@@ -1,38 +1,20 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth"; // เพิ่มบรรทัดนี้: นำเข้าระบบ Auth
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-key',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo.firebaseapp.com',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-project',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'demo.appspot.com',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '0',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || '0:0:web:0',
+  apiKey: "AIzaSyBaYn459J0BoCX3PGfEUUW9pzuCxXiFCuA",
+  authDomain: "smart-farm-c69be.firebaseapp.com",
+  projectId: "smart-farm-c69be",
+  storageBucket: "smart-farm-c69be.firebasestorage.app",
+  messagingSenderId: "139389413918",
+  appId: "1:139389413918:web:46fd439d179bebd051dc0f",
+  measurementId: "G-80E67N6X08"
 };
 
-// Check if Firebase is properly configured (not using demo values)
-export const isFirebaseConfigured = !!(
-    import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-    import.meta.env.VITE_FIREBASE_API_KEY !== 'demo-key'
-);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
-let app, auth, db, storage;
-
-try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-} catch (e) {
-    console.warn('Firebase initialization failed:', e.message);
-    app = null;
-    auth = { onAuthStateChanged: (_, cb) => { cb(null); return () => { }; } };
-    db = {};
-    storage = {};
-}
-
-export { auth, db, storage };
-export default app;
+// เพิ่มบรรทัดนี้: สร้างตัวแปร auth และ export ออกไปให้ไฟล์อื่นใช้งานได้
+export const auth = getAuth(app);
