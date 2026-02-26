@@ -5,15 +5,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
-
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// 2. เพิ่มบรรทัดนี้เพื่อเปิดใช้ระบบ Auth และ Export ออกไปให้ไฟล์อื่นใช้
-export const auth = getAuth(app);
-
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
