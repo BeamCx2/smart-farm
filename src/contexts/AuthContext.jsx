@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-import { auth, db } from '../firebase';
+import { auth, db } from '../lib/firebase';
 
-// 2. Import คำสั่งของ Firebase Auth และ Firestore ให้ครบถ้วน
 import { 
     onAuthStateChanged, 
     signInWithEmailAndPassword, 
@@ -81,4 +80,5 @@ export function useAuth() {
     if (!ctx) throw new Error('useAuth must be used within AuthProvider');
     return ctx;
 }
+
 
