@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth"; // 👈 1. เพิ่มบรรทัดนี้เข้ามา
+import { getAuth } from "firebase/auth"; // นำเข้า Auth
+import { getFirestore } from "firebase/firestore"; // นำเข้า Database
 
 const firebaseConfig = {
   apiKey: "AIzaSyBaYn459J0BoCX3PGfEUUW9pzuCxXiFCuA",
@@ -15,4 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-export const auth = getAuth(app); // 👈 2. เพิ่มบรรทัดนี้ไว้ล่างสุด
+// ต้องมี 2 บรรทัดนี้ด้านล่างสุดเสมอ
+export const auth = getAuth(app);
+export const db = getFirestore(app);
