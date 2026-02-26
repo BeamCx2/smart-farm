@@ -1,17 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-import { auth, db } from '../lib/firebase';
-
-import { 
-    onAuthStateChanged, 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    updateProfile, 
-    signOut 
+import { createContext, useContext, useEffect, useState } from 'react';
+import {
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -80,5 +78,3 @@ export function useAuth() {
     if (!ctx) throw new Error('useAuth must be used within AuthProvider');
     return ctx;
 }
-
-
