@@ -1,15 +1,20 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import {
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signOut,
-    updateProfile,
-} from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+// 1. นำเข้าตัวแปร auth จากไฟล์ firebase.js ของคุณ (เปลี่ยน path ให้ตรงกับโฟลเดอร์ของคุณ)
+import { auth } from './firebase'; 
+// 2. นำเข้าคำสั่งล็อกอินของ Firebase
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
-const AuthContext = createContext(null);
+// ตัวอย่างฟังก์ชันตอนกดปุ่มล็อกอิน
+const handleLogin = (email, password) => {
+    
+    // สังเกตตรงนี้ครับ! เราต้องใส่คำว่า auth ลงไปเป็นตัวแรกเสมอ
+    signInWithEmailAndPassword(auth, email, password) 
+        .then((userCredential) => {
+            console.log("ล็อกอินสำเร็จ!");
+        })
+        .catch((error) => {
+            console.error("เกิดข้อผิดพลาด:", error.message);
+        });
+}
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -78,3 +83,4 @@ export function useAuth() {
     if (!ctx) throw new Error('useAuth must be used within AuthProvider');
     return ctx;
 }
+
