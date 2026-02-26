@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// 1. แก้ไข Path ตรงนี้เป็น ../ เพื่อให้อ้างอิงไฟล์ข้ามโฟลเดอร์ได้ถูกต้อง
-// *หมายเหตุ: คุณต้องมีการดึงตัวแปร db มาใช้ด้วย
-import { auth, db } from '../firebase'; 
+import { auth, db } from '../firebase';
 
 // 2. Import คำสั่งของ Firebase Auth และ Firestore ให้ครบถ้วน
 import { 
@@ -83,3 +81,4 @@ export function useAuth() {
     if (!ctx) throw new Error('useAuth must be used within AuthProvider');
     return ctx;
 }
+
