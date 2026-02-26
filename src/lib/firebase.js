@@ -18,4 +18,6 @@ const analytics = getAnalytics(app);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// 👇 เพิ่มบรรทัดนี้เพื่อให้หน้า Home, Orders, Products ทำงานได้ครับ
 export const isFirebaseConfigured = true;
