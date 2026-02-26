@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth"; // 👈 อย่าลืมบรรทัดนี้เด็ดขาด! ถ้าไม่มี หน้าจะขาวทันที
+import { getAuth } from "firebase/auth"; // 👈 1. เพิ่มบรรทัดนี้เข้ามา
 
 const firebaseConfig = {
   apiKey: "AIzaSyBaYn459J0BoCX3PGfEUUW9pzuCxXiFCuA",
@@ -12,9 +12,7 @@ const firebaseConfig = {
   measurementId: "G-80E67N6X08"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// 👈 และต้องมีบรรทัดนี้ด้วยครับ
-export const auth = getAuth(app);
+export const auth = getAuth(app); // 👈 2. เพิ่มบรรทัดนี้ไว้ล่างสุด
