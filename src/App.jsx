@@ -5,19 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth"; // 1. เพิ่ม Import Auth
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBaYn459JOBoCX3PGfEUUW9pzuCxXiFCuA",
-  authDomain: "smart-farm-c69be.firebaseapp.com",
-  projectId: "smart-farm-c69be",
-  storageBucket: "smart-farm-c69be.firebasestorage.app",
-  messagingSenderId: "139389413918",
-  appId: "1:139389413918:web:46fd439d179bebd051dc0f",
-  measurementId: "G-80E67N6X08"
-};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
