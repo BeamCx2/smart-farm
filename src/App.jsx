@@ -11,7 +11,12 @@ import { getAuth } from "firebase/auth"; // 1. เพิ่ม Import Auth
 
 const firebaseConfig = {
   apiKey: "AIzaSyBaYn459JOBoCX3PGfEUUW9pzuCxXiFCuA",
-  // ... (ค่าอื่นๆ ของคุณ)
+  authDomain: "smart-farm-c69be.firebaseapp.com",
+  projectId: "smart-farm-c69be",
+  storageBucket: "smart-farm-c69be.firebasestorage.app",
+  messagingSenderId: "139389413918",
+  appId: "1:139389413918:web:46fd439d179bebd051dc0f",
+  measurementId: "G-80E67N6X08"
 };
 
 // Initialize Firebase
