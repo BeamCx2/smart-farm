@@ -25,59 +25,50 @@ function PaymentComponent() {
 
   // ใน App.jsx
 const handlePayment = async () => {
-  setLoading(true);
-  try {
-    // 1. ดึง Token (ที่เราเพิ่งทำสำเร็จ)
-    const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
-    const tokenData = await tokenRes.json();
-    const token = tokenData.access_token;
-
-    if (!token) throw new Error("Token ไม่มาตามนัด");
-
-    // 2. สร้าง QR Code โดยส่ง Token ไป
-    const qrRes = await fetch('/.netlify/functions/generate-qr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accessToken: token,
-        amount: 1.0 // ทดสอบ 1 บาท
-      })
-    });
+    setLoading(true);
+    console.log("--- เริ่มขั้นตอนการชำระเงิน ---");
     
-    const qrResult = await qrRes.json();
+    try {
+      // 1. ดึง Token
+      const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
+      const tokenData = await tokenRes.json();
+      const token = tokenData.access_token;
 
-    // 3. เช็ค Response จาก KBank (ดูชื่อ Field ให้ดี)
-    if (qrResult.qrImage) {
-      setQrData(qrResult);
-    } else {
-      alert(`KBank บอกว่า: ${qrResult.message || 'สร้าง QR ไม่สำเร็จ'}`);
+      console.log("Raw Token Data:", tokenData);
+
+      if (!token) {
+        throw new Error(tokenData.message || "ไม่ได้รับ Access Token จากระบบ");
+      }
+
+      // 2. สร้าง QR Code
+      const qrRes = await fetch('/.netlify/functions/generate-qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: token,
+          amount: 1.0 // ทดสอบ 1 บาท
+        })
+      });
+      
+      const qrResult = await qrRes.json();
+      console.log("QR Result จาก KBank:", qrResult);
+
+      // 3. ตรวจสอบและแสดงผล QR Code
+      if (qrResult.qrCode || qrResult.qrImage || qrResult.rawQr) {
+        // เก็บข้อมูลทั้งหมดไว้ใน State เพื่อนำไปแสดงผลรูปภาพ
+        setQrData(qrResult);
+      } else {
+        throw new Error(qrResult.message || "KBank ปฏิเสธการสร้าง QR");
+      }
+      
+    } catch (error) {
+      console.error("เกิดข้อผิดพลาด:", error.message);
+      alert(`การเชื่อมต่อขัดข้อง: ${error.message}`);
+    } finally {
+      setLoading(false);
+      console.log("--- จบขั้นตอนการทำงาน ---");
     }
-    
-  } catch (error) {
-    alert("ระบบขัดข้อง: " + error.message);
-  } finally {
-    setLoading(false);
-  }
-};
-    
-    const qrResult = await qrRes.json();
-    console.log("QR Result จาก KBank:", qrResult);
-
-    // เช็คค่าที่ KBank Sandbox มักจะส่งมา (qrImage หรือ rawQr)
-    if (qrResult.qrImage || qrResult.rawQr) {
-      setQrData(qrResult);
-    } else {
-      throw new Error(qrResult.message || "KBank ปฏิเสธการสร้าง QR");
-    }
-    
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาด:", error.message);
-    alert(`การเชื่อมต่อขัดข้อง: ${error.message}`);
-  } finally {
-    setLoading(false);
-    console.log("--- จบขั้นตอนการทำงาน ---");
-  }
-};
+  };
 
   return (
     <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
