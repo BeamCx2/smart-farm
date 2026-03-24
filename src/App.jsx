@@ -100,11 +100,23 @@ function PaymentComponent() {
         <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-500">
           <p className="mb-3 font-semibold text-emerald-800 underline decoration-emerald-200 decoration-4">สแกนชำระเงิน</p>
           <div className="bg-white p-4 rounded-2xl border-2 border-emerald-500 shadow-xl">
-             <img 
-               src={`data:image/png;base64,${qrData.qrImage}`} 
-               alt="QR Code" 
-               className="w-64 h-64 object-contain" 
-             />
+            
+            {/* 🚨 ส่วนที่เปลี่ยน: เช็คว่า KBank ส่งไฟล์ภาพ หรือส่งมาแค่ข้อความ 🚨 */}
+            {qrData.qrImage ? (
+              <img 
+                src={`data:image/png;base64,${qrData.qrImage}`} 
+                alt="QR Code" 
+                className="w-64 h-64 object-contain" 
+              />
+            ) : (
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrData.qrCode || '')}`} 
+                alt="Thai QR Code" 
+                className="w-64 h-64 object-contain" 
+              />
+            )}
+            {/* 🚨 จบส่วนที่เปลี่ยน 🚨 */}
+
           </div>
           <p className="mt-4 text-xs text-gray-400 font-mono">Ref: {qrData.partnerTxnUid}</p>
 
