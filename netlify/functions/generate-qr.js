@@ -19,14 +19,15 @@ exports.handler = async (event) => {
         'env-id': 'QR002'
       },
       body: JSON.stringify({
-        "partnerTxnUid": "TR" + Math.floor(Math.random() * 100000),
+        // แก้ไข: ใช้ค่าตามที่โจทย์ Exercise 2 กำหนดเป๊ะๆ
+        "partnerTxnUid": "PARTNERTEST0001", 
         "partnerId": "PTR1051873",
         "partnerSecret": "d4bded58200547bc85903574a293831b",
         "requestDt": new Date().toISOString(),
         "merchantId": "KB102057148704",
         "qrType": "3",
         "unconfrimFlag": "Y",
-        "billDetail": "Test",
+        "billDetail": "Test Payment",
         "reference1": "INV001",
         "amount": "1.00",
         "currencyCode": "THB"
@@ -34,10 +35,18 @@ exports.handler = async (event) => {
     });
 
     const data = await res.json();
-    console.log("LOG_DATA:", data);
+    console.log("KBank Response:", data);
 
-    return { statusCode: 200, headers, body: JSON.stringify(data) };
+    return { 
+      statusCode: 200, 
+      headers, 
+      body: JSON.stringify(data) 
+    };
   } catch (err) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    return { 
+      statusCode: 500, 
+      headers, 
+      body: JSON.stringify({ error: err.message }) 
+    };
   }
 };
