@@ -72,7 +72,6 @@ function PaymentComponent() {
       });
 
       const statusData = await res.json();
-      // "00" คือรหัสสำเร็จของ KBank
       if (statusData.statusCode === "00") {
         alert("🎉 ชำระเงินสำเร็จ!");
       } else {
@@ -87,19 +86,19 @@ function PaymentComponent() {
 
   return (
     <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
-      <h2 className="text-xl font-bold mb-4 text-emerald-700">ระบบชำระเงิน Smart Farm</h2>
+      <h2 className="text-xl font-bold mb-6 text-emerald-700">ระบบชำระเงิน Smart Farm</h2>
       
       <button 
         onClick={handlePayment} 
         disabled={loading}
-        className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 disabled:opacity-50 transition-all"
+        className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md"
       >
         {loading ? 'กำลังดำเนินการ...' : 'สร้าง QR 1 บาท'}
       </button>
 
       {qrData && (
-        <div className="mt-8 flex flex-col items-center">
-          <p className="mb-3 font-semibold text-emerald-800">สแกนชำระเงิน</p>
+        <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-500">
+          <p className="mb-3 font-semibold text-emerald-800 underline decoration-emerald-200 decoration-4">สแกนชำระเงิน</p>
           <div className="bg-white p-4 rounded-2xl border-2 border-emerald-500 shadow-xl">
              <img 
                src={`data:image/png;base64,${qrData.qrImage}`} 
@@ -109,11 +108,10 @@ function PaymentComponent() {
           </div>
           <p className="mt-4 text-xs text-gray-400 font-mono">Ref: {qrData.partnerTxnUid}</p>
 
-          {/* --- วางปุ่มตรวจสอบสถานะตรงนี้ --- */}
           <button 
             onClick={checkStatus}
             disabled={loading}
-            className="mt-6 px-6 py-2 bg-white text-emerald-600 border-2 border-emerald-600 rounded-full font-bold hover:bg-emerald-50 disabled:opacity-50 transition-all shadow-sm"
+            className="mt-6 px-8 py-3 bg-white text-emerald-600 border-2 border-emerald-600 rounded-full font-bold hover:bg-emerald-50 disabled:opacity-50 transition-all shadow-sm"
           >
             {loading ? 'กำลังตรวจสอบ...' : 'ฉันชำระเงินเรียบร้อยแล้ว'}
           </button>
@@ -121,32 +119,7 @@ function PaymentComponent() {
       )}
     </div>
   );
-}
-
-// ... (export default function App เดิมของคุณ)
-
-  return (
-    <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
-      <h2 className="text-xl font-bold mb-4 text-emerald-700">ทดสอบระบบชำระเงิน Smart Farm</h2>
-      <button 
-        onClick={handlePayment} 
-        disabled={loading}
-        className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 disabled:bg-gray-400 transition-all"
-      >
-        {loading ? 'กำลังสร้าง QR...' : 'ชำระเงิน 1 บาท'}
-      </button>
-
-      {qrData && (
-        <div className="mt-6 flex flex-col items-center animate-fade-in">
-          <p className="mb-2 font-semibold">สแกนเพื่อจ่ายเงิน (Sandbox):</p>
-          {/* ตรวจสอบ key ใน response: ของ KBank มักจะเป็น qrImage หรือ rawQr */}
-          <img src={`data:image/png;base64,${qrData.qrImage}`} alt="KBank QR Code" className="w-64 h-64 border-4 border-emerald-100 p-2 rounded-lg" />
-          <p className="mt-2 text-sm text-gray-500">Ref: {qrData.partnerTxnUid}</p>
-        </div>
-      )}
-    </div>
-  );
-}
+} // ปิดฟังก์ชัน PaymentComponent (ตัวเดียวพอครับ!)
 
 export default function App() {
   return (
