@@ -7,10 +7,14 @@ exports.handler = async (event, context) => {
     "Content-Type": "application/json"
   };
 
-  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers };
+  }
 
   try {
-    const { accessToken, amount } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    const accessToken = body.accessToken;
+    const amount = body.amount;
 
     const response = await fetch('https://openapi-sandbox.kasikornbank.com/v1/qrpayment/request', {
       method: 'POST',
@@ -18,12 +22,10 @@ exports.handler = async (event, context) => {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         'x-test-mode': 'true',
-        'env-id': 'QR002' 
+        'env-id': 'QR002'
       },
       body: JSON.stringify({
-        // แก้ไข: เปลี่ยนจาก TXN เป็น TR ตามกฎของ Exercise 2 
-        // และใช้ตัวเลข 5 หลักเพื่อไม่ให้ยาวเกินไป
-        "partnerTxnUid": "TR" + Math.floor(10000 + Math.random() * 90000), 
+        "partnerTxnUid": "TR" + Math.floor(10000 + Math.random() * 90000),
         "partnerId": "PTR1051873",
         "partnerSecret": "d4bded58200547bc85903574a293831b",
         "requestDt": new Date().toISOString(),
@@ -38,7 +40,7 @@ exports.handler = async (event, context) => {
     });
 
     const data = await response.json();
-    console.log("KBank Response Detail:", data); 
+    console.log("KBank Response:", data);
 
     return {
       statusCode: 200,
@@ -47,4 +49,11 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error("
+    console.error("Error:", error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+};
