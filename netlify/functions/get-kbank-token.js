@@ -1,45 +1,36 @@
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json"
   };
 
-  // ใช้ ID และ Secret จากรูป App Detail ล่าสุดของคุณ
-  // ตรวจสอบให้ดีว่าไม่มี "เว้นวรรค" ติดมาในตัวแปร
-  const consumerID = 'IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh'; 
-  const consumerSecret = 'T5qKGFRaafb2Ig12';
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
   try {
-    // 1. เข้ารหัส Credentials
-    const credentials = Buffer.from(`${consumerID}:${consumerSecret}`).toString('base64');
+    // 🚨 ใส่รหัสใหม่ล่าสุดที่คุณเพิ่งกดมาตรงนี้!
+    const consumerID = "IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh";
+    const consumerSecret = "T5qKGFRAafb2Ig12";
+    
+    // แปลงรหัสเป็น Base64 ตามกฎของ KBank
+    const authString = Buffer.from(`${consumerID}:${consumerSecret}`).toString('base64');
 
-    // 2. เรียก API (เพิ่ม env-id ตามที่หน้าเว็บ Sandbox แนะนำ)
-    const response = await fetch('https://openapi-sandbox.kasikornbank.com/v2/oauth/token', {
+    const res = await fetch('https://openapi-sandbox.kasikornbank.com/v1.2/oauth/token', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${credentials}`,
+        'Authorization': `Basic ${authString}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'x-test-mode': 'true',
-        'env-id': 'OAUTH2' // สำคัญ: ลองเพิ่มตามคำแนะนำในหน้าเว็บ KBank
+        'env-id': 'OAUTH2' 
       },
       body: 'grant_type=client_credentials'
     });
 
-    const data = await response.json();
-    
-    // ถ้า KBank ตอบกลับมาเป็น Error เราจะส่ง HTTP 400 กลับไปให้หน้าบ้านรู้
-    const statusCode = data.access_token ? 200 : 400;
+    const data = await res.json();
+    console.log("Token Response:", data);
 
-    return {
-      statusCode: statusCode,
-      headers,
-      body: JSON.stringify(data)
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: error.message })
-    };
+    return { statusCode: 200, headers, body: JSON.stringify(data) };
+  } catch (err) {
+    console.error("Token Error:", err);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
