@@ -19,20 +19,17 @@ exports.handler = async (event) => {
         'env-id': 'QR002'
       },
       body: JSON.stringify({
-        // 1. เลขรายการตามโจทย์
         "partnerTxnUid": "PARTNERTEST0001", 
-        // 2. Partner ID ตามตัวอักษรสีแดงในรูป (เปลี่ยน 8 เป็น 6)
         "partnerId": "PTR1051673", 
-        // 3. Partner Secret ตามตัวอักษรสีแดงในรูป
         "partnerSecret": "d4bded59200547bc85903574a293831b",
         "requestDt": new Date().toISOString(),
-        // 4. Merchant ID ตามตัวอักษรสีแดงในรูป
         "merchantId": "KB102057149704", 
         "qrType": "3",
         "unconfrimFlag": "Y",
         "billDetail": "Test Payment",
         "reference1": "INV001",
-        "amount": "1.00",
+        "amount": "100.00",       // เปลี่ยนยอดเป็น 100.00 เผื่อโจทย์บังคับ
+        "txnAmount": "100.00",    // พ่วงชื่อฟิลด์นี้ไปเผื่อ Sandbox ดักจับ
         "currencyCode": "THB"
       })
     });
