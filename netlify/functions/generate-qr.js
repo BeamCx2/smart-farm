@@ -1,28 +1,28 @@
 // netlify/functions/generate-qr.js
 
 exports.handler = async (event, context) => {
-  // 1. รับ access_token ที่ส่งมาจากหน้าเว็บ (หรือจะเรียกจากฟังก์ชัน token โดยตรงก็ได้)
+  // รับข้อมูลจากหน้าบ้าน (accessToken และ amount)
   const { accessToken, amount } = JSON.parse(event.body);
 
   try {
     const response = await fetch('https://openapi-sandbox.kasikornbank.com/v1/qrpayment/request', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`, // นำ Token มาใส่ตรงนี้
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         'x-test-mode': 'true'
       },
       body: JSON.stringify({
-        "partnerTxnUid": `PARTNER${Date.now()}`, // สุ่มเลข Transaction
-        "partnerId": "PTR1051873",               // ตามรูป Exercise 2
-        "partnerSecret": "d4bded58200547bc85903574a293831b", // ตามรูป
+        "partnerTxnUid": `SMARTFARM${Date.now()}`,
+        "partnerId": "PTR1051873", // จากรูป Exercise 2
+        "partnerSecret": "d4bded58200547bc85903574a293831b", // จากรูป Exercise 2
         "requestDt": new Date().toISOString(),
-        "merchantId": "KB102057148704",          // ตามรูป
+        "merchantId": "KB102057148704", // จากรูป Exercise 2
         "qrType": "3",
         "unconfrimFlag": "Y",
-        "billDetail": "Payment for Smart Farm",
+        "billDetail": "Payment for Smart Farm 1 THB",
         "reference1": "INV001",
-        "amount": amount,                        // รับค่าเงินมาจากหน้าเว็บ
+        "amount": amount.toFixed(2), // บังคับทศนิยม 2 ตำแหน่ง เช่น 1.00
         "currencyCode": "THB"
       })
     });
@@ -31,7 +31,10 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*" 
+      },
       body: JSON.stringify(data)
     };
   } catch (error) {
