@@ -1,4 +1,22 @@
-// ... (import เดิมของคุณทั้งหมด)
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
+import Layout from './components/layout/Layout';
+import AdminLayout from './components/layout/AdminLayout';
+import { useState } from 'react';
+import Home from './pages/Home';
+import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import Orders from './pages/Orders';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/admin/Dashboard';
+import ProductManager from './pages/admin/ProductManager';
+import OrderManager from './pages/admin/OrderManager';
 
 // 1. ตัด export default ออก ให้เหลือแค่ function ธรรมดา
 function PaymentComponent() {
