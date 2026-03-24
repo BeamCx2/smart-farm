@@ -10,6 +10,9 @@ exports.handler = async (event) => {
   try {
     const { accessToken } = JSON.parse(event.body);
 
+    // 🚨 จุดไคลแม็กซ์รอบนี้: สร้างเวลาแล้วตัดเศษมิลลิวินาทีทิ้งให้ KBank พอใจ
+    const formattedDate = new Date().toISOString().split('.')[0] + "Z";
+
     const res = await fetch('https://openapi-sandbox.kasikornbank.com/v1/qrpayment/request', {
       method: 'POST',
       headers: {
@@ -22,11 +25,10 @@ exports.handler = async (event) => {
         "partnerTxnUid": "PARTNERTEST0001", 
         "partnerId": "PTR1051673", 
         "partnerSecret": "d4bded59200547bc85903574a293831b",
-        "requestDt": new Date().toISOString(),
+        "requestDt": formattedDate, // ใช้เวลาที่ถูก format แล้ว
         "merchantId": "KB102057149704", 
         "qrType": "3",
         "txnAmount": 1.00, 
-        // 🚨 จุดไคลแม็กซ์รอบนี้: เปลี่ยนชื่อฟิลด์ตามที่ KBank สั่ง
         "txnCurrencyCode": "THB", 
         "reference1": "INV001",
         "reference2": "HELLOWORLD",
