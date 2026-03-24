@@ -1,22 +1,59 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ToastProvider } from './contexts/ToastContext';
-import Layout from './components/layout/Layout';
-import AdminLayout from './components/layout/AdminLayout';
+// ... (import เดิมของคุณทั้งหมด)
 
-import Home from './pages/Home';
-import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Orders from './pages/Orders';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/admin/Dashboard';
-import ProductManager from './pages/admin/ProductManager';
-import OrderManager from './pages/admin/OrderManager';
+// 1. ตัด export default ออก ให้เหลือแค่ function ธรรมดา
+function PaymentComponent() {
+  const [qrData, setQrData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handlePayment = async () => {
+    setLoading(true);
+    try {
+      const tokenResponse = await fetch('/.netlify/functions/get-kbank-token');
+      const tokenData = await tokenResponse.json();
+      if (!tokenData.access_token) throw new Error("ดึง Token ไม่สำเร็จ");
+
+      const qrResponse = await fetch('/.netlify/functions/generate-qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: tokenData.access_token,
+          amount: 1.00 
+        })
+      });
+      
+      const qrResult = await qrResponse.json();
+      setQrData(qrResult);
+      
+    } catch (error) {
+      console.error("การชำระเงินขัดข้อง:", error);
+      alert("เกิดข้อผิดพลาดในการสร้าง QR Code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
+      <h2 className="text-xl font-bold mb-4 text-emerald-700">ทดสอบระบบชำระเงิน Smart Farm</h2>
+      <button 
+        onClick={handlePayment} 
+        disabled={loading}
+        className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 disabled:bg-gray-400 transition-all"
+      >
+        {loading ? 'กำลังสร้าง QR...' : 'ชำระเงิน 1 บาท'}
+      </button>
+
+      {qrData && (
+        <div className="mt-6 flex flex-col items-center animate-fade-in">
+          <p className="mb-2 font-semibold">สแกนเพื่อจ่ายเงิน (Sandbox):</p>
+          {/* ตรวจสอบ key ใน response: ของ KBank มักจะเป็น qrImage หรือ rawQr */}
+          <img src={`data:image/png;base64,${qrData.qrImage}`} alt="KBank QR Code" className="w-64 h-64 border-4 border-emerald-100 p-2 rounded-lg" />
+          <p className="mt-2 text-sm text-gray-500">Ref: {qrData.partnerTxnUid}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -32,18 +69,20 @@ export default function App() {
                   <Route path="/products/:id" element={<ProductDetail />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
+                  
+                  {/* 2. เพิ่มทางเข้าหน้าทดสอบจ่ายเงินตรงนี้ */}
+                  <Route path="/test-payment" element={<PaymentComponent />} />
+
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
 
-                  {/* Admin */}
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="products" element={<ProductManager />} />
                     <Route path="orders" element={<OrderManager />} />
                   </Route>
 
-                  {/* 404 */}
                   <Route path="*" element={
                     <div className="min-h-[60vh] flex flex-col items-center justify-center">
                       <div className="text-6xl mb-4">🔍</div>
