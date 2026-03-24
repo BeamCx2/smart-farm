@@ -26,36 +26,39 @@ function PaymentComponent() {
   // ใน App.jsx
 const handlePayment = async () => {
   setLoading(true);
-  console.log("--- เริ่มขั้นตอนการชำระเงิน ---");
-  
   try {
-    // 1. ดึง Token
+    // 1. ดึง Token (ที่เราเพิ่งทำสำเร็จ)
     const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
     const tokenData = await tokenRes.json();
-    
-    // ดูของจริงที่ส่งกลับมาจาก Function ใน Console
-    console.log("Raw Token Data:", tokenData);
+    const token = tokenData.access_token;
 
-    // ถ้า KBank ส่ง Error มาในรูปแบบอื่น (เช่น data.error) เราจะดักตรงนี้
-    const token = tokenData.access_token; 
+    if (!token) throw new Error("Token ไม่มาตามนัด");
+
+    // 2. สร้าง QR Code โดยส่ง Token ไป
+    const qrRes = await fetch('/.netlify/functions/generate-qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accessToken: token,
+        amount: 1.0 // ทดสอบ 1 บาท
+      })
+    });
     
-    if (!token) {
-      // ถ้าไม่มี token ให้เอา error message จาก KBank มาโชว์
-      const errorMsg = tokenData.message || tokenData.error || "ไม่ได้รับ Access Token จากระบบ";
-      throw new Error(errorMsg);
+    const qrResult = await qrRes.json();
+
+    // 3. เช็ค Response จาก KBank (ดูชื่อ Field ให้ดี)
+    if (qrResult.qrImage) {
+      setQrData(qrResult);
+    } else {
+      alert(`KBank บอกว่า: ${qrResult.message || 'สร้าง QR ไม่สำเร็จ'}`);
     }
-
-    console.log("ดึง Token สำเร็จ:", token);
-
-
-const qrRes = await fetch('/.netlify/functions/generate-qr', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    accessToken: tokenData.access_token, // ต้องใช้ชื่อ accessToken ตามหลังบ้าน
-    amount: 1.0                          // ต้องใช้ชื่อ amount ตามหลังบ้าน
-  })
-});
+    
+  } catch (error) {
+    alert("ระบบขัดข้อง: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
     
     const qrResult = await qrRes.json();
     console.log("QR Result จาก KBank:", qrResult);
