@@ -25,9 +25,9 @@ exports.handler = async (event) => {
         "requestDt": new Date().toISOString(),
         "merchantId": "KB102057149704", 
         "qrType": "3",
-        // 🚨 จุดไคลแม็กซ์: เปลี่ยนชื่อจาก amount เป็น txnAmount และส่งเป็นตัวเลข
         "txnAmount": 1.00, 
-        "currencyCode": "THB",
+        // 🚨 จุดไคลแม็กซ์รอบนี้: เปลี่ยนชื่อฟิลด์ตามที่ KBank สั่ง
+        "txnCurrencyCode": "THB", 
         "reference1": "INV001",
         "reference2": "HELLOWORLD",
         "reference3": "INV001",
