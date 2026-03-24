@@ -23,32 +23,47 @@ function PaymentComponent() {
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handlePayment = async () => {
-    setLoading(true);
-    try {
-      const tokenResponse = await fetch('/.netlify/functions/get-kbank-token');
-      const tokenData = await tokenResponse.json();
-      if (!tokenData.access_token) throw new Error("ดึง Token ไม่สำเร็จ");
+  // ใน App.jsx
+const handlePayment = async () => {
+  setLoading(true);
+  try {
+    // 1. ดึง Token
+    const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
+    const tokenData = await tokenRes.json();
+    
+    // ตรวจสอบว่าได้ token จริงไหม (เช็คใน Console ดูได้)
+    console.log("Token received:", tokenData.access_token);
+    if (!tokenData.access_token) throw new Error("No Access Token");
 
-      const qrResponse = await fetch('/.netlify/functions/generate-qr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: tokenData.access_token,
-          amount: 1.00 
-        })
-      });
-      
-      const qrResult = await qrResponse.json();
+    // 2. สร้าง QR (เพิ่ม headers และส่ง amount เป็นตัวเลข)
+    const qrRes = await fetch('/.netlify/functions/generate-qr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // สำคัญมาก!
+      },
+      body: JSON.stringify({
+        accessToken: tokenData.access_token,
+        amount: 1.0 // ส่งเป็น Number
+      })
+    });
+    
+    const qrResult = await qrRes.json();
+    console.log("QR Result:", qrResult); // ดู Log ตรงนี้ว่า KBank ตอบอะไรมา
+
+    if (qrResult.qrImage || qrResult.rawQr) {
       setQrData(qrResult);
-      
-    } catch (error) {
-      console.error("การชำระเงินขัดข้อง:", error);
-      alert("เกิดข้อผิดพลาดในการสร้าง QR Code");
-    } finally {
-      setLoading(false);
+    } else {
+      // ถ้า KBank ส่ง error มา มันจะมาตกที่นี่
+      alert(`KBank Error: ${qrResult.message || 'สร้าง QR ไม่สำเร็จ'}`);
     }
-  };
+    
+  } catch (error) {
+    console.error("Error:", error);
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
