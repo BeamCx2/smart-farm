@@ -1,6 +1,6 @@
 exports.handler = async (event, context) => {
-  const consumerID = 'suDxvMLTLYsQwLTROL9UL1mBCenibmcr';
-  const consumerSecret = 'gOOfPtGLoGxYP3DG';
+  const consumerID = 'IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh';
+  const consumerSecret = 'T5qKGFRaafb2Ig12';
   // ใช้ Buffer เพื่อทำ Base64
   const credentials = Buffer.from(`${consumerID}:${consumerSecret}`).toString('base64');
 
