@@ -8,29 +8,28 @@ exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
   try {
-    const consumerID = "IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh";
+    // 🚨 สำคัญมาก: เช็คให้ชัวร์ว่ารหัส 2 บรรทัดนี้ถูกต้อง ไม่มีเคาะวรรคหรือช่องว่างซ่อนอยู่!
+    const consumerID = "IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh"; 
     const consumerSecret = "T5qKGFRAafb2Ig12";
     
-    // แปลงรหัสเป็น Base64
     const authString = Buffer.from(`${consumerID}:${consumerSecret}`).toString('base64');
 
-    // ใช้ v2 ตามมาตรฐานของ KBank API ใหม่ล่าสุด
-    const res = await fetch('https://openapi-sandbox.kasikornbank.com/v2/oauth/token', {
+    // ใช้ v1.2 ตามที่เคยทำสำเร็จ
+    const res = await fetch('https://openapi-sandbox.kasikornbank.com/v1.2/oauth/token', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${authString}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'env-id': 'OAUTH2' // ใส่กลับคืนมาเพื่อความชัวร์
       },
       body: 'grant_type=client_credentials'
     });
 
-    // 🚨 อ่านข้อความดิบๆ ออกมาก่อน เพื่อป้องกัน JSON.parse Error
     const rawText = await res.text();
-    console.log("Raw Token Response (ดูตรงนี้):", rawText);
-    console.log("Status Code:", res.status);
+    console.log("Raw Token Response:", rawText);
 
-    if (!rawText) {
-      throw new Error(`KBank ส่งค่าว่างเปล่า (Status: ${res.status}) - อาจจะ URL ผิด หรือรหัสไม่ถูกต้อง`);
+    if (!res.ok) {
+      throw new Error(`KBank ปฏิเสธ (Status: ${res.status}): ${rawText}`);
     }
 
     const data = JSON.parse(rawText);
