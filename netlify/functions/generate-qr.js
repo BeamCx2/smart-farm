@@ -25,12 +25,13 @@ exports.handler = async (event) => {
         "requestDt": new Date().toISOString(),
         "merchantId": "KB102057149704", 
         "qrType": "3",
-        "amount": "1.00", // ยอดเงินบวก (Positive number)
+        // 🚨 จุดไคลแม็กซ์: เปลี่ยนชื่อจาก amount เป็น txnAmount และส่งเป็นตัวเลข
+        "txnAmount": 1.00, 
         "currencyCode": "THB",
         "reference1": "INV001",
-        "reference2": "HELLOWORLD", // เพิ่มตามตาราง
-        "reference3": "INV001",     // เพิ่มตามตาราง
-        "reference4": "INV001"      // เพิ่มตามตาราง
+        "reference2": "HELLOWORLD",
+        "reference3": "INV001",
+        "reference4": "INV001"
       })
     });
 
