@@ -19,56 +19,111 @@ import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
 
 // 1. ตัด export default ออก ให้เหลือแค่ function ธรรมดา
+// ... (imports เดิมของคุณ)
+
 function PaymentComponent() {
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ใน App.jsx
-const handlePayment = async () => {
+  // 1. ฟังก์ชันสร้าง QR Code
+  const handlePayment = async () => {
     setLoading(true);
-    console.log("--- เริ่มขั้นตอนการชำระเงิน ---");
-    
     try {
-      // 1. ดึง Token
       const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
       const tokenData = await tokenRes.json();
       const token = tokenData.access_token;
 
-      console.log("Raw Token Data:", tokenData);
+      if (!token) throw new Error("Token ไม่มาตามนัด");
 
-      if (!token) {
-        throw new Error(tokenData.message || "ไม่ได้รับ Access Token จากระบบ");
-      }
-
-      // 2. สร้าง QR Code
       const qrRes = await fetch('/.netlify/functions/generate-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: token,
-          amount: 1.0 // ทดสอบ 1 บาท
-        })
+        body: JSON.stringify({ accessToken: token, amount: 1.0 })
       });
-      
       const qrResult = await qrRes.json();
-      console.log("QR Result จาก KBank:", qrResult);
 
-      // 3. ตรวจสอบและแสดงผล QR Code
-      if (qrResult.qrCode || qrResult.qrImage || qrResult.rawQr) {
-        // เก็บข้อมูลทั้งหมดไว้ใน State เพื่อนำไปแสดงผลรูปภาพ
+      if (qrResult.qrImage || qrResult.qrCode) {
         setQrData(qrResult);
       } else {
-        throw new Error(qrResult.message || "KBank ปฏิเสธการสร้าง QR");
+        alert("KBank: " + (qrResult.message || "สร้าง QR ไม่สำเร็จ"));
       }
-      
     } catch (error) {
-      console.error("เกิดข้อผิดพลาด:", error.message);
-      alert(`การเชื่อมต่อขัดข้อง: ${error.message}`);
+      alert("ระบบขัดข้อง: " + error.message);
     } finally {
       setLoading(false);
-      console.log("--- จบขั้นตอนการทำงาน ---");
     }
   };
+
+  // 2. ฟังก์ชันตรวจสอบสถานะ (Inquiry)
+  const checkStatus = async () => {
+    if (!qrData) return;
+    setLoading(true);
+    try {
+      const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
+      const tokenData = await tokenRes.json();
+
+      const res = await fetch('/.netlify/functions/check-payment-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: tokenData.access_token,
+          partnerTxnUid: qrData.partnerTxnUid
+        })
+      });
+
+      const statusData = await res.json();
+      // "00" คือรหัสสำเร็จของ KBank
+      if (statusData.statusCode === "00") {
+        alert("🎉 ชำระเงินสำเร็จ!");
+      } else {
+        alert(`สถานะ: ${statusData.statusDesc || 'ยังไม่พบยอดเงิน'}`);
+      }
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการตรวจสอบ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
+      <h2 className="text-xl font-bold mb-4 text-emerald-700">ระบบชำระเงิน Smart Farm</h2>
+      
+      <button 
+        onClick={handlePayment} 
+        disabled={loading}
+        className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 disabled:opacity-50 transition-all"
+      >
+        {loading ? 'กำลังดำเนินการ...' : 'สร้าง QR 1 บาท'}
+      </button>
+
+      {qrData && (
+        <div className="mt-8 flex flex-col items-center">
+          <p className="mb-3 font-semibold text-emerald-800">สแกนชำระเงิน</p>
+          <div className="bg-white p-4 rounded-2xl border-2 border-emerald-500 shadow-xl">
+             <img 
+               src={`data:image/png;base64,${qrData.qrImage}`} 
+               alt="QR Code" 
+               className="w-64 h-64 object-contain" 
+             />
+          </div>
+          <p className="mt-4 text-xs text-gray-400 font-mono">Ref: {qrData.partnerTxnUid}</p>
+
+          {/* --- วางปุ่มตรวจสอบสถานะตรงนี้ --- */}
+          <button 
+            onClick={checkStatus}
+            disabled={loading}
+            className="mt-6 px-6 py-2 bg-white text-emerald-600 border-2 border-emerald-600 rounded-full font-bold hover:bg-emerald-50 disabled:opacity-50 transition-all shadow-sm"
+          >
+            {loading ? 'กำลังตรวจสอบ...' : 'ฉันชำระเงินเรียบร้อยแล้ว'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ... (export default function App เดิมของคุณ)
 
   return (
     <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
