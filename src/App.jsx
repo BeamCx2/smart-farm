@@ -26,42 +26,53 @@ function PaymentComponent() {
   // ใน App.jsx
 const handlePayment = async () => {
   setLoading(true);
+  console.log("--- เริ่มขั้นตอนการชำระเงิน ---");
+  
   try {
     // 1. ดึง Token
     const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
     const tokenData = await tokenRes.json();
     
-    // ตรวจสอบว่าได้ token จริงไหม (เช็คใน Console ดูได้)
-    console.log("Token received:", tokenData.access_token);
-    if (!tokenData.access_token) throw new Error("No Access Token");
+    // ดูของจริงที่ส่งกลับมาจาก Function ใน Console
+    console.log("Raw Token Data:", tokenData);
 
-    // 2. สร้าง QR (เพิ่ม headers และส่ง amount เป็นตัวเลข)
+    // ถ้า KBank ส่ง Error มาในรูปแบบอื่น (เช่น data.error) เราจะดักตรงนี้
+    const token = tokenData.access_token; 
+    
+    if (!token) {
+      // ถ้าไม่มี token ให้เอา error message จาก KBank มาโชว์
+      const errorMsg = tokenData.message || tokenData.error || "ไม่ได้รับ Access Token จากระบบ";
+      throw new Error(errorMsg);
+    }
+
+    console.log("ดึง Token สำเร็จ:", token);
+
+    // 2. สร้าง QR
     const qrRes = await fetch('/.netlify/functions/generate-qr', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json', // สำคัญมาก!
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        accessToken: tokenData.access_token,
-        amount: 1.0 // ส่งเป็น Number
+        accessToken: token,
+        amount: 1.0 // ส่งเป็นตัวเลข
       })
     });
     
     const qrResult = await qrRes.json();
-    console.log("QR Result:", qrResult); // ดู Log ตรงนี้ว่า KBank ตอบอะไรมา
+    console.log("QR Result จาก KBank:", qrResult);
 
+    // เช็คค่าที่ KBank Sandbox มักจะส่งมา (qrImage หรือ rawQr)
     if (qrResult.qrImage || qrResult.rawQr) {
       setQrData(qrResult);
     } else {
-      // ถ้า KBank ส่ง error มา มันจะมาตกที่นี่
-      alert(`KBank Error: ${qrResult.message || 'สร้าง QR ไม่สำเร็จ'}`);
+      throw new Error(qrResult.message || "KBank ปฏิเสธการสร้าง QR");
     }
     
   } catch (error) {
-    console.error("Error:", error);
-    alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+    console.error("เกิดข้อผิดพลาด:", error.message);
+    alert(`การเชื่อมต่อขัดข้อง: ${error.message}`);
   } finally {
     setLoading(false);
+    console.log("--- จบขั้นตอนการทำงาน ---");
   }
 };
 
