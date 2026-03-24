@@ -1,14 +1,18 @@
-// netlify/functions/get-kbank-token.js
-
 exports.handler = async (event, context) => {
+  // 1. ตั้งค่า Header ให้รองรับการเรียกจากหน้าเว็บ (CORS)
   const headers = {
     "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json"
   };
 
-  // ตรวจสอบ ID/Secret: ห้ามมีเว้นวรรคเด็ดขาด!
-  // คัดลอกมาจาก Exercise 1 ให้แม่นยำครับ
-  const consumerID = 'IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh'; 
+  // ดักการส่งแบบ OPTIONS (ที่ Browser มักจะส่งมาเช็คก่อน)
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers };
+  }
+
+  // ใช้ ID/Secret จากรูปที่คุณส่งมาล่าสุด
+  const consumerID = 'IL3TZXQLi63A4hNR74PbgPA3Y8X8eHFh';
   const consumerSecret = 'T5qKGFRaafb2Ig12';
 
   try {
@@ -19,17 +23,17 @@ exports.handler = async (event, context) => {
       headers: {
         'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'x-test-mode': 'true'
+        'x-test-mode': 'true',
+        'env-id': 'OAUTH2' // เพิ่ม Header ตามที่หน้าเว็บ KBank ระบุ
       },
       body: 'grant_type=client_credentials'
     });
 
     const data = await response.json();
-    console.log("KBank Token Response:", data);
 
     return {
       statusCode: 200,
-      headers,
+      headers, // ส่ง Header กลับไปด้วย
       body: JSON.stringify(data)
     };
   } catch (error) {
