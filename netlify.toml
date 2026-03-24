@@ -1,0 +1,3 @@
+[build]
+  functions = "netlify/functions"
+  publish = "dist" # หรือชื่อ folder ที่คุณ build (เช่น build, out, .next)
