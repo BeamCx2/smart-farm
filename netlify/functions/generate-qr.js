@@ -25,12 +25,12 @@ exports.handler = async (event) => {
         "requestDt": new Date().toISOString(),
         "merchantId": "KB102057149704", 
         "qrType": "3",
-        "unconfrimFlag": "Y",
-        "billDetail": "Test Payment",
+        "amount": "1.00", // ยอดเงินบวก (Positive number)
+        "currencyCode": "THB",
         "reference1": "INV001",
-        "amount": "100.00",       // เปลี่ยนยอดเป็น 100.00 เผื่อโจทย์บังคับ
-        "txnAmount": "100.00",    // พ่วงชื่อฟิลด์นี้ไปเผื่อ Sandbox ดักจับ
-        "currencyCode": "THB"
+        "reference2": "HELLOWORLD", // เพิ่มตามตาราง
+        "reference3": "INV001",     // เพิ่มตามตาราง
+        "reference4": "INV001"      // เพิ่มตามตาราง
       })
     });
 
