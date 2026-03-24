@@ -10,8 +10,12 @@ exports.handler = async (event) => {
   try {
     const { accessToken } = JSON.parse(event.body);
 
-    // 🚨 จุดไคลแม็กซ์รอบนี้: สร้างเวลาแล้วตัดเศษมิลลิวินาทีทิ้งให้ KBank พอใจ
-    const formattedDate = new Date().toISOString().split('.')[0] + "Z";
+    // 🚨 จุดไคลแม็กซ์รอบนี้: สร้างเวลาประเทศไทย (+07:00) เป๊ะๆ
+    const now = new Date();
+    // บวกเวลาเพิ่ม 7 ชั่วโมง (Netlify รันอยู่บนเวลา UTC)
+    const localTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); 
+    // ตัดเศษมิลลิวินาทีทิ้ง แล้วต่อท้ายด้วย +07:00
+    const formattedDate = localTime.toISOString().split('.')[0] + "+07:00";
 
     const res = await fetch('https://openapi-sandbox.kasikornbank.com/v1/qrpayment/request', {
       method: 'POST',
@@ -25,7 +29,7 @@ exports.handler = async (event) => {
         "partnerTxnUid": "PARTNERTEST0001", 
         "partnerId": "PTR1051673", 
         "partnerSecret": "d4bded59200547bc85903574a293831b",
-        "requestDt": formattedDate, // ใช้เวลาที่ถูก format แล้ว
+        "requestDt": formattedDate, // ส่งเวลาไทยเข้าไป
         "merchantId": "KB102057149704", 
         "qrType": "3",
         "txnAmount": 1.00, 
