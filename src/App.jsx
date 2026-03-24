@@ -47,15 +47,15 @@ const handlePayment = async () => {
 
     console.log("ดึง Token สำเร็จ:", token);
 
-    // 2. สร้าง QR
-    const qrRes = await fetch('/.netlify/functions/generate-qr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accessToken: token,
-        amount: 1.0 // ส่งเป็นตัวเลข
-      })
-    });
+
+const qrRes = await fetch('/.netlify/functions/generate-qr', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    accessToken: tokenData.access_token, // ต้องใช้ชื่อ accessToken ตามหลังบ้าน
+    amount: 1.0                          // ต้องใช้ชื่อ amount ตามหลังบ้าน
+  })
+});
     
     const qrResult = await qrRes.json();
     console.log("QR Result จาก KBank:", qrResult);
