@@ -33,11 +33,11 @@ function PaymentComponent() {
   const firebaseDocId = location.state?.firebaseDocId; // 🆔 ID ของเอกสารใน Firebase
 
   // ถ้าไม่มีข้อมูลยอดเงิน ให้เด้งกลับหน้าตะกร้า
-  useEffect(() => {
-    if (!amountToPay) {
-      navigate('/cart');
-    }
-  }, [amountToPay, navigate]);
+  // useEffect(() => {
+  //   if (!amountToPay) {
+  //     navigate('/cart');
+  //   }
+  // }, [amountToPay, navigate]);
 
   // 1. ฟังก์ชันสร้าง QR Code ผ่าน Netlify Functions
   const handlePayment = async () => {
