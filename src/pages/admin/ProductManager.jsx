@@ -18,7 +18,7 @@ export default function ProductManager() {
     // 1. โหลดข้อมูลสินค้า
     const load = async () => {
         try {
-            const snap = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'desc')));
+            const snap = await getDocs(collection(db, 'products'));
             setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
         } catch (err) {
             addToast('ไม่สามารถโหลดข้อมูลได้', 'error');
