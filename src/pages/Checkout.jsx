@@ -48,11 +48,12 @@ export default function Checkout() {
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
 
         const currentOrderId = generateOrderId();
+        const currentTotal = total; // 🚨 เก็บค่ายอดรวมไว้ในตัวแปรกล่าวก่อนเคลียร์ตะกร้า
 
         const orderData = {
             orderId: currentOrderId,
@@ -67,8 +68,8 @@ export default function Checkout() {
             })),
             subtotal, 
             shipping, 
-            total,
-            totalSatang: toSatang(total),
+            total: currentTotal,
+            totalSatang: toSatang(currentTotal),
             paymentMethod,
             status: 'pending',
             createdAt: serverTimestamp(),
@@ -76,23 +77,22 @@ export default function Checkout() {
 
         try {
             console.log("🚀 กำลังบันทึกข้อมูลไปที่ Firebase...");
-            
-            // 1. บันทึกข้อมูลและเก็บค่า Reference ของเอกสารไว้
             const docRef = await addDoc(collection(db, 'orders'), orderData);
             
-            console.log("✅ บันทึกสำเร็จ ID:", docRef.id);
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
             
-            // 2. ล้างตะกร้า
+            // 🚨 ย้าย clearCart() มาไว้ตรงนี้ (หลังจากบันทึก DB สำเร็จ)
             clearCart();
 
-            // 3. Redirect ไปหน้าชำระเงิน พร้อมส่ง firebaseDocId ไปด้วย 🚨
             if (paymentMethod === 'promptpay') {
+                console.log("➡️ กำลังส่งไปหน้าชำระเงินด้วยยอด:", currentTotal);
+                
+                // 🚨 ใช้ currentTotal ที่เราเก็บไว้ แทนการใช้ total จาก Context
                 navigate('/test-payment', { 
                     state: { 
-                        amount: total,
+                        amount: currentTotal,
                         orderId: currentOrderId,
-                        firebaseDocId: docRef.id // 👈 ส่ง ID นี้ไปให้หน้า PaymentComponent ใช้
+                        firebaseDocId: docRef.id
                     } 
                 });
             } else {
