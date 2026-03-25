@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-// 1. เพิ่มการ Import Auth และ Firestore
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -15,13 +14,19 @@ const firebaseConfig = {
   measurementId: "G-80E67N6X08"
 };
 
+// 1. เพิ่มตัวแปรเช็คว่าใส่ API Key หรือยัง (เพื่อให้หน้า Home ไม่ Error)
+export const isFirebaseConfigured = !!firebaseConfig.apiKey;
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
-// 2. สร้างตัวแปรและ Export ออกไปใช้ในไฟล์อื่น
+// 2. ป้องกัน Error กรณี Analytics รันบน Server (SSR)
+let analytics;
+if (typeof window !== "undefined") {
+  analytics = getAnalytics(app);
+}
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-// หากต้องการส่งออก app เป็น default (เผื่อไว้)
+export { analytics };
 export default app;
