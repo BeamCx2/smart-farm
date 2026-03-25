@@ -98,71 +98,128 @@ export default function Checkout() {
     };
 
     return (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 min-h-screen">
-            <h1 className="text-2xl font-bold mb-2 text-emerald-700">💳 ชำระเงิน</h1>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+            <h1 className="text-2xl font-bold mb-2">💳 ชำระเงิน</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">กรอกข้อมูลเพื่อดำเนินการสั่งซื้อ</p>
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left — ข้อมูลลูกค้า */}
+                    {/* Left — Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
-                            <h3 className="font-bold mb-6 text-lg">📍 ข้อมูลจัดส่ง</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {/* Shipping */}
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                            <h3 className="font-bold mb-5">📍 ข้อมูลจัดส่ง</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold mb-1.5 text-gray-600">ชื่อ-นามสกุล *</label>
-                                    <input name="name" value={form.name} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-gray-50 dark:bg-gray-800 focus:border-emerald-500 outline-none transition-all" />
+                                    <label className="block text-sm font-semibold mb-1.5">ชื่อ-นามสกุล *</label>
+                                    <input name="name" value={form.name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="สมชาย ใจดี" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold mb-1.5 text-gray-600">เบอร์โทรศัพท์ *</label>
-                                    <input name="phone" value={form.phone} onChange={handleChange} required type="tel" className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-gray-50 dark:bg-gray-800 focus:border-emerald-500 outline-none transition-all" />
+                                    <label className="block text-sm font-semibold mb-1.5">เบอร์โทรศัพท์ *</label>
+                                    <input name="phone" value={form.phone} onChange={handleChange} required type="tel" className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="081-234-5678" />
                                 </div>
                             </div>
-                            <div className="mt-5">
-                                <label className="block text-sm font-semibold mb-1.5 text-gray-600">ที่อยู่จัดส่ง *</label>
-                                <textarea name="address" value={form.address} onChange={handleChange} required rows="3" className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-gray-50 dark:bg-gray-800 focus:border-emerald-500 outline-none transition-all" />
+                            <div className="mt-4">
+                                <label className="block text-sm font-semibold mb-1.5">อีเมล *</label>
+                                <input name="email" value={form.email} onChange={handleChange} required type="email" className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="you@example.com" />
+                            </div>
+                            <div className="mt-4">
+                                <label className="block text-sm font-semibold mb-1.5">ที่อยู่ *</label>
+                                <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="123/45 ซ.สุขใจ ถ.เกษตร" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">เขต/อำเภอ *</label>
+                                    <input name="district" value={form.district} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="จตุจักร" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">จังหวัด *</label>
+                                    <input name="province" value={form.province} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="กรุงเทพฯ" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">รหัสไปรษณีย์ *</label>
+                                    <input name="zipcode" value={form.zipcode} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="10900" />
+                                </div>
                             </div>
                         </div>
 
-                        {/* วิธีการชำระเงิน */}
-                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
-                            <h3 className="font-bold mb-6 text-lg">💰 วิธีชำระเงิน</h3>
-                            <div className="grid grid-cols-1 gap-4">
+                        {/* Payment */}
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                            <h3 className="font-bold mb-5">💰 วิธีชำระเงิน</h3>
+                            <div className="space-y-3">
                                 {PAYMENT_METHODS.map((m) => (
-                                    <label key={m.id} className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10' : 'border-gray-100 dark:border-gray-800 hover:border-emerald-300'}`}>
-                                        <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-5 h-5" />
+                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'}`}>
+                                        <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-4 h-4" />
                                         <div>
-                                            <div className="font-bold text-gray-800 dark:text-gray-100">{m.label}</div>
+                                            <div className="font-semibold text-sm">{m.label}</div>
                                             <div className="text-xs text-gray-500">{m.desc}</div>
                                         </div>
                                     </label>
                                 ))}
                             </div>
+
+                            {/* Payment details */}
+                            <div className="mt-6">
+                                {paymentMethod === 'card' && (
+                                    <div className="space-y-4">
+                                        <div><label className="block text-sm font-semibold mb-1.5">หมายเลขบัตร</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="1234 5678 9012 3456" maxLength={19} /></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div><label className="block text-sm font-semibold mb-1.5">วันหมดอายุ</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="MM/YY" maxLength={5} /></div>
+                                            <div><label className="block text-sm font-semibold mb-1.5">CVV</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="123" maxLength={4} type="password" /></div>
+                                        </div>
+                                    </div>
+                                )}
+                                {/* {paymentMethod === 'promptpay' && (
+                                    <div className="text-center py-6">
+                                        <div className="w-48 h-48 mx-auto mb-4 bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center">
+                                            <svg viewBox="0 0 200 200" width="160" height="160"><rect width="200" height="200" fill="white" /><g fill="black"><rect x="10" y="10" width="50" height="50" /><rect x="18" y="18" width="34" height="34" fill="white" /><rect x="26" y="26" width="18" height="18" /><rect x="140" y="10" width="50" height="50" /><rect x="148" y="18" width="34" height="34" fill="white" /><rect x="156" y="26" width="18" height="18" /><rect x="10" y="140" width="50" height="50" /><rect x="18" y="148" width="34" height="34" fill="white" /><rect x="26" y="156" width="18" height="18" />{Array.from({ length: 80 }, (_, i) => { const x = 70 + (i % 8) * 8; const y = 10 + Math.floor(i / 8) * 8; return Math.random() > 0.5 ? `<rect x="${x}" y="${y}" width="7" height="7"/>` : ''; }).join('')}</g></svg>
+                                        </div>
+                                        <p className="font-semibold mb-1">สแกน QR Code เพื่อชำระเงิน</p>
+                                        <p className="text-sm text-gray-500">เปิดแอปธนาคารและสแกน QR Code ด้านบน</p>
+                                    </div>
+                                )} */}
+                                {paymentMethod === 'bank' && (
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 space-y-2 text-sm">
+                                        <h4 className="font-bold mb-3">ข้อมูลบัญชีธนาคาร</h4>
+                                        <div className="flex justify-between"><span className="text-gray-500">ธนาคาร</span><strong>กสิกรไทย (KBank)</strong></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">ชื่อบัญชี</span><strong>Smart Farm จำกัด</strong></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">เลขบัญชี</span><strong>123-4-56789-0</strong></div>
+                                        <p className="text-xs text-gray-400 mt-3">กรุณาโอนยอดที่ถูกต้องและใช้หมายเลขคำสั่งซื้อเป็นอ้างอิง</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Right — สรุปยอดเงิน */}
-                    <div className="space-y-6 h-fit lg:sticky lg:top-24">
-                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-xl border border-gray-50 dark:border-gray-800">
-                            <h3 className="font-bold text-xl mb-6">📋 สรุปคำสั่งซื้อ</h3>
-                            <div className="space-y-4 mb-8">
-                                <div className="flex justify-between text-gray-500"><span>ราคาสินค้า</span><span>{formatTHB(subtotal)}</span></div>
-                                <div className="flex justify-between text-gray-500"><span>ค่าจัดส่ง</span><span>{shipping === 0 ? <span className="text-emerald-600 font-bold">ฟรี</span> : formatTHB(shipping)}</span></div>
-                                <div className="border-t pt-4 flex justify-between items-end">
-                                    <span className="font-bold">ยอดสุทธิ</span>
-                                    <span className="text-3xl font-black text-emerald-600">{formatTHB(total)}</span>
+                    {/* Right — Summary */}
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 h-fit lg:sticky lg:top-24">
+                        <h3 className="font-bold text-lg mb-4">📋 สรุปคำสั่งซื้อ</h3>
+                        <div className="max-h-60 overflow-y-auto space-y-3 mb-4">
+                            {items.map((item) => (
+                                <div key={item.id} className="flex gap-3 items-center">
+                                    <img src={item.image || 'https://placehold.co/50x50/e8f5e9/2e7d32?text=P'} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium truncate">{item.name}</div>
+                                        <div className="text-xs text-gray-500">x{item.qty}</div>
+                                    </div>
+                                    <div className="text-sm font-semibold shrink-0">{formatTHB(item.price * item.qty)}</div>
                                 </div>
-                            </div>
-                            
-                            <button 
-                                type="submit" 
-                                disabled={submitting} 
-                                className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50"
-                            >
-                                {submitting ? 'กำลังส่งข้อมูล...' : `✅ สั่งซื้อสินค้า — ${formatTHB(total)}`}
-                            </button>
-                            <p className="text-center text-[10px] text-gray-400 mt-4 uppercase tracking-widest font-bold">Secure Checkout by Smart Farm</p>
+                            ))}
                         </div>
+                        <hr className="border-gray-200 dark:border-gray-700 my-4" />
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-500">ราคารวม</span><span>{formatTHB(subtotal)}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">ค่าจัดส่ง</span><span>{shipping === 0 ? <span className="text-emerald-600 font-semibold">ฟรี</span> : formatTHB(shipping)}</span></div>
+                            <hr className="border-gray-200 dark:border-gray-700" />
+                            <div className="flex justify-between text-base font-bold pt-1"><span>ยอดรวม</span><span className="text-emerald-700 dark:text-emerald-400">{formatTHB(total)}</span></div>
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full mt-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {submitting ? 'กำลังดำเนินการ...' : `✅ สั่งซื้อ — ${formatTHB(total)}`}
+                        </button>
                     </div>
                 </div>
             </form>
