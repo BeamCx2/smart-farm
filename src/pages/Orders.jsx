@@ -3,13 +3,25 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB } from '../lib/utils';
-import { Link } from 'react-router-dom'; // 🚨 เพิ่มตัวนี้ด้วยครับบอส
+import { Link, Navigate } from 'react-router-dom'; // 🚨 เพิ่ม Navigate ตรงนี้ด้วย
 
 export default function Orders() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // 🚨 ดึง loading ของ auth มาด้วย
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
+
+  // 🚨 1. ถ้า Auth กำลังโหลด ให้โชว์ Loading ก่อน
+  if (authLoading) {
+    return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังตรวจสอบสิทธิ์...</div>;
+  }
+
+  // 🚨 2. ถ้าไม่มี User (ไม่ได้ล็อกอิน) ให้ดีดไปหน้าสมัครสมาชิกทันที
+  if (!user) {
+    return <Navigate to="/register" replace />;
+  }
+
+  // ... โค้ด useEffect และ logic อื่นๆ ของเดิมของบอส ...
 
   useEffect(() => {
     if (!user) return;
