@@ -190,33 +190,88 @@ export default function ProductManager() {
             </div>
 
             {/* Modal - เพิ่ม/แก้ไขสินค้า */}
-            {modalOpen && (
-                <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
-                        <h2 className="text-2xl font-black mb-8">{editId ? '✏️ แก้ไขสินค้า' : '➕ เพิ่มสินค้าใหม่'}</h2>
-                        <form onSubmit={handleSave} className="space-y-5">
-                            <div><label className="text-xs font-black text-gray-400">ชื่อสินค้า *</label><input name="name" value={form.name} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:bg-gray-800 outline-none" /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-xs font-black text-gray-400">ราคา *</label><input name="price" type="number" value={form.price} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:bg-gray-800 outline-none" /></div>
-                                <div><label className="text-xs font-black text-gray-400">สต็อกเริ่มต้น *</label><input name="stock" type="number" value={form.stock} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:bg-gray-800 outline-none" /></div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-black text-gray-400">หมวดหมู่ *</label>
-                                <select name="category" value={form.category} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:bg-gray-800 outline-none">
-                                    <option value="">เลือกหมวดหมู่</option>
-                                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex gap-4 pt-4">
-                                <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-4 font-bold border-2 rounded-2xl">ยกเลิก</button>
-                                <button type="submit" disabled={saving} className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-xl">
-                                    {saving ? 'กำลังบันทึก...' : 'ยืนยัน'}
-                                </button>
-                            </div>
-                        </form>
+{modalOpen && (
+    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-lg max-h-[90vh] overflow-y-auto p-10 shadow-2xl relative">
+            <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100">
+                    {editId ? '✏️ แก้ไขรายละเอียด' : '➕ เพิ่มสินค้าใหม่'}
+                </h2>
+                <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-3xl transition-colors">&times;</button>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-5">
+                {/* 1. ชื่อสินค้า */}
+                <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">ชื่อสินค้า *</label>
+                    <input name="name" value={form.name} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:border-emerald-400 outline-none transition-all" placeholder="เช่น กรีนคอสออร์แกนิค" />
+                </div>
+
+                {/* 2. ✅ เพิ่มช่องคำอธิบาย (Description) */}
+                <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">รายละเอียดสินค้า</label>
+                    <textarea 
+                        name="description" 
+                        value={form.description} 
+                        onChange={handleChange} 
+                        rows={3} 
+                        className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:border-emerald-400 outline-none transition-all resize-none" 
+                        placeholder="อธิบายความสด กรอบ หรือวิธีเก็บรักษา..." 
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">ราคา (บาท) *</label>
+                        <input name="price" type="number" step="0.01" value={form.price} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:border-emerald-400 outline-none transition-all" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">สต็อกเริ่มต้น *</label>
+                        <input name="stock" type="number" value={form.stock} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:border-emerald-400 outline-none transition-all" />
                     </div>
                 </div>
-            )}
+
+                {/* 3. ✅ เพิ่มส่วนอัปโหลดรูปภาพ (Image Upload) */}
+                <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">รูปภาพสินค้า</label>
+                    <div className="border-4 border-dashed border-gray-50 dark:border-gray-800 rounded-[2rem] p-8 text-center cursor-pointer hover:border-emerald-400 transition-all relative overflow-hidden group">
+                        {form.image ? (
+                            <div className="relative">
+                                <img src={form.image} alt="preview" className="max-h-40 mx-auto rounded-2xl mb-2 group-hover:opacity-50 transition-opacity" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">คลิกเพื่อเปลี่ยนรูป</p>
+                            </div>
+                        ) : (
+                            <div className="py-4">
+                                <div className="text-4xl mb-2 text-gray-300">📸</div>
+                                <p className="text-xs font-bold text-gray-400">คลิกหรือลากไฟล์เพื่ออัปโหลด</p>
+                            </div>
+                        )}
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleImageUpload} 
+                            className="absolute inset-0 opacity-0 cursor-pointer" 
+                        />
+                    </div>
+                    {/* หรือจะใส่เป็น URL ตรงๆ ก็ได้ */}
+                    <input 
+                        name="image" 
+                        value={form.image} 
+                        onChange={handleChange} 
+                        className="w-full mt-3 px-4 py-2 text-xs rounded-xl border border-gray-100 dark:bg-gray-800 outline-none" 
+                        placeholder="หรือวาง URL รูปภาพที่นี่..." 
+                    />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                    <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 font-bold hover:bg-gray-50 transition-all">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" disabled={saving} className="flex-[2] py-4 rounded-2xl bg-emerald-600 text-white font-black shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all disabled:opacity-50">
+                        {saving ? 'กำลังบันทึก...' : editId ? 'บันทึกการแก้ไข' : 'เพิ่มสินค้าเข้าฟาร์ม'}
+                    </button>
+                </div>
+            </form>
         </div>
-    );
-}
+    </div>
+)}
