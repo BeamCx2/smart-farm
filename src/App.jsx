@@ -87,6 +87,8 @@ function PaymentComponent() {
   );
 }
 
+// ... โค้ดส่วน Import และฟังก์ชันอื่นๆ เหมือนเดิม ...
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -97,26 +99,28 @@ export default function App() {
               <Routes>
                 <Route element={<Layout />}>
                   
-                  {/* ✅ หน้าที่เปิดให้ "ใครก็ได้" เข้าดูได้ (Public) */}
+                  {/* ✅ หน้าที่ "ใครก็เข้าดูได้" (Public) */}
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:id" element={<ProductDetail />} />
+                  <Route path="/cart" element={<Cart />} /> {/* 🔓 ปลดล็อคหน้าตะกร้าแล้วครับบอส */}
                   <Route path="/register" element={<Register />} />
                   <Route path="/login" element={<Login />} />
 
-                  {/* 🔒 หน้าที่ "ต้องล็อกอิน" ถึงจะเข้าได้ (Private) */}
-                  <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+                  {/* 🔒 หน้าที่ "ต้องล็อกอินเท่านั้น" (Private) */}
+                  {/* ลูกค้าจะเจอหน้า Register เมื่อจะกดจ่ายเงิน หรือดูประวัติการสั่งซื้อ */}
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/test-payment" element={<ProtectedRoute><PaymentComponent /></ProtectedRoute>} />
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
 
-                  {/* Admin */}
+                  {/* Admin Zone */}
                   <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<Dashboard />} />
                     <Route path="products" element={<ProductManager />} />
                     <Route path="orders" element={<OrderManager />} />
                   </Route>
 
+                  {/* 404 - กลับหน้าแรก */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
               </Routes>
