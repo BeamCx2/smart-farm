@@ -17,42 +17,50 @@ import Register from './pages/Register';
 import Dashboard from './pages/admin/Dashboard';
 import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
-
+import { useLocation } from 'react-router-dom';
 // 1. ตัด export default ออก ให้เหลือแค่ function ธรรมดา
 // ... (imports เดิมของคุณ)
 
 function PaymentComponent() {
-  const [qrData, setQrData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  // ดึงยอดเงินที่ส่งมา ถ้าไม่มีให้ใช้ 1.00 เป็นค่าเริ่มต้น (ป้องกัน Error)
+  const amountToPay = location.state?.amount || 1.00; 
 
-  // 1. ฟังก์ชันสร้าง QR Code
   const handlePayment = async () => {
     setLoading(true);
     try {
       const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
       const tokenData = await tokenRes.json();
-      const token = tokenData.access_token;
-
-      if (!token) throw new Error("Token ไม่มาตามนัด");
-
+      
+      // ส่ง amountToPay ไปที่ฟังก์ชันสร้าง QR ด้วย
       const qrRes = await fetch('/.netlify/functions/generate-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: token, amount: 1.0 })
+        body: JSON.stringify({ 
+          accessToken: tokenData.access_token, 
+          amount: amountToPay // 👈 ใช้ยอดเงินจริงจากตะกร้าแล้ว!
+        })
       });
+      
       const qrResult = await qrRes.json();
-
-      if (qrResult.qrImage || qrResult.qrCode) {
-        setQrData(qrResult);
-      } else {
-        alert("KBank: " + (qrResult.message || "สร้าง QR ไม่สำเร็จ"));
-      }
+      // ... โค้ดส่วนที่เหลือเหมือนเดิม ...
     } catch (error) {
       alert("ระบบขัดข้อง: " + error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  return (
+    <div>
+      {/* แก้ไขหัวข้อให้โชว์ยอดเงินจริง */}
+      <button onClick={handlePayment}>
+        {loading ? 'กำลังดำเนินการ...' : `สร้าง QR ${amountToPay} บาท`}
+      </button>
+      {/* ... */}
+    </div>
+  );
+}
 
   // 2. ฟังก์ชันตรวจสอบสถานะ (Inquiry)
   const checkStatus = async () => {
