@@ -10,45 +10,39 @@ export default function Orders() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // 1. ถ้าระบบ Auth ยังโหลดไม่เสร็จ ให้รอสั่งก่อน
-        if (authLoading) return;
+useEffect(() => {
+    // 🚨 1. ต้องรอให้ authLoading เป็น false ก่อน (รอระบบเช็คชื่อเสร็จ)
+    if (authLoading) return;
 
-        // 2. ถ้าโหลดเสร็จแล้วแต่ไม่มี User (ไม่ได้ Login) ให้หยุดโหลดและไม่โชว์อะไร
-        if (!user) {
-            setOrders([]);
+    // 🚨 2. ถ้าไม่มี user (ไม่ได้ login) ก็ไม่ต้องดึงข้อมูล
+    if (!user) {
+        setOrders([]);
+        setLoading(false);
+        return;
+    }
+
+    async function load() {
+        try {
+            setLoading(true);
+            // 🚨 3. ใส่ userId ลงไปใน Query ให้ถูกต้อง
+            const q = query(
+                collection(db, 'orders'),
+                where('userId', '==', user.uid), // 👈 เช็คตรงนี้ว่าตัวสะกด userId ตรงกับใน Firebase ไหม
+                orderBy('createdAt', 'desc')
+            );
+
+            const snap = await getDocs(q);
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setOrders(data);
+        } catch (err) {
+            console.error("Fetch error:", err.message);
+        } finally {
             setLoading(false);
-            return;
         }
+    }
 
-        async function load() {
-            try {
-                setLoading(true);
-                console.log("🔍 กำลังดึงออเดอร์เฉพาะของ User:", user.uid);
-
-                // 3. ดึงเฉพาะออเดอร์ที่ userId ตรงกับคนที่ Login อยู่เท่านั้น
-                const q = query(
-                    collection(db, 'orders'),
-                    where('userId', '==', user.uid),
-                    orderBy('createdAt', 'desc')
-                );
-
-                const snap = await getDocs(q);
-                const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                
-                setOrders(data);
-                console.log("✅ ดึงข้อมูลสำเร็จ:", data.length, "รายการ");
-            } catch (err) {
-                console.error("❌ Error:", err.message);
-                // 💡 ถ้าขึ้น Error เรื่อง Index ให้คลิกลิงก์สีแดงใน Console (F12) เพื่อสร้าง Index อีกครั้ง
-                setOrders([]);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        load();
-    }, [user, authLoading]); // 🚨 สำคัญ: ต้องใส่ [user, authLoading] เพื่อให้มันโหลดใหม่เมื่อ Login เสร็จ
+    load();
+}, [user, authLoading]); // 🚨 4. ต้องใส่ [user, authLoading] ไว้ตรงนี้เพื่อให้มันรันใหม่เมื่อ login เสร็จ
 
     // ส่วนการแสดงผล Loading
     if (loading) {
