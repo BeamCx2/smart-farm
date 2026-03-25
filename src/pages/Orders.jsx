@@ -21,26 +21,38 @@ export default function Orders() {
     return <Navigate to="/register" replace />;
   }
 
+// ใน useEffect ของ Orders.jsx
 useEffect(() => {
     if (!user) return;
 
-    // 🚨 สร้าง Query ดึงเฉพาะออเดอร์ของลูกค้านั้นๆ และเรียงจากใหม่ไปเก่า
+    // 🚨 เอา orderBy ออกจาก Query เพื่อเลี่ยงการใช้ Index
     const q = query(
         collection(db, 'orders'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
     );
 
-    // ✅ ใช้ onSnapshot เพื่อให้เวลาแอดมินเปลี่ยนสถานะ หน้าลูกค้าจะเปลี่ยนตามทันที!
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const orderData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
-        setOrders(orderData);
+
+        // ✅ มาเรียงลำดับเองที่ฝั่งลูกค้า (Client-side sorting)
+        const sortedOrders = orderData.sort((a, b) => {
+            const dateA = a.createdAt?.seconds || 0;
+            const dateB = b.createdAt?.seconds || 0;
+            return dateB - dateA; // ใหม่ไปเก่า
+        });
+
+        setOrders(sortedOrders);
+        setLoading(false); // 👈 อย่าลืมปิด Loading ตรงนี้ด้วยครับบอส!
     }, (error) => {
-        console.error("Error fetching orders:", error);
+        console.error("Error:", error);
+        setLoading(false);
     });
+
+    return () => unsubscribe();
+}, [user]);
 
     return () => unsubscribe(); // ล้างการเชื่อมต่อเมื่อปิดหน้า
 }, [user]);
