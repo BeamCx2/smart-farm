@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link, Navigate 
 import { AuthProvider, useAuth } from './contexts/AuthContext'; // 🚨 เพิ่ม useAuth
 import { CartProvider } from './contexts/CartContext';
 import { ThemeProvider } from './contexts/ThemeProvider'; // ตรวจสอบชื่อไฟล์ context ของบอสด้วยครับ
-import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
 import { useState, useEffect } from 'react';
