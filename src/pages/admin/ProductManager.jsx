@@ -76,7 +76,81 @@ export default function ProductManager() {
 
     if (loading) {
         return <div className="flex justify-center py-16"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
-    }
+    };
+    // ฟังก์ชันอัปเดตสต๊อก (ใส่ไว้ใน Component ProductManager)
+const handleUpdateStock = async (productId, currentStock, amount) => {
+  const newStock = parseInt(currentStock) + amount;
+  if (newStock < 0) return; // กันสต๊อกติดลบ
+
+  try {
+    const productRef = doc(db, 'products', productId);
+    await updateDoc(productRef, { stock: newStock });
+    // อัปเดต State ในหน้าจอด้วย (ถ้าบอสมี state products)
+    setProducts(products.map(p => p.id === productId ? {...p, stock: newStock} : p));
+  } catch (e) {
+    addToast('อัปเดตสต๊อกไม่สำเร็จ', 'error');
+  }
+};
+// ฟังก์ชันอัปเดตสต๊อก (ใส่ไว้ใน Component ProductManager)
+const handleUpdateStock = async (productId, currentStock, amount) => {
+  const newStock = parseInt(currentStock) + amount;
+  if (newStock < 0) return; // กันสต๊อกติดลบ
+
+  try {
+    const productRef = doc(db, 'products', productId);
+    await updateDoc(productRef, { stock: newStock });
+    // อัปเดต State ในหน้าจอด้วย (ถ้าบอสมี state products)
+    setProducts(products.map(p => p.id === productId ? {...p, stock: newStock} : p));
+  } catch (e) {
+    addToast('อัปเดตสต๊อกไม่สำเร็จ', 'error');
+  }
+};
+
+// --- ในส่วนของ JSX (ตารางสินค้า) ---
+<td className="px-5 py-3">
+  <div className="flex items-center gap-3">
+    <button 
+      onClick={() => handleUpdateStock(p.id, p.stock, -1)}
+      className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+    >
+      -
+    </button>
+    
+    <span className={`font-bold w-10 text-center ${p.stock < 10 ? 'text-red-500' : 'text-gray-700'}`}>
+      {p.stock}
+    </span>
+    
+    <button 
+      onClick={() => handleUpdateStock(p.id, p.stock, 1)}
+      className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100"
+    >
+      +
+    </button>
+  </div>
+</td>
+// --- ในส่วนของ JSX (ตารางสินค้า) ---
+<td className="px-5 py-3">
+  <div className="flex items-center gap-3">
+    <button 
+      onClick={() => handleUpdateStock(p.id, p.stock, -1)}
+      className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+    >
+      -
+    </button>
+    
+    <span className={`font-bold w-10 text-center ${p.stock < 10 ? 'text-red-500' : 'text-gray-700'}`}>
+      {p.stock}
+    </span>
+    
+    <button 
+      onClick={() => handleUpdateStock(p.id, p.stock, 1)}
+      className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100"
+    >
+      +
+    </button>
+  </div>
+</td>
+    
 
     return (
         <div>
