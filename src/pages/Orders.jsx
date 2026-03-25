@@ -114,7 +114,40 @@ export default function Orders() {
                 <span className={`text-gray-300 transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}>▼</span>
               </div>
             </div>
+// ... โค้ดส่วนบนคงเดิม ...
 
+<div className="flex items-center gap-6 ml-auto">
+  {/* ส่วนแสดงยอดรวม (ซ่อนในมือถือ โชว์ในคอม) */}
+  <div className="text-right hidden sm:block">
+    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">ยอดสุทธิ</p>
+    <p className="font-black text-emerald-600 text-lg">{formatTHB(order.total)}</p>
+  </div>
+  
+  <div className="flex flex-col items-end gap-2">
+    {/* ✅ โชว์วิธีชำระเงิน (Payment Method) */}
+    <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-lg border border-gray-100 dark:border-gray-700">
+      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">โอนผ่าน:</span>
+      <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase">
+        {order.paymentMethod || 'PROMPTPAY'}
+      </span>
+    </div>
+
+    {/* Badge สถานะสินค้า */}
+    <span className={`px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-tight ${
+      order.status === 'completed' || order.status === 'shipped' || order.status === 'finished' ? 'bg-emerald-100 text-emerald-600' : 
+      order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
+      'bg-amber-100 text-amber-600'
+    }`}>
+      {order.status === 'completed' || order.status === 'shipped' || order.status === 'finished' ? 'เสร็จสิ้นแล้ว' : 
+       order.status === 'paid' ? 'ชำระเงินแล้ว' :
+       order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
+    </span>
+  </div>
+  
+  <span className={`text-gray-300 transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}>▼</span>
+</div>
+
+// ... โค้ดส่วนล่างคงเดิม ...
             {expandedId === order.id && (
               <div className="px-8 pb-8 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/20">
                 <div className="py-4 space-y-4">
