@@ -1,107 +1,114 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { formatTHB, formatDateTime, ORDER_STATUSES } from '../lib/utils';
+import { formatTHB } from '../lib/utils';
 
 export default function Orders() {
-    const { user, loading: authLoading } = useAuth();
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null); // 🚨 สำหรับเก็บว่ากำลังเปิดดูออเดอร์ไหน
 
-useEffect(() => {
-    // 🚨 1. ต้องรอให้ authLoading เป็น false ก่อน (รอระบบเช็คชื่อเสร็จ)
-    if (authLoading) return;
+  useEffect(() => {
+    if (!user) return;
 
-    // 🚨 2. ถ้าไม่มี user (ไม่ได้ login) ก็ไม่ต้องดึงข้อมูล
-    if (!user) {
-        setOrders([]);
-        setLoading(false);
-        return;
-    }
-
-    async function load() {
-        try {
-            setLoading(true);
-            // 🚨 3. ใส่ userId ลงไปใน Query ให้ถูกต้อง
-            const q = query(
-                collection(db, 'orders'),
-                where('userId', '==', user.uid), // 👈 เช็คตรงนี้ว่าตัวสะกด userId ตรงกับใน Firebase ไหม
-                orderBy('createdAt', 'desc')
-            );
-
-            const snap = await getDocs(q);
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setOrders(data);
-        } catch (err) {
-            console.error("Fetch error:", err.message);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    load();
-}, [user, authLoading]); // 🚨 4. ต้องใส่ [user, authLoading] ไว้ตรงนี้เพื่อให้มันรันใหม่เมื่อ login เสร็จ
-
-    // ส่วนการแสดงผล Loading
-    if (loading) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-            </div>
-        );
-    }
-
-    // ถ้าไม่ได้ Login ให้บอกให้ไป Login ก่อน
-    if (!user) {
-        return (
-            <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-                <h2 className="text-xl font-bold mb-4">🔐 กรุณาเข้าสู่ระบบ</h2>
-                <p className="text-gray-500 mb-6">เพื่อดูรายการสั่งซื้อของคุณ</p>
-                <Link to="/login" className="px-8 py-3 bg-emerald-600 text-white rounded-full font-semibold">เข้าสู่ระบบ</Link>
-            </div>
-        );
-    }
-
-    return (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-            <h1 className="text-2xl font-bold mb-2">📋 คำสั่งซื้อของฉัน</h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">พบทั้งหมด {orders.length} รายการ</p>
-
-            {orders.length === 0 ? (
-                <div className="text-center py-16 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
-                    <div className="text-5xl mb-4">📦</div>
-                    <h3 className="text-lg font-semibold mb-2">ยังไม่มีคำสั่งซื้อ</h3>
-                    <p className="text-gray-500 mb-6">คุณยังไม่ได้สั่งซื้อสินค้า หรือออเดอร์เก่าอาจไม่มีข้อมูลเจ้าของ</p>
-                    <Link to="/products" className="inline-flex px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full shadow-lg transition-all">ไปที่หน้าร้านค้า</Link>
-                </div>
-            ) : (
-                <div className="grid gap-4">
-                    {orders.map((order) => {
-                        const status = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
-                        return (
-                            <div key={order.id} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:shadow-md">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                        <div className="font-bold text-emerald-700 dark:text-emerald-400">#{order.orderId || order.id.slice(0, 8)}</div>
-                                        <div className="text-xs text-gray-400 mt-1">{order.createdAt ? formatDateTime(order.createdAt) : 'เพิ่งสั่งซื้อ'}</div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
-                                            <div className="text-xs text-gray-400 uppercase">ยอดสุทธิ</div>
-                                            <div className="font-bold text-emerald-600">{formatTHB(order.total)}</div>
-                                        </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold
-                                            ${status.color === 'green' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}
-                                        `}>{status.label}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </section>
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
     );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [user]);
+
+  if (loading) return <div className="p-20 text-center text-emerald-600 animate-pulse">กำลังโหลดประวัติการสั่งซื้อ...</div>;
+
+  return (
+    <section className="max-w-4xl mx-auto px-4 py-10">
+      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <span>📜 คำสั่งซื้อของฉัน</span>
+        <span className="text-sm font-normal text-gray-400">({orders.length} รายการ)</span>
+      </h1>
+
+      <div className="space-y-4">
+        {orders.map((order) => (
+          <div 
+            key={order.id} 
+            className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden transition-all hover:border-emerald-200"
+          >
+            {/* 🔝 ส่วนหัว (ที่โชว์ในรูปของบอส) */}
+            <div 
+              className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer"
+              onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
+            >
+              <div>
+                <h3 className="font-bold text-emerald-700 dark:text-emerald-400">#{order.orderId}</h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  {order.createdAt?.toDate().toLocaleString('th-TH')}
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">ยอดสุทธิ</p>
+                  <p className="font-black text-emerald-600">{formatTHB(order.total)}</p>
+                </div>
+                
+                <span className={`px-4 py-1.5 rounded-full text-xs font-bold ${
+                  order.status === 'paid' 
+                  ? 'bg-emerald-100 text-emerald-600' 
+                  : 'bg-amber-100 text-amber-600'
+                }`}>
+                  {order.status === 'paid' ? 'ชำระแล้ว' : 'รอดำเนินการ'}
+                </span>
+
+                {/* ลูกศรชี้ลง/ขึ้น */}
+                <span className={`text-gray-300 transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </div>
+            </div>
+
+            {/* 📂 ส่วนรายละเอียดสินค้า (จะแสดงเมื่อกดคลิก) */}
+            {expandedId === order.id && (
+              <div className="px-6 pb-6 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 animate-in slide-in-from-top-2 duration-300">
+                <h4 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-widest">รายการสินค้า</h4>
+                <div className="space-y-3">
+                  {order.items?.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <img 
+                        src={item.image || 'https://placehold.co/100x100?text=ผัก'} 
+                        alt={item.name} 
+                        className="w-12 h-12 rounded-xl object-cover border border-white shadow-sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-gray-500">จำนวน: {item.qty} ชิ้น</p>
+                      </div>
+                      <p className="font-bold text-sm">{formatTHB(item.price * item.qty)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ข้อมูลจัดส่ง */}
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 tracking-widest">ที่อยู่จัดส่ง</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    {order.customer?.name} ({order.customer?.phone})<br />
+                    {order.customer?.address} {order.customer?.district} {order.customer?.province} {order.customer?.zipcode}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
