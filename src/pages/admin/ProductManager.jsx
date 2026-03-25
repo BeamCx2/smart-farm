@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { formatTHB, CATEGORIES } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
@@ -23,7 +23,7 @@ export default function ProductManager() {
             const sortedData = data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             setProducts(sortedData);
         } catch (err) {
-            addToast('ไม่สามารถโหลดข้อมูลได้: ' + err.message, 'error');
+            addToast('ไม่สามารถโหลดข้อมูลได้', 'error');
         } finally {
             setLoading(false);
         }
@@ -40,18 +40,14 @@ export default function ProductManager() {
             setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStock } : p));
             addToast('อัปเดตสต๊อกแล้ว', 'success');
         } catch (e) {
-            addToast('ผิดพลาด: ' + e.message, 'error');
+            addToast('ผิดพลาด', 'error');
         }
     };
 
     const openAdd = () => { setEditId(null); setForm(emptyProduct); setModalOpen(true); };
     const openEdit = (p) => { 
         setEditId(p.id); 
-        setForm({ 
-            name: p.name, description: p.description || '', price: p.price, 
-            stock: p.stock || 0, category: p.category, image: p.image || '', 
-            video: p.video || '', status: p.status || 'active' 
-        }); 
+        setForm({ ...p }); 
         setModalOpen(true); 
     };
 
@@ -60,7 +56,6 @@ export default function ProductManager() {
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { addToast('รูปภาพต้องไม่เกิน 5MB', 'error'); return; }
         const reader = new FileReader();
         reader.onload = (ev) => setForm({ ...form, image: ev.target.result });
         reader.readAsDataURL(file);
@@ -73,7 +68,7 @@ export default function ProductManager() {
         try {
             if (editId) {
                 await updateDoc(doc(db, 'products', editId), data);
-                addToast('แก้ไขสำเร็จ!', 'success');
+                addToast('บันทึกสำเร็จ!', 'success');
             } else {
                 await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
                 addToast('เพิ่มสำเร็จ!', 'success');
@@ -91,9 +86,9 @@ export default function ProductManager() {
         if (!confirm('ต้องการลบ?')) return;
         try {
             await deleteDoc(doc(db, 'products', id));
-            addToast('ลบเรียบร้อย', 'info');
             load();
-        } catch (err) { addToast('Error: ' + err.message, 'error'); }
+            addToast('ลบเรียบร้อย', 'info');
+        } catch (err) { addToast('Error', 'error'); }
     };
 
     if (loading) return <div className="flex justify-center py-16"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
@@ -101,38 +96,38 @@ export default function ProductManager() {
     return (
         <div className="p-4 sm:p-8">
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-2xl font-bold">📦 จัดการสินค้า</h1>
-                <button onClick={openAdd} className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold shadow-lg">➕ เพิ่มสินค้าใหม่</button>
+                <h1 className="text-2xl font-black text-emerald-800 tracking-tight">📦 จัดการสินค้า</h1>
+                <button onClick={openAdd} className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg hover:bg-emerald-700 transition-all">➕ เพิ่มสินค้าใหม่</button>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
-                            <th className="px-6 py-4 text-left">สินค้า</th>
-                            <th className="px-6 py-4 text-center">สต๊อก</th>
-                            <th className="px-6 py-4 text-left">ราคา</th>
-                            <th className="px-6 py-4 text-right">จัดการ</th>
+                            <th className="px-6 py-4 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px]">สินค้า</th>
+                            <th className="px-6 py-4 text-center font-bold text-gray-400 uppercase tracking-widest text-[10px]">สต๊อก</th>
+                            <th className="px-6 py-4 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px]">ราคา</th>
+                            <th className="px-6 py-4 text-right font-bold text-gray-400 uppercase tracking-widest text-[10px]">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                         {products.map((p) => (
-                            <tr key={p.id}>
-                                <td className="px-6 py-4 flex items-center gap-3 font-bold">
-                                    <img src={p.image || 'https://placehold.co/50'} className="w-10 h-10 rounded-lg object-cover" />
-                                    {p.name}
+                            <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-6 py-4 flex items-center gap-4">
+                                    <img src={p.image || 'https://placehold.co/100'} className="w-12 h-12 rounded-2xl object-cover shadow-sm border border-gray-100" />
+                                    <span className="font-black text-gray-700 dark:text-gray-200">{p.name}</span>
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <button onClick={() => handleUpdateStock(p.id, p.stock, -1)} className="w-6 h-6 bg-red-50 text-red-500 rounded">-</button>
-                                        <span className="w-8 font-bold">{p.stock || 0}</span>
-                                        <button onClick={() => handleUpdateStock(p.id, p.stock, 1)} className="w-6 h-6 bg-emerald-50 text-emerald-500 rounded">+</button>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center justify-center gap-3">
+                                        <button onClick={() => handleUpdateStock(p.id, p.stock, -1)} className="w-8 h-8 bg-red-50 text-red-500 rounded-xl font-black hover:bg-red-100 transition-colors">-</button>
+                                        <span className={`w-8 text-center font-black text-lg ${p.stock <= 5 ? 'text-red-500 animate-pulse' : 'text-emerald-600'}`}>{p.stock || 0}</span>
+                                        <button onClick={() => handleUpdateStock(p.id, p.stock, 1)} className="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-xl font-black hover:bg-emerald-100 transition-colors">+</button>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 font-bold">{formatTHB(p.price)}</td>
-                                <td className="px-6 py-4 text-right space-x-2">
-                                    <button onClick={() => openEdit(p)} className="text-emerald-600 font-bold">แก้ไข</button>
-                                    <button onClick={() => handleDelete(p.id)} className="text-red-400 font-bold">ลบ</button>
+                                <td className="px-6 py-4 font-black text-gray-800 dark:text-white">{formatTHB(p.price)}</td>
+                                <td className="px-6 py-4 text-right space-x-4">
+                                    <button onClick={() => openEdit(p)} className="text-emerald-600 font-black hover:underline">แก้ไข</button>
+                                    <button onClick={() => handleDelete(p.id)} className="text-red-300 font-black hover:text-red-500">ลบ</button>
                                 </td>
                             </tr>
                         ))}
@@ -140,35 +135,79 @@ export default function ProductManager() {
                 </table>
             </div>
 
-            {/* Modal - เพิ่ม/แก้ไขสินค้า */}
+            {/* Modal */}
             {modalOpen && (
-                <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
-                        <h2 className="text-2xl font-black mb-6">{editId ? '✏️ แก้ไข' : '➕ เพิ่มใหม่'}</h2>
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">ชื่อสินค้า *</label><input name="name" value={form.name} onChange={handleChange} required className="w-full px-5 py-3 rounded-xl border-2 dark:bg-gray-800 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">รายละเอียด</label><textarea name="description" value={form.description} onChange={handleChange} rows={2} className="w-full px-5 py-3 rounded-xl border-2 dark:bg-gray-800 outline-none" /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">ราคา *</label><input name="price" type="number" value={form.price} onChange={handleChange} required className="w-full px-5 py-3 rounded-xl border-2 dark:bg-gray-800 outline-none" /></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">สต็อก *</label><input name="stock" type="number" value={form.stock} onChange={handleChange} required className="w-full px-5 py-3 rounded-xl border-2 dark:bg-gray-800 outline-none" /></div>
-                            </div>
+                <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100">{editId ? '✏️ แก้ไขข้อมูล' : '➕ เพิ่มสินค้าใหม่'}</h2>
+                            <button onClick={() => setModalOpen(false)} className="text-3xl text-gray-300 hover:text-gray-600 transition-colors">&times;</button>
+                        </div>
+
+                        <form onSubmit={handleSave} className="space-y-6">
+                            {/* ชื่อสินค้า */}
                             <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase">รูปภาพ</label>
-                                <div className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer relative">
-                                    {form.image && <img src={form.image} className="h-20 mx-auto mb-2 rounded-lg" />}
-                                    <p className="text-[10px] text-gray-400">คลิกเพื่ออัปโหลด</p>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">ชื่อสินค้า *</label>
+                                <input name="name" value={form.name} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-bold" placeholder="ชื่อผักสด/สินค้า" />
+                            </div>
+
+                            {/* รายละเอียด */}
+                            <div>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">รายละเอียดสินค้า</label>
+                                <textarea name="description" value={form.description} onChange={handleChange} rows={2} className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-medium" placeholder="อธิบายสินค้าเล็กน้อย..." />
+                            </div>
+
+                            {/* ราคาและสต็อก */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">ราคา (บาท) *</label><input name="price" type="number" value={form.price} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-black" /></div>
+                                <div><label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">สต็อกเริ่มต้น *</label><input name="stock" type="number" value={form.stock} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-black" /></div>
+                            </div>
+
+                            {/* ✅ ส่วนจัดการรูปภาพ (เพิ่ม URL + Upload) */}
+                            <div>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">รูปภาพสินค้า (URL หรือ อัปโหลด)</label>
+                                
+                                {/* พิมพ์ URL โดยตรง */}
+                                <input 
+                                    name="image" 
+                                    value={form.image} 
+                                    onChange={handleChange} 
+                                    className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all text-xs font-medium mb-4" 
+                                    placeholder="วาง URL รูปภาพที่นี่..." 
+                                />
+
+                                {/* หรืออัปโหลดไฟล์ */}
+                                <div className="border-4 border-dashed border-gray-50 dark:border-gray-800 rounded-[2rem] p-6 text-center relative group overflow-hidden transition-all hover:border-emerald-200">
+                                    {form.image ? (
+                                        <div className="relative">
+                                            <img src={form.image} alt="preview" className="h-32 mx-auto rounded-2xl mb-2 shadow-md group-hover:scale-105 transition-transform" />
+                                            <p className="text-[10px] font-black text-gray-300 uppercase">เปลี่ยนรูปภาพได้ที่นี่</p>
+                                        </div>
+                                    ) : (
+                                        <div className="py-4">
+                                            <p className="text-4xl mb-2">📸</p>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">คลิกเพื่ออัปโหลดจากเครื่อง</p>
+                                        </div>
+                                    )}
                                     <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>
                             </div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">หมวดหมู่</label>
-                                <select name="category" value={form.category} onChange={handleChange} required className="w-full px-5 py-3 rounded-xl border-2 dark:bg-gray-800">
-                                    <option value="">เลือกหมวด</option>
+
+                            {/* หมวดหมู่ */}
+                            <div>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">หมวดหมู่สินค้า *</label>
+                                <select name="category" value={form.category} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-bold">
+                                    <option value="">เลือกหมวดหมู่</option>
                                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
+
+                            {/* ปุ่มกดยืนยัน */}
                             <div className="flex gap-4 pt-4">
-                                <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-3 font-bold border-2 rounded-xl">ยกเลิก</button>
-                                <button type="submit" disabled={saving} className="flex-[2] py-3 bg-emerald-600 text-white font-black rounded-xl shadow-lg">{saving ? 'กำลังบันทึก...' : 'ยืนยัน'}</button>
+                                <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-4 font-black border-2 border-gray-50 dark:border-gray-800 rounded-2xl hover:bg-gray-50 transition-all text-gray-400">ยกเลิก</button>
+                                <button type="submit" disabled={saving} className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 transition-all disabled:opacity-50">
+                                    {saving ? 'กำลังบันทึก...' : editId ? '💾 บันทึกการแก้ไข' : '🚀 เพิ่มสินค้าเข้าฟาร์ม'}
+                                </button>
                             </div>
                         </form>
                     </div>
