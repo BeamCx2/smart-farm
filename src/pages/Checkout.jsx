@@ -76,21 +76,23 @@ export default function Checkout() {
 
         try {
             console.log("🚀 กำลังบันทึกข้อมูลไปที่ Firebase...");
-            // บันทึกข้อมูลลงฐานข้อมูล
-            await addDoc(collection(db, 'orders'), orderData);
             
-            console.log("✅ บันทึกสำเร็จ! กำลังไปหน้าชำระเงิน...");
+            // 1. บันทึกข้อมูลและเก็บค่า Reference ของเอกสารไว้
+            const docRef = await addDoc(collection(db, 'orders'), orderData);
+            
+            console.log("✅ บันทึกสำเร็จ ID:", docRef.id);
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
             
-            // ล้างตะกร้าก่อนไปหน้าถัดไป
+            // 2. ล้างตะกร้า
             clearCart();
 
-            // 🚨 แก้ไขจุด Redirect: ใช้ Path ภายในเครื่องเท่านั้น ห้ามใส่ https://
+            // 3. Redirect ไปหน้าชำระเงิน พร้อมส่ง firebaseDocId ไปด้วย 🚨
             if (paymentMethod === 'promptpay') {
                 navigate('/test-payment', { 
                     state: { 
                         amount: total,
-                        orderId: currentOrderId 
+                        orderId: currentOrderId,
+                        firebaseDocId: docRef.id // 👈 ส่ง ID นี้ไปให้หน้า PaymentComponent ใช้
                     } 
                 });
             } else {
@@ -99,7 +101,6 @@ export default function Checkout() {
 
         } catch (err) {
             console.error('Firestore Error:', err.message);
-            // 💡 ถ้าบันทึกไม่เข้า ส่วนใหญ่เป็นเพราะยังไม่ได้กด Create Index ในลิงก์สีแดงที่ Console ครับ
             addToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
         } finally {
             setSubmitting(false);
