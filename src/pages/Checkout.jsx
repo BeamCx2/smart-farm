@@ -18,7 +18,6 @@ export default function Checkout() {
     const { addToast } = useToast();
     const navigate = useNavigate();
     
-    // ตั้งค่าเริ่มต้นเป็น promptpay เพื่อให้ตรงกับระบบที่เราทำไว้
     const [paymentMethod, setPaymentMethod] = useState('promptpay');
     const [submitting, setSubmitting] = useState(false);
     const [form, setForm] = useState({
@@ -44,11 +43,18 @@ export default function Checkout() {
 
         const currentOrderId = generateOrderId();
 
+        // 1. เตรียมข้อมูลออเดอร์
         const order = {
             orderId: currentOrderId,
             userId: user?.uid || 'guest',
             customer: { ...form },
-            items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, image: i.image })),
+            items: items.map((i) => ({ 
+                id: i.id, 
+                name: i.name, 
+                price: i.price, 
+                qty: i.qty, 
+                image: i.image 
+            })),
             subtotal, 
             shipping, 
             total,
@@ -59,15 +65,16 @@ export default function Checkout() {
         };
 
         try {
-            // 1. บันทึกข้อมูลลง Firebase
+            // 2. พยายามบันทึกลง Firebase (จะสำเร็จได้ต้องเคลียร์เรื่อง Billing 400 บาทก่อน)
+            console.log("Saving order to Firebase...");
             await addDoc(collection(db, 'orders'), order);
             
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
             clearCart();
 
-            // 2. ตรวจสอบวิธีชำระเงิน
+            // 3. ไปหน้าถัดไปตามวิธีชำระเงิน
             if (paymentMethod === 'promptpay') {
-                // ถ้าเป็น PromptPay ให้กระโดดไปหน้าจ่ายเงิน พร้อมส่งยอด total ไปด้วย
+                // ส่ง total ไปหน้าจ่ายเงินกสิกร
                 navigate('/test-payment', { 
                     state: { 
                         amount: total,
@@ -75,13 +82,17 @@ export default function Checkout() {
                     } 
                 });
             } else {
-                // ถ้าเป็นโอนเงินปกติ ให้ไปหน้าดูรายการสั่งซื้อ
                 navigate('/orders');
             }
 
         } catch (err) {
-            console.error('Error:', err.message);
-            addToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+            console.error('Firestore Error:', err.message);
+            // กรณี Billing ติดขัด เราจะแจ้งเตือนแต่ยังยอมให้ไปหน้าถัดไปเพื่อทดสอบ UI
+            addToast('ติดปัญหาการบันทึกข้อมูล แต่คุณสามารถทดสอบหน้าจ่ายเงินได้', 'warning');
+            
+            if (paymentMethod === 'promptpay') {
+                navigate('/test-payment', { state: { amount: total } });
+            }
         } finally {
             setSubmitting(false);
         }
@@ -94,7 +105,7 @@ export default function Checkout() {
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left — Form */}
+                    {/* ข้อมูลจัดส่ง */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                             <h3 className="font-bold mb-5">📍 ข้อมูลจัดส่ง</h3>
@@ -132,6 +143,7 @@ export default function Checkout() {
                             </div>
                         </div>
 
+                        {/* เลือกวิธีชำระเงิน */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                             <h3 className="font-bold mb-5">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
@@ -148,13 +160,13 @@ export default function Checkout() {
                         </div>
                     </div>
 
-                    {/* Right — Summary */}
+                    {/* สรุปราคา */}
                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 h-fit lg:sticky lg:top-24">
                         <h3 className="font-bold text-lg mb-4">📋 สรุปคำสั่งซื้อ</h3>
                         <div className="max-h-60 overflow-y-auto space-y-3 mb-4">
                             {items.map((item) => (
                                 <div key={item.id} className="flex gap-3 items-center">
-                                    <img src={item.image || 'https://placehold.co/50x50/e8f5e9/2e7d32?text=P'} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                    <img src={item.image || 'https://placehold.co/50x50?text=P'} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium truncate">{item.name}</div>
                                         <div className="text-xs text-gray-500">x{item.qty}</div>
