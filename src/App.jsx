@@ -1,13 +1,19 @@
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore'; 
 import { db } from './lib/firebase'; 
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom'; // 🚨 เพิ่ม Navigate
-import { AuthProvider, useAuth } from './contexts/AuthContext'; // 🚨 เพิ่ม useAuth
+
+// Contexts
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
-import { ThemeProvider } from './contexts/ThemeProvider'; // ตรวจสอบชื่อไฟล์ context ของบอสด้วยครับ
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext'; // ✅ แก้ไขให้เหลืออันเดียวและ Path ถูกต้อง
+import { ToastProvider } from './contexts/ToastContext';
+
+// Components & Layouts
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
-import { useState, useEffect } from 'react';
+
+// Pages
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
@@ -16,6 +22,8 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
+
+// Admin Pages
 import Dashboard from './pages/admin/Dashboard';
 import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
@@ -27,8 +35,8 @@ function RootRedirect() {
   // ระหว่างรอเช็คสถานะล็อกอิน ไม่ต้องแสดงอะไร
   if (loading) return null;
 
-  // ✅ ถ้าล็อกอินแล้วไปหน้าสินค้า (หรือหน้า Home ถ้าบอสอยากให้เห็นหน้าแรกก่อน)
-  // ❌ ถ้ายังไม่ล็อกอิน ดีดไปหน้า Register ทันที
+  // ✅ ถ้าล็อกอินแล้วไปหน้าสินค้า (หรือเปลี่ยนเป็น /home ตามชอบครับ)
+  // ❌ ถ้ายังไม่ล็อกอิน ดีดไปหน้า Register ทันทีตามที่บอสต้องการ
   return user ? <Navigate to="/products" replace /> : <Navigate to="/register" replace />;
 }
 
@@ -124,7 +132,7 @@ export default function App() {
               <Routes>
                 <Route element={<Layout />}>
                   
-                  {/* 🚨 เปลี่ยนจาก <Home /> เป็น <RootRedirect /> */}
+                  {/* 🚨 หน้าแรกสุดให้วิ่งไปเช็คที่ RootRedirect */}
                   <Route path="/" element={<RootRedirect />} />
                   
                   <Route path="/home" element={<Home />} />
@@ -144,7 +152,7 @@ export default function App() {
                     <Route path="orders" element={<OrderManager />} />
                   </Route>
 
-                  {/* 404 Page - เปลี่ยนให้ดีดกลับไปหน้าแรก (RootRedirect) */}
+                  {/* 404 Page - ดีดกลับไปหน้าแรก */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
               </Routes>
