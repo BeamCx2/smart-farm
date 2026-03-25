@@ -9,37 +9,33 @@ export default function Home() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function load() {
-            // 🚨 ถ้าไม่ได้ตั้งค่า Firebase ให้หยุดรอ (หรือโชว์แจ้งเตือน)
-            if (!isFirebaseConfigured) {
-                console.error("Firebase is not configured!");
-                setLoading(false);
-                return;
-            }
+// ในไฟล์ src/pages/Home.jsx
+useEffect(() => {
+    async function load() {
+        try {
+            setLoading(true);
+            // 1. ดึงสินค้า active ทั้งหมดออกมา (ไม่ต้องใส่ orderBy ใน query)
+            const q = query(collection(db, 'products'), where('status', '==', 'active'));
+            const snap = await getDocs(q);
+            
+            const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-            try {
-                // ✅ ดึงเฉพาะจาก Firebase เท่านั้น
-                const q = query(
-                    collection(db, 'products'), 
-                    where('status', '==', 'active'), 
-                    orderBy('createdAt', 'desc'), 
-                    limit(8)
-                );
-                
-                const snap = await getDocs(q);
-                const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-                setProducts(data);
-            } catch (e) {
-                console.error('Firestore fetch error:', e);
-                // ❌ ลบระบบดึง Demo ออกแล้ว เพื่อให้บอสเห็นข้อมูลจริง
-                setProducts([]); 
-            } finally {
-                setLoading(false);
-            }
+            // 2. มาเรียงลำดับเองที่นี่ (ถ้าชิ้นไหนไม่มี createdAt ให้เอาไปไว้ล่างสุด)
+            const sortedData = data.sort((a, b) => {
+                const dateA = a.createdAt?.seconds || 0;
+                const dateB = b.createdAt?.seconds || 0;
+                return dateB - dateA;
+            }).slice(0, 8); // เอาแค่ 8 ชิ้นแรก
+
+            setProducts(sortedData);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
-        load();
-    }, []);
+    }
+    load();
+}, []);
 
     return (
         <>
