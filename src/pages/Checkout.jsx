@@ -8,7 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
 
 const PAYMENT_METHODS = [
-    { id: 'card', label: '💳 บัตรเครดิต / เดบิต', desc: 'Visa, Mastercard, JCB' },
+    // { id: 'card', label: '💳 บัตรเครดิต / เดบิต', desc: 'Visa, Mastercard, JCB' },
     { id: 'promptpay', label: '📱 PromptPay QR', desc: 'สแกนจ่ายผ่าน QR Code' },
     { id: 'bank', label: '🏦 โอนเงินผ่านธนาคาร', desc: 'โอนตรงเข้าบัญชี' },
 ];
@@ -131,16 +131,16 @@ export default function Checkout() {
                                             <div><label className="block text-sm font-semibold mb-1.5">CVV</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="123" maxLength={4} type="password" /></div>
                                         </div>
                                     </div>
-                                )}
-                                {paymentMethod === 'promptpay' && (
-                                    <div className="text-center py-6">
-                                        <div className="w-48 h-48 mx-auto mb-4 bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center">
-                                            <svg viewBox="0 0 200 200" width="160" height="160"><rect width="200" height="200" fill="white" /><g fill="black"><rect x="10" y="10" width="50" height="50" /><rect x="18" y="18" width="34" height="34" fill="white" /><rect x="26" y="26" width="18" height="18" /><rect x="140" y="10" width="50" height="50" /><rect x="148" y="18" width="34" height="34" fill="white" /><rect x="156" y="26" width="18" height="18" /><rect x="10" y="140" width="50" height="50" /><rect x="18" y="148" width="34" height="34" fill="white" /><rect x="26" y="156" width="18" height="18" />{Array.from({ length: 80 }, (_, i) => { const x = 70 + (i % 8) * 8; const y = 10 + Math.floor(i / 8) * 8; return Math.random() > 0.5 ? `<rect x="${x}" y="${y}" width="7" height="7"/>` : ''; }).join('')}</g></svg>
-                                        </div>
-                                        <p className="font-semibold mb-1">สแกน QR Code เพื่อชำระเงิน</p>
-                                        <p className="text-sm text-gray-500">เปิดแอปธนาคารและสแกน QR Code ด้านบน</p>
-                                    </div>
-                                )}
+                                // )}
+                                // {paymentMethod === 'promptpay' && (
+                                //     <div className="text-center py-6">
+                                //         <div className="w-48 h-48 mx-auto mb-4 bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center">
+                                //             <svg viewBox="0 0 200 200" width="160" height="160"><rect width="200" height="200" fill="white" /><g fill="black"><rect x="10" y="10" width="50" height="50" /><rect x="18" y="18" width="34" height="34" fill="white" /><rect x="26" y="26" width="18" height="18" /><rect x="140" y="10" width="50" height="50" /><rect x="148" y="18" width="34" height="34" fill="white" /><rect x="156" y="26" width="18" height="18" /><rect x="10" y="140" width="50" height="50" /><rect x="18" y="148" width="34" height="34" fill="white" /><rect x="26" y="156" width="18" height="18" />{Array.from({ length: 80 }, (_, i) => { const x = 70 + (i % 8) * 8; const y = 10 + Math.floor(i / 8) * 8; return Math.random() > 0.5 ? `<rect x="${x}" y="${y}" width="7" height="7"/>` : ''; }).join('')}</g></svg>
+                                //         </div>
+                                //         <p className="font-semibold mb-1">สแกน QR Code เพื่อชำระเงิน</p>
+                                //         <p className="text-sm text-gray-500">เปิดแอปธนาคารและสแกน QR Code ด้านบน</p>
+                                //     </div>
+                                // )}
                                 {paymentMethod === 'bank' && (
                                     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 space-y-2 text-sm">
                                         <h4 className="font-bold mb-3">ข้อมูลบัญชีธนาคาร</h4>
