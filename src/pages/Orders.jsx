@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB, formatDateTime, ORDER_STATUSES } from '../lib/utils';
@@ -11,26 +11,36 @@ export default function Orders() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // 1. ถ้าระบบ Auth ยังโหลดไม่เสร็จ ให้รอสั่งก่อน
         if (authLoading) return;
+
+        // 2. ถ้าโหลดเสร็จแล้วแต่ไม่มี User (ไม่ได้ Login) ให้หยุดโหลดและไม่โชว์อะไร
+        if (!user) {
+            setOrders([]);
+            setLoading(false);
+            return;
+        }
 
         async function load() {
             try {
-                console.log("🔄 กำลังดึงข้อมูลออเดอร์ทั้งหมดจาก Firebase...");
-                
-                // 🚨 ปรับใหม่: ดึงทุกอย่างมาโชว์ก่อนเพื่อเช็คว่า Database เชื่อมติดไหม
+                setLoading(true);
+                console.log("🔍 กำลังดึงออเดอร์เฉพาะของ User:", user.uid);
+
+                // 3. ดึงเฉพาะออเดอร์ที่ userId ตรงกับคนที่ Login อยู่เท่านั้น
                 const q = query(
-                    collection(db, 'orders'), 
-                    orderBy('createdAt', 'desc'),
-                    limit(20) // ดึงมาดู 20 รายการล่าสุด
+                    collection(db, 'orders'),
+                    where('userId', '==', user.uid),
+                    orderBy('createdAt', 'desc')
                 );
 
                 const snap = await getDocs(q);
                 const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
-                console.log("✅ พบข้อมูลออเดอร์:", data.length, "รายการ");
                 setOrders(data);
+                console.log("✅ ดึงข้อมูลสำเร็จ:", data.length, "รายการ");
             } catch (err) {
-                console.error("❌ เกิดข้อผิดพลาด:", err.message);
+                console.error("❌ Error:", err.message);
+                // 💡 ถ้าขึ้น Error เรื่อง Index ให้คลิกลิงก์สีแดงใน Console (F12) เพื่อสร้าง Index อีกครั้ง
                 setOrders([]);
             } finally {
                 setLoading(false);
@@ -38,8 +48,9 @@ export default function Orders() {
         }
 
         load();
-    }, [user, authLoading]);
+    }, [user, authLoading]); // 🚨 สำคัญ: ต้องใส่ [user, authLoading] เพื่อให้มันโหลดใหม่เมื่อ Login เสร็จ
 
+    // ส่วนการแสดงผล Loading
     if (loading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
@@ -48,50 +59,49 @@ export default function Orders() {
         );
     }
 
+    // ถ้าไม่ได้ Login ให้บอกให้ไป Login ก่อน
+    if (!user) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+                <h2 className="text-xl font-bold mb-4">🔐 กรุณาเข้าสู่ระบบ</h2>
+                <p className="text-gray-500 mb-6">เพื่อดูรายการสั่งซื้อของคุณ</p>
+                <Link to="/login" className="px-8 py-3 bg-emerald-600 text-white rounded-full font-semibold">เข้าสู่ระบบ</Link>
+            </div>
+        );
+    }
+
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-            <h1 className="text-2xl font-bold mb-2">📋 รายการสั่งซื้อล่าสุด</h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">พบทั้งหมด {orders.length} รายการในระบบ</p>
+            <h1 className="text-2xl font-bold mb-2">📋 คำสั่งซื้อของฉัน</h1>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">พบทั้งหมด {orders.length} รายการ</p>
 
             {orders.length === 0 ? (
                 <div className="text-center py-16 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
                     <div className="text-5xl mb-4">📦</div>
-                    <h3 className="text-lg font-semibold mb-2">ไม่พบข้อมูลในระบบ</h3>
-                    <p className="text-gray-500 mb-6">หากคุณเพิ่งสั่งซื้อ กรุณารอสักครู่แล้วลองรีเฟรชหน้าจอ</p>
+                    <h3 className="text-lg font-semibold mb-2">ยังไม่มีคำสั่งซื้อ</h3>
+                    <p className="text-gray-500 mb-6">คุณยังไม่ได้สั่งซื้อสินค้า หรือออเดอร์เก่าอาจไม่มีข้อมูลเจ้าของ</p>
                     <Link to="/products" className="inline-flex px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full shadow-lg transition-all">ไปที่หน้าร้านค้า</Link>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="grid gap-4">
                     {orders.map((order) => {
                         const status = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
                         return (
                             <div key={order.id} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:shadow-md">
-                                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <span className="font-bold text-emerald-700 dark:text-emerald-400">#{order.orderId || order.id.slice(0, 8)}</span>
-                                        <span className="text-sm text-gray-400 ml-3">
-                                            {order.createdAt ? formatDateTime(order.createdAt) : 'กำลังโหลดเวลา...'}
-                                        </span>
+                                        <div className="font-bold text-emerald-700 dark:text-emerald-400">#{order.orderId || order.id.slice(0, 8)}</div>
+                                        <div className="text-xs text-gray-400 mt-1">{order.createdAt ? formatDateTime(order.createdAt) : 'เพิ่งสั่งซื้อ'}</div>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right">
+                                            <div className="text-xs text-gray-400 uppercase">ยอดสุทธิ</div>
+                                            <div className="font-bold text-emerald-600">{formatTHB(order.total)}</div>
+                                        </div>
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold
-                                            ${status.color === 'green' ? 'bg-green-100 text-green-700' : ''}
-                                            ${status.color === 'yellow' ? 'bg-yellow-100 text-yellow-700' : ''}
-                                            ${status.color === 'blue' ? 'bg-blue-100 text-blue-700' : ''}
-                                            ${status.color === 'red' ? 'bg-red-100 text-red-700' : ''}
+                                            ${status.color === 'green' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}
                                         `}>{status.label}</span>
                                     </div>
-                                </div>
-                                
-                                <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    👤 ผู้สั่ง: {order.customer?.name || 'ไม่ระบุชื่อ'}
-                                </div>
-
-                                <div className="border-t border-gray-50 dark:border-gray-800 pt-4 flex justify-between items-center">
-                                    <div className="text-sm text-gray-500">
-                                        สินค้า {order.items?.length || 0} รายการ
-                                    </div>
-                                    <div className="font-bold text-lg text-emerald-600">{formatTHB(order.total)}</div>
                                 </div>
                             </div>
                         );
