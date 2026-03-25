@@ -3,25 +3,23 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB } from '../lib/utils';
-import { Link, Navigate } from 'react-router-dom'; // ✅ รวมไว้ที่บรรทัดเดียวพอครับ
+import { Link, Navigate, useNavigate } from 'react-router-dom'; // ✅ เพิ่ม useNavigate ตรงนี้ครับ
 
 export default function Orders() {
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate(); // ✅ ประกาศตัวแปร navigate
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
 
-  // 1. เช็คว่าโหลด Auth เสร็จหรือยัง
   if (authLoading) {
     return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังตรวจสอบสิทธิ์...</div>;
   }
 
-  // 2. ถ้าไม่ได้ล็อกอิน ให้ดีดไปหน้าสมัครสมาชิก
   if (!user) {
     return <Navigate to="/register" replace />;
   }
 
-  // 3. ดึงข้อมูลจาก Firebase
   useEffect(() => {
     const q = query(
       collection(db, 'orders'),
@@ -93,14 +91,35 @@ export default function Orders() {
                   <p className="font-black text-emerald-600 text-lg">{formatTHB(order.total)}</p>
                 </div>
                 
-                <span className={`px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-tight ${
-                  order.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 
-                  order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
-                  'bg-amber-100 text-amber-600'
-                }`}>
-                  {order.status === 'paid' ? 'ชำระแล้ว' : 
-                   order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
-                </span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-tight ${
+                    order.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 
+                    order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
+                    'bg-amber-100 text-amber-600'
+                  }`}>
+                    {order.status === 'paid' ? 'ชำระแล้ว' : 
+                     order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
+                  </span>
+
+                  {/* 🚨 ปุ่มชำระเงินสำหรับออเดอร์ที่ค้างชำระ */}
+                  {order.status === 'pending' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // กันไม่ให้กดแล้วไปกาง Accordion
+                        navigate('/test-payment', { 
+                          state: { 
+                            amount: order.total, 
+                            orderId: order.orderId || order.id.slice(0, 8),
+                            firebaseDocId: order.id 
+                          } 
+                        });
+                      }}
+                      className="text-[10px] bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+                    >
+                      💳 ชำระเงินที่นี่
+                    </button>
+                  )}
+                </div>
 
                 <span className={`text-gray-300 transition-transform duration-300 ${expandedId === order.id ? 'rotate-180' : ''}`}>
                   ▼
