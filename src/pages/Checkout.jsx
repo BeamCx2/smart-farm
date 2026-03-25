@@ -38,23 +38,21 @@ export default function Checkout() {
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
     // --- ฟังก์ชันหลักในการส่งคำสั่งซื้อ ---
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-
-        const currentOrderId = generateOrderId();
-
-        // 1. เตรียมข้อมูลออเดอร์สำหรับ Firebase
+// 1. เตรียมข้อมูลออเดอร์สำหรับ Firebase
         const orderData = {
             orderId: currentOrderId,
-            userId: user?.uid || 'guest', // เช็คจาก AuthContext หรือ Firebase Auth
-            customer: { ...form },
+            // 🚨 ปรับตรงนี้: ถ้า user.uid ไม่มี ให้ลองใช้ user.id หรือ email แทน (เพื่อป้องกันค่าว่าง)
+            userId: user?.uid || user?.id || 'guest', 
+            customer: { 
+                ...form,
+                email: form.email || user?.email // เก็บ email ไว้สำรองเผื่อค้นหา
+            },
             items: items.map((i) => ({ 
                 id: i.id, 
                 name: i.name, 
                 price: i.price, 
                 qty: i.qty, 
-                image: i.image 
+                image: i.image || '' 
             })),
             subtotal, 
             shipping, 
@@ -62,7 +60,7 @@ export default function Checkout() {
             totalSatang: toSatang(total),
             paymentMethod,
             status: 'pending',
-            createdAt: serverTimestamp(), // บันทึกเวลาฝั่ง Server
+            createdAt: serverTimestamp(),
         };
 
         try {
