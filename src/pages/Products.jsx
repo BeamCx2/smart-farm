@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; 
+import { collection, query, where, onSnapshot } from 'firebase/firestore'; 
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { CATEGORIES } from '../lib/utils';
 import ProductCard from '../components/products/ProductCard';
-
-// ❌ ลบ import { getDemoProducts } ออกแล้วครับ
 
 export default function Products() {
     const [products, setProducts] = useState([]);
@@ -15,26 +13,32 @@ export default function Products() {
     const activeCategory = searchParams.get('category') || 'ทั้งหมด';
 
     useEffect(() => {
-        // ✅ ถ้าไม่ได้ตั้งค่า Firebase ให้เป็นอาเรย์ว่างไปเลย ไม่ต้องใช้ Demo
         if (!isFirebaseConfigured) {
             setProducts([]);
             setLoading(false);
             return;
         }
 
+        // 🚨 ปรับ Query ให้ดึงง่ายขึ้น (เอา orderBy ออกก่อนเพื่อกันบั๊ก createdAt ไม่มีค่า)
         const q = query(
             collection(db, 'products'), 
-            where('status', '==', 'active'), 
-            orderBy('createdAt', 'desc')
+            where('status', '==', 'active')
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setProducts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+            const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            
+            // ✅ มาเรียงลำดับในฝั่งเราเอง (Client-side sorting)
+            const sortedData = data.sort((a, b) => {
+                const dateA = a.createdAt?.seconds || 0;
+                const dateB = b.createdAt?.seconds || 0;
+                return dateB - dateA;
+            });
+
+            setProducts(sortedData);
             setLoading(false);
         }, (error) => {
             console.error("Firestore Error:", error);
-            // ❌ ไม่ใช้ getDemoProducts() แล้วครับ
-            setProducts([]);
             setLoading(false);
         });
 
@@ -43,7 +47,9 @@ export default function Products() {
 
     const filtered = useMemo(() => {
         return products.filter((p) => {
+            // เช็คหมวดหมู่
             const matchCat = activeCategory === 'ทั้งหมด' || p.category === activeCategory;
+            // เช็คคำค้นหา
             const matchSearch = !search || 
                 p.name.toLowerCase().includes(search.toLowerCase()) || 
                 (p.description || '').toLowerCase().includes(search.toLowerCase());
@@ -62,13 +68,13 @@ export default function Products() {
 
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 min-h-screen">
-            <h1 className="text-2xl font-black mb-2 text-gray-800 dark:text-gray-100 uppercase tracking-tight">🛍️ สินค้าทั้งหมด</h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium">ผักสดคุณภาพส่งตรงจากฟาร์ม อัปเดตสต๊อกเรียลไทม์</p>
+            <h1 className="text-xl font-black mb-1 text-gray-800 dark:text-gray-100 uppercase tracking-tight">🛍️ สินค้าทั้งหมด</h1>
+            <p className="text-gray-400 mb-8 font-medium text-[10px] uppercase tracking-widest">Fresh & Organic Products</p>
 
             {/* Search Box */}
-            <div className="relative max-w-md mb-8 group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-emerald-500 transition-colors">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <div className="relative max-w-md mb-8">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                     </svg>
                 </div>
@@ -76,21 +82,21 @@ export default function Products() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="ค้นหาชื่อผัก หรือรายละเอียด..."
-                    className="w-full pl-12 pr-4 py-4 rounded-[1.5rem] border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:border-emerald-400 outline-none transition-all shadow-sm"
+                    placeholder="ค้นหาผักสด..."
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                 />
             </div>
 
-            {/* Categories Filter */}
-            <div className="flex flex-wrap gap-3 mb-10">
+            {/* Categories */}
+            <div className="flex flex-wrap gap-2 mb-10">
                 {['ทั้งหมด', ...CATEGORIES].map((cat) => (
                     <button
                         key={cat}
                         onClick={() => setCategory(cat)}
-                        className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
+                        className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${
                             activeCategory === cat
-                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 -translate-y-0.5'
-                            : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-400 hover:border-emerald-200 hover:text-emerald-600 shadow-sm'
+                            ? 'bg-emerald-600 text-white shadow-md'
+                            : 'bg-white dark:bg-gray-900 border border-gray-50 text-gray-400 hover:text-emerald-600'
                         }`}
                     >
                         {cat}
@@ -100,18 +106,17 @@ export default function Products() {
 
             {/* Product Grid */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4">
-                    <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
-                    <p className="text-sm font-bold text-emerald-600 animate-pulse">กำลังเตรียมผักสดๆ ให้คุณ...</p>
+                <div className="flex justify-center py-20">
+                    <div className="w-8 h-8 border-4 border-emerald-50 border-t-emerald-500 rounded-full animate-spin" />
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="text-center py-24 bg-gray-50/50 dark:bg-gray-800/20 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-700">
-                    <div className="text-7xl mb-6">🥗</div>
-                    <h3 className="text-xl font-black mb-2 uppercase">ไม่พบสินค้าในระบบ</h3>
-                    <p className="text-gray-400 max-w-xs mx-auto text-sm">หากไม่มีสินค้าขึ้น บอสลองเข้าไปเพิ่มสินค้าในหน้าแอดมินก่อนนะครับ</p>
+                <div className="text-center py-20 bg-gray-50/50 dark:bg-gray-800/20 rounded-[2rem] border border-dashed border-gray-100">
+                    <div className="text-5xl mb-4">🥗</div>
+                    <h3 className="text-sm font-black mb-1 uppercase text-gray-500">ไม่พบสินค้าในหมวดนี้</h3>
+                    <p className="text-gray-400 text-[10px]">ลองเลือกหมวดหมู่อื่นดูนะครับบอส</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                     {filtered.map((p) => (
                         <ProductCard key={p.id} product={p} />
                     ))}
