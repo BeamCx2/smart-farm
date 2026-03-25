@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useCart } from '../contexts/CartContext';
@@ -14,7 +14,7 @@ const PAYMENT_METHODS = [
 
 export default function Checkout() {
     const { items, subtotal, shipping, total, clearCart } = useCart();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth(); // ดึง loading มาด้วย
     const { addToast } = useToast();
     const navigate = useNavigate();
     
@@ -30,14 +30,27 @@ export default function Checkout() {
         zipcode: '',
     });
 
+    // 1. ถ้าระบบ Auth ยังโหลดไม่เสร็จ ให้แสดง Loading ก่อน
+    if (authLoading) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    // 2. 🚨 บังคับ Login: ถ้าไม่มี User ให้เด้งไปหน้า Login
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // 3. ถ้าตะกร้าว่าง ให้กลับไปหน้าตะกร้า
     if (items.length === 0) {
-        navigate('/cart');
-        return null;
+        return <Navigate to="/cart" replace />;
     }
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    // 🚨 แก้ไขจุดนี้: เติม async ไว้ข้างหน้า e => เพื่อให้ใช้ await บันทึก Firebase ได้
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
@@ -46,7 +59,7 @@ export default function Checkout() {
 
         const orderData = {
             orderId: currentOrderId,
-            userId: user?.uid || 'guest', 
+            userId: user.uid, // มั่นใจได้ว่ามี UID แน่นอนเพราะเราดักไว้ข้างบนแล้ว
             customer: { ...form },
             items: items.map((i) => ({ 
                 id: i.id, 
@@ -66,7 +79,6 @@ export default function Checkout() {
 
         try {
             console.log("กำลังบันทึกข้อมูลไปที่ Firebase...");
-            // 🚨 บรรทัดเจ้าปัญหาที่ทำให้ Build Failed เพราะไม่มี async ข้างบน
             await addDoc(collection(db, 'orders'), orderData);
             
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
@@ -85,7 +97,7 @@ export default function Checkout() {
 
         } catch (err) {
             console.error('Firestore Error:', err.message);
-            addToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+            addToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + err.message, 'error');
         } finally {
             setSubmitting(false);
         }
@@ -100,7 +112,7 @@ export default function Checkout() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-                            <h3 className="font-bold mb-5">📍 ข้อมูลจัดส่ง</h3>
+                            <h3 className="font-bold mb-5 text-emerald-600">📍 ข้อมูลจัดส่ง (ต้องเข้าสู่ระบบก่อนสั่งซื้อ)</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold mb-1.5">ชื่อ-นามสกุล *</label>
@@ -113,12 +125,12 @@ export default function Checkout() {
                             </div>
                             <div className="mt-4">
                                 <label className="block text-sm font-semibold mb-1.5">ที่อยู่ *</label>
-                                <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white dark:bg-gray-900" />
+                                <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                                <div><label className="block text-sm font-semibold mb-1.5">เขต/อำเภอ</label><input name="district" value={form.district} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200" /></div>
-                                <div><label className="block text-sm font-semibold mb-1.5">จังหวัด</label><input name="province" value={form.province} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200" /></div>
-                                <div><label className="block text-sm font-semibold mb-1.5">รหัสไปรษณีย์</label><input name="zipcode" value={form.zipcode} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200" /></div>
+                                <div><label className="block text-sm font-semibold mb-1.5">เขต/อำเภอ</label><input name="district" value={form.district} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" /></div>
+                                <div><label className="block text-sm font-semibold mb-1.5">จังหวัด</label><input name="province" value={form.province} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" /></div>
+                                <div><label className="block text-sm font-semibold mb-1.5">รหัสไปรษณีย์</label><input name="zipcode" value={form.zipcode} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" /></div>
                             </div>
                         </div>
 
@@ -126,7 +138,7 @@ export default function Checkout() {
                             <h3 className="font-bold mb-5">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
                                 {PAYMENT_METHODS.map((m) => (
-                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
+                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10' : 'border-gray-200 dark:border-gray-800'}`}>
                                         <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-4 h-4" />
                                         <div>
                                             <div className="font-semibold text-sm">{m.label}</div>
@@ -138,14 +150,19 @@ export default function Checkout() {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 h-fit lg:sticky lg:top-24">
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 h-fit lg:sticky lg:top-24">
                         <h3 className="font-bold text-lg mb-4">📋 สรุปคำสั่งซื้อ</h3>
-                        <div className="flex justify-between font-bold text-base text-emerald-700 mb-6">
-                            <span>ยอดรวมทั้งหมด</span>
-                            <span>{formatTHB(total)}</span>
+                        <div className="space-y-3 text-sm mb-6">
+                            <div className="flex justify-between"><span>ราคาสินค้า</span><span>{formatTHB(subtotal)}</span></div>
+                            <div className="flex justify-between"><span>ค่าจัดส่ง</span><span>{formatTHB(shipping)}</span></div>
+                            <hr className="dark:border-gray-800" />
+                            <div className="flex justify-between font-bold text-base text-emerald-700">
+                                <span>ยอดรวมทั้งหมด</span>
+                                <span>{formatTHB(total)}</span>
+                            </div>
                         </div>
-                        <button type="submit" disabled={submitting} className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-semibold shadow-lg disabled:opacity-50 transition-all">
-                            {submitting ? 'กำลังดำเนินการ...' : `✅ สั่งซื้อสินค้า`}
+                        <button type="submit" disabled={submitting} className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-semibold shadow-lg disabled:opacity-50 transition-all hover:bg-emerald-700 active:scale-[0.98]">
+                            {submitting ? 'กำลังบันทึกข้อมูล...' : `✅ สั่งซื้อสินค้า — ${formatTHB(total)}`}
                         </button>
                     </div>
                 </div>
