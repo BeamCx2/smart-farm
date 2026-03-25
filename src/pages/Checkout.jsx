@@ -85,7 +85,7 @@ export default function Checkout() {
             clearCart();
 
             if (paymentMethod === 'promptpay') {
-                navigate('/test-payment', { 
+                navigate('https://smartfarmtest.netlify.app/test-payment', { 
                     state: { 
                         amount: total,
                         orderId: currentOrderId 
