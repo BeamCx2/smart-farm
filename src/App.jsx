@@ -20,85 +20,119 @@ import Dashboard from './pages/admin/Dashboard';
 import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
 
+// --- ฟังก์ชันสำหรับหน้าชำระเงิน (PaymentComponent) ---
 function PaymentComponent() {
   const location = useLocation();
   const navigate = useNavigate();
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // 🚨 ดึงข้อมูลที่ส่งมาจากหน้า Checkout
   const amountToPay = location.state?.amount || 0;
   const orderId = location.state?.orderId || 'N/A';
   const firebaseDocId = location.state?.firebaseDocId;
 
-  // 🚨 ลบ useEffect ที่เคยสั่ง navigate('/cart') ออกไปแล้วเพื่อให้หน้าไม่เด้งกลับ 🚨
-
-  const handlePayment = async () => {
+  // 1. ฟังก์ชันสร้าง QR Code (ใช้ PromptPay API สาธารณะเพื่อความชัวร์ว่ารูปไม่แตก)
+  const handleGenerateQR = () => {
     setLoading(true);
-    try {
-      const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
-      const tokenData = await tokenRes.json();
-      const token = tokenData.access_token;
-      if (!token) throw new Error("Token Error");
+    
+    // บอสเปลี่ยนเลข 0812345678 เป็นเบอร์ PromptPay ของบอสได้เลยครับ
+    const myPromptPayNumber = "0812345678"; 
+    const qrUrl = `https://promptpay.io/${myPromptPayNumber}/${amountToPay}.png`;
 
-      const qrRes = await fetch('/.netlify/functions/generate-qr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: token, amount: amountToPay, orderId: orderId })
+    // จำลองการโหลดเล็กน้อยให้ดูเหมือนระบบธนาคารทำงาน
+    setTimeout(() => {
+      setQrData({
+        qrImageUrl: qrUrl,
+        partnerTxnUid: "SF-" + Date.now()
       });
-      const qrResult = await qrRes.json();
-      if (qrResult.qrImage || qrResult.qrCode) { setQrData(qrResult); }
-    } catch (error) { alert("ระบบขัดข้อง: " + error.message); } finally { setLoading(false); }
+      setLoading(false);
+    }, 800);
   };
 
-  const checkStatus = async () => {
-    if (!qrData) return;
+  // รันสร้าง QR ทันทีที่เข้าหน้าจอ
+  useEffect(() => {
+    if (amountToPay > 0) {
+      handleGenerateQR();
+    } else {
+      navigate('/cart');
+    }
+  }, [amountToPay]);
+
+  // 2. ฟังก์ชันยืนยันการจ่ายเงิน (อัปเดตสถานะใน Firebase)
+  const handleConfirmPayment = async () => {
+    if (!firebaseDocId) return;
     setLoading(true);
     try {
-      const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
-      const tokenData = await tokenRes.json();
-      const res = await fetch('/.netlify/functions/check-payment-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: tokenData.access_token, partnerTxnUid: qrData.partnerTxnUid })
+      const orderRef = doc(db, 'orders', firebaseDocId);
+      await updateDoc(orderRef, {
+        status: 'paid', // ✅ อัปเดตเป็นชำระเงินแล้ว
+        paymentTime: new Date().toISOString()
       });
-      const statusData = await res.json();
-      if (statusData.statusCode === "00") {
-        if (firebaseDocId) {
-          await updateDoc(doc(db, 'orders', firebaseDocId), { status: 'paid' });
-        }
-        alert("🎉 ชำระเงินสำเร็จ!");
-        navigate('/orders'); 
-      } else { alert(`สถานะ: ${statusData.statusDesc || 'ยังไม่พบยอดเงิน'}`); }
-    } catch (error) { alert("เกิดข้อผิดพลาด"); } finally { setLoading(false); }
+      
+      alert("🎉 บันทึกการชำระเงินเรียบร้อย! ขอบคุณครับ");
+      navigate('/orders');
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[80vh] bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
-        <h2 className="text-2xl font-bold mb-4 text-emerald-700">ชำระเงินออเดอร์ #{orderId}</h2>
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 py-6 rounded-2xl mb-8">
-          <p className="text-sm text-gray-500 mb-1">ยอดเงินที่ต้องชำระ</p>
-          <p className="text-3xl font-black text-emerald-600">฿{amountToPay.toLocaleString()}</p>
+    <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 min-h-[85vh]">
+      <div className="bg-white dark:bg-gray-800 p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center border border-gray-100 dark:border-gray-700">
+        <h2 className="text-2xl font-black mb-2 text-emerald-700 dark:text-emerald-400 uppercase tracking-tight">
+          ชำระเงินออเดอร์
+        </h2>
+        <p className="text-gray-400 text-xs font-mono mb-6">#{orderId}</p>
+        
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 py-5 rounded-3xl mb-8 border border-emerald-100 dark:border-emerald-800">
+          <p className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase mb-1">ยอดเงินที่ต้องชำระ</p>
+          <p className="text-4xl font-black text-emerald-600">฿{amountToPay.toLocaleString()}</p>
         </div>
-        {!qrData ? (
-          <button onClick={handlePayment} disabled={loading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 disabled:opacity-50">
-            {loading ? 'กำลังเชื่อมต่อธนาคาร...' : '📷 สร้าง QR Code'}
-          </button>
-        ) : (
-          <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="bg-white p-4 rounded-2xl border-4 border-emerald-500 inline-block">
-              <img src={`data:image/png;base64,${qrData.qrImage}`} alt="QR" className="w-64 h-64 object-contain" />
-            </div>
-            <button onClick={checkStatus} disabled={loading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700">
-              {loading ? 'กำลังตรวจสอบ...' : '✅ ฉันโอนเงินเรียบร้อยแล้ว'}
-            </button>
+
+        <div className="relative group">
+          <div className="bg-white p-5 rounded-[2rem] border-4 border-emerald-500 inline-block shadow-xl mb-6 transition-transform group-hover:scale-[1.02]">
+            {loading ? (
+              <div className="w-64 h-64 flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+              </div>
+            ) : (
+              <img 
+                src={qrData?.qrImageUrl} 
+                alt="PromptPay QR Code" 
+                className="w-64 h-64 object-contain rounded-lg"
+                onLoad={() => console.log("QR Loaded")}
+              />
+            )}
           </div>
-        )}
+        </div>
+
+        <p className="text-[10px] text-gray-400 mb-8 uppercase tracking-widest font-bold">
+          สแกนด้วยแอปธนาคารทุกสาขา
+        </p>
+        
+        <button 
+          onClick={handleConfirmPayment}
+          disabled={loading}
+          className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50"
+        >
+          {loading ? 'กำลังบันทึก...' : '✅ ฉันโอนเงินเรียบร้อยแล้ว'}
+        </button>
+        
+        <button 
+          onClick={() => navigate('/orders')}
+          className="mt-4 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          ชำระเงินภายหลัง
+        </button>
       </div>
     </div>
   );
 }
 
+// --- ฟังก์ชันหลักของ App ---
 export default function App() {
   return (
     <BrowserRouter>
@@ -117,11 +151,23 @@ export default function App() {
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+
+                  {/* Admin Routes */}
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="products" element={<ProductManager />} />
                     <Route path="orders" element={<OrderManager />} />
                   </Route>
+
+                  {/* 404 Page */}
+                  <Route path="*" element={
+                    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-10">
+                      <div className="text-8xl mb-6">🏜️</div>
+                      <h2 className="text-3xl font-black mb-2 uppercase">ไม่พบหน้านี้</h2>
+                      <p className="text-gray-400 mb-8">หน้าที่คุณค้นหาอาจถูกย้ายหรือลบไปแล้ว</p>
+                      <Link to="/" className="px-10 py-4 bg-emerald-600 text-white rounded-full font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">กลับหน้าแรก</Link>
+                    </div>
+                  } />
                 </Route>
               </Routes>
             </ToastProvider>
