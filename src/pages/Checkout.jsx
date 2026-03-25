@@ -140,7 +140,7 @@ export default function Checkout() {
                                 //         <p className="font-semibold mb-1">สแกน QR Code เพื่อชำระเงิน</p>
                                 //         <p className="text-sm text-gray-500">เปิดแอปธนาคารและสแกน QR Code ด้านบน</p>
                                 //     </div>
-                                // )}
+                                )}
                                 {paymentMethod === 'bank' && (
                                     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 space-y-2 text-sm">
                                         <h4 className="font-bold mb-3">ข้อมูลบัญชีธนาคาร</h4>
