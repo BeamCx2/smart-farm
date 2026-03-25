@@ -64,9 +64,9 @@ export const CATEGORIES = [
 ];
 
 export const ORDER_STATUSES = {
-    pending: { label: 'รอดำเนินการ', color: 'yellow' },
-    paid: { label: 'ชำระแล้ว', color: 'blue' },
-    shipped: { label: 'จัดส่งแล้ว', color: 'purple' },
-    completed: { label: 'เสร็จสิ้น', color: 'green' },
-    cancelled: { label: 'ยกเลิก', color: 'red' },
+    pending: { label: '⏳ รอดำเนินการ', color: 'yellow' },
+    paid: { label: '💰 ชำระเงินแล้ว', color: 'green' },
+    shipped: { label: '🚚 จัดส่งแล้ว', color: 'blue' },
+    completed: { label: '✅ เสร็จสิ้น', color: 'purple' },
+    cancelled: { label: '❌ ยกเลิก', color: 'red' }
 };
