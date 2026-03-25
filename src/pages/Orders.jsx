@@ -11,6 +11,7 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
+  
 
   if (authLoading) {
     return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังตรวจสอบสิทธิ์...</div>;
@@ -20,20 +21,29 @@ export default function Orders() {
     return <Navigate to="/register" replace />;
   }
 
-  useEffect(() => {
+useEffect(() => {
+    if (!user) return;
+
+    // 🚨 สร้าง Query ดึงเฉพาะออเดอร์ของลูกค้านั้นๆ และเรียงจากใหม่ไปเก่า
     const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+        collection(db, 'orders'),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
     );
 
+    // ✅ ใช้ onSnapshot เพื่อให้เวลาแอดมินเปลี่ยนสถานะ หน้าลูกค้าจะเปลี่ยนตามทันที!
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoading(false);
+        const orderData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        setOrders(orderData);
+    }, (error) => {
+        console.error("Error fetching orders:", error);
     });
 
-    return unsubscribe;
-  }, [user]);
+    return () => unsubscribe(); // ล้างการเชื่อมต่อเมื่อปิดหน้า
+}, [user]);
 
   if (loading) return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังโหลดประวัติการสั่งซื้อ...</div>;
 
