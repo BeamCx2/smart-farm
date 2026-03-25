@@ -1,38 +1,22 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-key',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo.firebaseapp.com',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-project',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'demo.appspot.com',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '0',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || '0:0:web:0',
+  apiKey: "AIzaSyBaYn459JOBoCX3PGfEUUW9pzuCxXiFCuA",
+  authDomain: "smart-farm-c69be.firebaseapp.com",
+  databaseURL: "https://smart-farm-c69be-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-farm-c69be",
+  storageBucket: "smart-farm-c69be.firebasestorage.app",
+  messagingSenderId: "139389413918",
+  appId: "1:139389413918:web:46fd439d179bebd051dc0f",
+  measurementId: "G-80E67N6X08"
 };
 
-// Check if Firebase is properly configured (not using demo values)
-export const isFirebaseConfigured = !!(
-    import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-    import.meta.env.VITE_FIREBASE_API_KEY !== 'demo-key'
-);
-
-let app, auth, db, storage;
-
-try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-} catch (e) {
-    console.warn('Firebase initialization failed:', e.message);
-    app = null;
-    auth = { onAuthStateChanged: (_, cb) => { cb(null); return () => { }; } };
-    db = {};
-    storage = {};
-}
-
-export { auth, db, storage };
-export default app;
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
