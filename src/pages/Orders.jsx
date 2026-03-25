@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB, formatDateTime, ORDER_STATUSES } from '../lib/utils';
 
@@ -11,40 +11,22 @@ export default function Orders() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // รอให้ระบบ Auth โหลดเสร็จก่อน
+        // รอให้ระบบ Auth โหลดสถานะเสร็จก่อน
         if (authLoading) return;
 
-async function load() {
-    try {
-        let q;
-        if (user?.uid) {
-            q = query(collection(db, 'orders'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-        } else {
-            q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(10));
-        }
-        const snap = await getDocs(q);
-        setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (err) {
-        console.error(err);
-    } finally {
-        setLoading(false);
-    }
-}
-
+        async function load() {
             try {
                 let q;
-                // 🚨 ปรับ Logic การดึงข้อมูล: 
-                // ถ้าล็อกอิน (มี user.uid) ให้ดึงเฉพาะของตัวเอง
-                // ถ้ายังโหลด User ไม่ติด ให้ลองดึง 10 รายการล่าสุดมาโชว์ก่อนเพื่อเช็คว่าต่อติดไหม
+                // บังคับดึงข้อมูลจาก Firebase
                 if (user?.uid) {
-                    console.log("Fetching orders for user:", user.uid);
+                    console.log("Fetching real orders for UID:", user.uid);
                     q = query(
                         collection(db, 'orders'), 
                         where('userId', '==', user.uid), 
                         orderBy('createdAt', 'desc')
                     );
                 } else {
-                    console.log("Guest mode or Auth pending: Fetching latest orders...");
+                    console.log("No user found, showing latest 10 public orders...");
                     q = query(
                         collection(db, 'orders'), 
                         orderBy('createdAt', 'desc'), 
@@ -53,18 +35,10 @@ async function load() {
                 }
 
                 const snap = await getDocs(q);
-                const data = snap.docs.map((d) => ({ 
-                    id: d.id, 
-                    ...d.data() 
-                }));
-                
-                console.log("Orders found:", data.length);
+                const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 setOrders(data);
-
             } catch (err) {
-                console.error('Error loading orders:', err.message);
-                // 💡 ถ้าใน Console (F12) ขึ้นลิงก์สีแดงๆ ให้คลิกไปกด "Create Index" ใน Firebase นะครับ
-                setOrders([]);
+                console.error("Firebase fetch error:", err.message);
             } finally {
                 setLoading(false);
             }
@@ -83,12 +57,8 @@ async function load() {
 
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-            <div className="flex justify-between items-end mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold mb-2">📋 คำสั่งซื้อของฉัน</h1>
-                    <p className="text-gray-500 dark:text-gray-400">พบ {orders.length} รายการ</p>
-                </div>
-            </div>
+            <h1 className="text-2xl font-bold mb-2">📋 คำสั่งซื้อของฉัน</h1>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">พบ {orders.length} รายการ</p>
 
             {orders.length === 0 ? (
                 <div className="text-center py-16 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
@@ -106,11 +76,13 @@ async function load() {
                                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                                     <div>
                                         <span className="font-bold text-emerald-700 dark:text-emerald-400">#{order.orderId || order.id.slice(0, 8)}</span>
-                                        <span className="text-sm text-gray-400 ml-3">{order.createdAt ? formatDateTime(order.createdAt) : 'กำลังโหลดเวลา...'}</span>
+                                        <span className="text-sm text-gray-400 ml-3">
+                                            {order.createdAt ? formatDateTime(order.createdAt) : 'เพิ่งสั่งซื้อ'}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs text-gray-500 uppercase font-medium tracking-wider">
-                                            {order.paymentMethod === 'promptpay' ? '📱 PromptPay' : '🏦 Bank Transfer'}
+                                            {order.paymentMethod === 'promptpay' ? '📱 PromptPay' : '🏦 โอนเงิน'}
                                         </span>
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold
                                             ${status.color === 'green' ? 'bg-green-100 text-green-700' : ''}
