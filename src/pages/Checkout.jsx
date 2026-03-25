@@ -53,7 +53,8 @@ const handleSubmit = async (e) => {
         setSubmitting(true);
 
         const currentOrderId = generateOrderId();
-        const currentTotal = total; // 🚨 เก็บค่ายอดรวมไว้ในตัวแปรกล่าวก่อนเคลียร์ตะกร้า
+        // 🚨 1. เก็บค่ายอดเงินปัจจุบันไว้ในตัวแปรก่อน (ห้ามใช้ total ตรงๆ หลังจากเคลียร์ตะกร้า)
+        const amountToPay = total; 
 
         const orderData = {
             orderId: currentOrderId,
@@ -68,31 +69,31 @@ const handleSubmit = async (e) => {
             })),
             subtotal, 
             shipping, 
-            total: currentTotal,
-            totalSatang: toSatang(currentTotal),
+            total: amountToPay, // ใช้ค่าที่เราเก็บไว้
+            totalSatang: toSatang(amountToPay),
             paymentMethod,
             status: 'pending',
             createdAt: serverTimestamp(),
         };
 
         try {
-            console.log("🚀 กำลังบันทึกข้อมูลไปที่ Firebase...");
+            console.log("🚀 กำลังบันทึกออเดอร์...");
+            // 2. บันทึกลง Firebase
             const docRef = await addDoc(collection(db, 'orders'), orderData);
             
+            console.log("✅ บันทึกสำเร็จ! กำลังไปหน้าชำระเงินด้วยยอด:", amountToPay);
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
             
-            // 🚨 ย้าย clearCart() มาไว้ตรงนี้ (หลังจากบันทึก DB สำเร็จ)
+            // 3. 🚨 เคลียร์ตะกร้า "หลังจาก" บันทึกสำเร็จ
             clearCart();
 
+            // 4. เปลี่ยนหน้าไปที่ /test-payment
             if (paymentMethod === 'promptpay') {
-                console.log("➡️ กำลังส่งไปหน้าชำระเงินด้วยยอด:", currentTotal);
-                
-                // 🚨 ใช้ currentTotal ที่เราเก็บไว้ แทนการใช้ total จาก Context
                 navigate('/test-payment', { 
                     state: { 
-                        amount: currentTotal,
+                        amount: amountToPay, // ส่งค่าคงที่ไป
                         orderId: currentOrderId,
-                        firebaseDocId: docRef.id
+                        firebaseDocId: docRef.id // ส่ง ID ไปอัปเดตสถานะตอนจ่ายเสร็จ
                     } 
                 });
             } else {
