@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB } from '../lib/utils';
 import { Link, Navigate } from 'react-router-dom'; // 🚨 เพิ่ม Navigate ตรงนี้ด้วย
-
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 export default function Orders() {
   const { user, loading: authLoading } = useAuth(); // 🚨 ดึง loading ของ auth มาด้วย
   const [orders, setOrders] = useState([]);
@@ -55,7 +55,51 @@ export default function Orders() {
       </section>
     );
   }
+function RootRedirect() {
+  const { user, loading } = useAuth();
 
+  // ช่วงที่ Firebase กำลังเช็คสถานะล็อกอิน ให้แสดงหน้าว่างหรือ Loading แวบหนึ่ง
+  if (loading) return null; 
+
+  // 🚨 เงื่อนไข: ถ้ามี User (ล็อกอินแล้ว) ให้ไปหน้า Products 
+  // แต่ถ้าไม่มี (ยังไม่ได้สมัคร) ให้ดีดไปหน้า Register ทันที
+  return user ? <Navigate to="/products" replace /> : <Navigate to="/register" replace />;
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      {/* ... Providers ต่างๆ ของบอส ... */}
+      <Routes>
+        <Route element={<Layout />}>
+          
+          {/* 🚨 จุดที่ต้องแก้: หน้าแรกสุด (/) ให้ใช้ RootRedirect คุม */}
+          <Route path="/" element={<RootRedirect />} />
+
+          {/* หน้าอื่นๆ ของระบบ */}
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/test-payment" element={<PaymentComponent />} />
+          <Route path="/orders" element={<Orders />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="products" element={<ProductManager />} />
+            <Route path="orders" element={<OrderManager />} />
+          </Route>
+
+          {/* 404 Page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
   return (
     <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
       <h1 className="text-2xl font-bold mb-8 flex items-center gap-3">
