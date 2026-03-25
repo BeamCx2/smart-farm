@@ -14,19 +14,8 @@ const firebaseConfig = {
   measurementId: "G-80E67N6X08"
 };
 
-// 1. เพิ่มตัวแปรเช็คว่าใส่ API Key หรือยัง (เพื่อให้หน้า Home ไม่ Error)
 export const isFirebaseConfigured = !!firebaseConfig.apiKey;
-
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// 2. ป้องกัน Error กรณี Analytics รันบน Server (SSR)
-let analytics;
-if (typeof window !== "undefined") {
-  analytics = getAnalytics(app);
-}
-
-export const auth = getAuth(app);
+export const isFirebaseConfigured = true; 
 export const db = getFirestore(app);
-export { analytics };
-export default app;
+export const auth = getAuth(app);
