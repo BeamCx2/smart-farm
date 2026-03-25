@@ -1,6 +1,6 @@
 import { doc, updateDoc } from 'firebase/firestore'; 
-import { db } from './lib/firebase'; // เช็ค Path ให้ถูกนะครับ ปกติคือ ./lib/firebase
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { db } from './lib/firebase'; 
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -30,8 +30,9 @@ function PaymentComponent() {
   // 🚨 ดึงข้อมูลที่ส่งมาจากหน้า Checkout
   const amountToPay = location.state?.amount || 0;
   const orderId = location.state?.orderId || 'N/A';
+  const firebaseDocId = location.state?.firebaseDocId; // 🆔 ID ของเอกสารใน Firebase
 
-  // ถ้าไม่มีข้อมูลยอดเงิน ให้เด้งกลับหน้าตะกร้า (กันคนพิมพ์ URL เข้ามาเล่นๆ)
+  // ถ้าไม่มีข้อมูลยอดเงิน ให้เด้งกลับหน้าตะกร้า
   useEffect(() => {
     if (!amountToPay) {
       navigate('/cart');
@@ -42,14 +43,12 @@ function PaymentComponent() {
   const handlePayment = async () => {
     setLoading(true);
     try {
-      // ดึง Access Token จาก KBank (ผ่าน Function)
       const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
       const tokenData = await tokenRes.json();
       const token = tokenData.access_token;
 
       if (!token) throw new Error("ไม่สามารถขอรหัสเข้าถึงจากธนาคารได้");
 
-      // สร้าง QR Code ตามยอดเงินจริง
       const qrRes = await fetch('/.netlify/functions/generate-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +72,7 @@ function PaymentComponent() {
     }
   };
 
-  // 2. ฟังก์ชันตรวจสอบสถานะการจ่ายเงิน
+  // 2. ฟังก์ชันตรวจสอบสถานะการจ่ายเงิน และ อัปเดต Firebase
   const checkStatus = async () => {
     if (!qrData) return;
     setLoading(true);
@@ -91,9 +90,25 @@ function PaymentComponent() {
       });
 
       const statusData = await res.json();
+
+      // 🚨 ตรวจสอบว่าชำระเงินสำเร็จหรือไม่ (KBank Success Code = "00")
       if (statusData.statusCode === "00") {
+        
+        // ✅ ขั้นตอนสำคัญ: อัปเดตสถานะใน Firebase ให้เป็น 'paid'
+        if (firebaseDocId) {
+          try {
+            const orderRef = doc(db, 'orders', firebaseDocId);
+            await updateDoc(orderRef, {
+              status: 'paid' // เปลี่ยนสถานะเป็นชำระเงินแล้ว
+            });
+            console.log("✅ Firebase updated: Order marked as PAID");
+          } catch (dbErr) {
+            console.error("❌ Failed to update Firebase:", dbErr.message);
+          }
+        }
+
         alert("🎉 ชำระเงินสำเร็จ! ขอบคุณที่อุดหนุนฟาร์มของเรา");
-        navigate('/orders'); // จ่ายเสร็จดีดไปหน้าดูรายการสั่งซื้อเลย
+        navigate('/orders'); 
       } else {
         alert(`สถานะ: ${statusData.statusDesc || 'ยังไม่พบยอดโอน กรุณารอสักครู่แล้วลองใหม่'}`);
       }
@@ -127,12 +142,12 @@ function PaymentComponent() {
           <div className="space-y-6">
             <div className="bg-white p-4 rounded-2xl border-4 border-emerald-500 inline-block shadow-inner">
               <img 
-                src={`data:image/png;base64,${qrData.qrImage}`} 
+                src={qrData.qrImage ? `data:image/png;base64,${qrData.qrImage}` : `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrData.qrCode || '')}`} 
                 alt="KBank PromptPay QR" 
                 className="w-64 h-64 object-contain" 
               />
             </div>
-            <p className="text-xs text-gray-400">QR นี้มีอายุการใช้งาน 15 นาที</p>
+            <p className="text-xs text-gray-400 font-mono">Ref: {qrData.partnerTxnUid}</p>
             
             <div className="flex flex-col gap-3">
               <button 
@@ -142,10 +157,7 @@ function PaymentComponent() {
               >
                 {loading ? 'กำลังตรวจสอบ...' : '✅ ฉันโอนเงินเรียบร้อยแล้ว'}
               </button>
-              <button 
-                onClick={() => setQrData(null)}
-                className="text-sm text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={() => setQrData(null)} className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
                 สร้าง QR ใหม่อีกครั้ง
               </button>
             </div>
