@@ -6,6 +6,28 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
+
+// 1. ตัวอย่างการคำนวณ (ในหน้า Checkout ของคุณน่าจะมีส่วนนี้อยู่แล้ว)
+const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+const shippingFee = 100.00;
+const totalAmount = subtotal + shippingFee; // นี่คือยอดจริงที่จะส่งไป
+
+// 2. ฟังก์ชันเมื่อกดปุ่ม "สั่งซื้อ"
+const handleCheckout = () => {
+  if (totalAmount <= 0) {
+    alert("กรุณาเลือกสินค้าก่อนสั่งซื้อ");
+    return;
+  }
+
+  // ส่งค่า totalAmount ที่คำนวณได้จริงไปยังหน้า Payment
+  navigate('/test-payment', { 
+    state: { 
+      amount: totalAmount,
+      orderId: "ORDER-" + Date.now() // (แถม) ส่งเลขที่สั่งซื้อไปด้วยก็ได้ครับ
+    } 
+  });
+};
 
 const PAYMENT_METHODS = [
     // { id: 'card', label: '💳 บัตรเครดิต / เดบิต', desc: 'Visa, Mastercard, JCB' },
