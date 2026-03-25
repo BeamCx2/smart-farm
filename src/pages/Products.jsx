@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // ✅ เปลี่ยนมาใช้ onSnapshot
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; 
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { CATEGORIES } from '../lib/utils';
 import ProductCard from '../components/products/ProductCard';
-import { getDemoProducts } from './Home';
+
+// ❌ ลบ import { getDemoProducts } ออกแล้วครับ
 
 export default function Products() {
     const [products, setProducts] = useState([]);
@@ -14,13 +15,13 @@ export default function Products() {
     const activeCategory = searchParams.get('category') || 'ทั้งหมด';
 
     useEffect(() => {
+        // ✅ ถ้าไม่ได้ตั้งค่า Firebase ให้เป็นอาเรย์ว่างไปเลย ไม่ต้องใช้ Demo
         if (!isFirebaseConfigured) {
-            setProducts(getDemoProducts());
+            setProducts([]);
             setLoading(false);
             return;
         }
 
-        // 🚨 เปลี่ยนจาก getDocs เป็น onSnapshot เพื่อให้สต๊อกอัปเดตทันทีที่แอดมินแก้หลังบ้าน
         const q = query(
             collection(db, 'products'), 
             where('status', '==', 'active'), 
@@ -32,11 +33,12 @@ export default function Products() {
             setLoading(false);
         }, (error) => {
             console.error("Firestore Error:", error);
-            setProducts(getDemoProducts());
+            // ❌ ไม่ใช้ getDemoProducts() แล้วครับ
+            setProducts([]);
             setLoading(false);
         });
 
-        return () => unsubscribe(); // ล้างการเชื่อมต่อเมื่อปิดหน้า
+        return () => unsubscribe(); 
     }, []);
 
     const filtered = useMemo(() => {
@@ -61,7 +63,7 @@ export default function Products() {
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 min-h-screen">
             <h1 className="text-2xl font-black mb-2 text-gray-800 dark:text-gray-100 uppercase tracking-tight">🛍️ สินค้าทั้งหมด</h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium">เลือกซื้อผักสดและสินค้าเกษตรอินทรีย์คุณภาพส่งตรงจากฟาร์ม</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium">ผักสดคุณภาพส่งตรงจากฟาร์ม อัปเดตสต๊อกเรียลไทม์</p>
 
             {/* Search Box */}
             <div className="relative max-w-md mb-8 group">
@@ -75,7 +77,7 @@ export default function Products() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="ค้นหาชื่อผัก หรือรายละเอียด..."
-                    className="w-full pl-12 pr-4 py-4 rounded-[1.5rem] border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:border-emerald-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-emerald-400/10 transition-all outline-none shadow-sm"
+                    className="w-full pl-12 pr-4 py-4 rounded-[1.5rem] border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm focus:border-emerald-400 outline-none transition-all shadow-sm"
                 />
             </div>
 
@@ -105,8 +107,8 @@ export default function Products() {
             ) : filtered.length === 0 ? (
                 <div className="text-center py-24 bg-gray-50/50 dark:bg-gray-800/20 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-700">
                     <div className="text-7xl mb-6">🥗</div>
-                    <h3 className="text-xl font-black mb-2 uppercase">ไม่พบสินค้าที่คุณต้องการ</h3>
-                    <p className="text-gray-400 max-w-xs mx-auto text-sm">ลองเปลี่ยนคำค้นหา หรือเลือกหมวดหมู่สินค้าประเภทอื่นดูนะครับ</p>
+                    <h3 className="text-xl font-black mb-2 uppercase">ไม่พบสินค้าในระบบ</h3>
+                    <p className="text-gray-400 max-w-xs mx-auto text-sm">หากไม่มีสินค้าขึ้น บอสลองเข้าไปเพิ่มสินค้าในหน้าแอดมินก่อนนะครับ</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
