@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../lib/firebase'; // มั่นใจว่าไฟล์นี้ส่งออก db และ auth มาแล้ว
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -37,16 +37,17 @@ export default function Checkout() {
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+    // --- ฟังก์ชันหลักในการส่งคำสั่งซื้อ ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
 
         const currentOrderId = generateOrderId();
 
-        // 1. เตรียมข้อมูลออเดอร์
-        const order = {
+        // 1. เตรียมข้อมูลออเดอร์สำหรับ Firebase
+        const orderData = {
             orderId: currentOrderId,
-            userId: user?.uid || 'guest',
+            userId: user?.uid || 'guest', // เช็คจาก AuthContext หรือ Firebase Auth
             customer: { ...form },
             items: items.map((i) => ({ 
                 id: i.id, 
@@ -61,20 +62,23 @@ export default function Checkout() {
             totalSatang: toSatang(total),
             paymentMethod,
             status: 'pending',
-            createdAt: serverTimestamp(),
+            createdAt: serverTimestamp(), // บันทึกเวลาฝั่ง Server
         };
 
         try {
-            // 2. พยายามบันทึกลง Firebase (จะสำเร็จได้ต้องเคลียร์เรื่อง Billing 400 บาทก่อน)
-            console.log("Saving order to Firebase...");
-            await addDoc(collection(db, 'orders'), order);
+            // 2. บันทึกข้อมูลลง Firestore (Collection: orders)
+            console.log("กำลังบันทึกข้อมูลไปที่ Firebase...");
+            const docRef = await addDoc(collection(db, 'orders'), orderData);
+            console.log("บันทึกออเดอร์สำเร็จ ID:", docRef.id);
             
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
+            
+            // 3. ล้างตะกร้าสินค้า
             clearCart();
 
-            // 3. ไปหน้าถัดไปตามวิธีชำระเงิน
+            // 4. ไปหน้าถัดไปตามวิธีชำระเงินที่เลือก
             if (paymentMethod === 'promptpay') {
-                // ส่ง total ไปหน้าจ่ายเงินกสิกร
+                // ส่งยอดเงินจริงไปหน้าจ่ายเงินกสิกร
                 navigate('/test-payment', { 
                     state: { 
                         amount: total,
@@ -82,17 +86,13 @@ export default function Checkout() {
                     } 
                 });
             } else {
+                // ถ้าโอนเงินธรรมดา ไปหน้าประวัติคำสั่งซื้อ
                 navigate('/orders');
             }
 
         } catch (err) {
             console.error('Firestore Error:', err.message);
-            // กรณี Billing ติดขัด เราจะแจ้งเตือนแต่ยังยอมให้ไปหน้าถัดไปเพื่อทดสอบ UI
-            addToast('ติดปัญหาการบันทึกข้อมูล แต่คุณสามารถทดสอบหน้าจ่ายเงินได้', 'warning');
-            
-            if (paymentMethod === 'promptpay') {
-                navigate('/test-payment', { state: { amount: total } });
-            }
+            addToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + err.message, 'error');
         } finally {
             setSubmitting(false);
         }
@@ -143,7 +143,7 @@ export default function Checkout() {
                             </div>
                         </div>
 
-                        {/* เลือกวิธีชำระเงิน */}
+                        {/* วิธีชำระเงิน */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                             <h3 className="font-bold mb-5">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
@@ -160,7 +160,7 @@ export default function Checkout() {
                         </div>
                     </div>
 
-                    {/* สรุปราคา */}
+                    {/* สรุปคำสั่งซื้อ */}
                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 h-fit lg:sticky lg:top-24">
                         <h3 className="font-bold text-lg mb-4">📋 สรุปคำสั่งซื้อ</h3>
                         <div className="max-h-60 overflow-y-auto space-y-3 mb-4">
@@ -184,14 +184,4 @@ export default function Checkout() {
                         </div>
                         <button
                             type="submit"
-                            disabled={submitting}
-                            className="w-full mt-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {submitting ? 'กำลังดำเนินการ...' : `✅ สั่งซื้อ — ${formatTHB(total)}`}
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </section>
-    );
-}
+                            disabled={sub
