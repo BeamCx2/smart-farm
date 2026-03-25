@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// 🚨 เพิ่ม limit เข้ามาใน import
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,14 +14,13 @@ export default function Orders() {
         // รอให้ระบบ Auth โหลดเสร็จก่อน
         if (authLoading) return;
 
-        async function load() {
-            // เช็คว่าเชื่อม Firebase ติดไหม
-            if (!isFirebaseConfigured) {
-                console.warn("Firebase is not configured.");
-                setOrders([]);
-                setLoading(false);
-                return;
-            }
+async function load() {
+    if (!isFirebaseConfigured) { // 👈 ลบก้อน if นี้ทิ้งไปเลยครับ
+        setOrders([]);
+        setLoading(false);
+        return;
+    }
+}
 
             try {
                 let q;
