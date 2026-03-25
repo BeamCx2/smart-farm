@@ -16,15 +16,22 @@ export default function ProductManager() {
     const { addToast } = useToast();
 
     // 1. โหลดข้อมูลสินค้า
-    const load = async () => {
-        try {
-            const snap = await getDocs(collection(db, 'products'));
-            setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        } catch (err) {
-            addToast('ไม่สามารถโหลดข้อมูลได้', 'error');
-        }
+const load = async () => {
+    try {
+        setLoading(true);
+        // ดึงแบบตรงๆ ไม่ต้อง Filter อะไรทั้งสิ้นเพื่อเช็คว่า Data มาไหม
+        const snap = await getDocs(collection(db, 'products'));
+        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        
+        console.log("Data from Firebase:", data); // ดูใน Console ว่ามาไหม
+        setProducts(data);
+    } catch (err) {
+        console.error("Load Error:", err);
+        addToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+    } finally {
         setLoading(false);
-    };
+    }
+};
 
     useEffect(() => { load(); }, []);
 
