@@ -27,33 +27,45 @@ export default function Checkout() {
 
     if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
     if (!user) return <Navigate to="/login" replace />;
-    if (items.length === 0) return <Navigate to="/cart" replace />;
+
+    // 🚨 จุดแก้มหากาพย์: ห้ามดีดกลับถ้ากำลัง Submitting อยู่ (ป้องกันหน้าขาว/เด้งกลับ)
+    if (items.length === 0 && !submitting) {
+        return <Navigate to="/cart" replace />;
+    }
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (submitting) return;
         setSubmitting(true);
 
         const currentOrderId = generateOrderId();
-        const amountToPay = total; // 🚨 เก็บค่ายอดเงินไว้ก่อนป้องกันตะกร้าว่าง
+        const amountToPay = total; // เก็บค่ายอดเงินไว้ก่อนตะกร้าจะว่าง
 
         const orderData = {
             orderId: currentOrderId,
             userId: user.uid,
             customer: { ...form },
             items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, image: i.image || '' })),
-            subtotal, shipping, total: amountToPay,
+            subtotal, 
+            shipping, 
+            total: amountToPay,
             totalSatang: toSatang(amountToPay),
-            paymentMethod, status: 'pending',
+            paymentMethod, 
+            status: 'pending',
             createdAt: serverTimestamp(),
         };
 
         try {
+            console.log("🚀 บันทึกออเดอร์ลง Firebase...");
             const docRef = await addDoc(collection(db, 'orders'), orderData);
+            
+            // ✅ บันทึกสำเร็จแล้ว ค่อยจัดการเรื่องเปลี่ยนหน้า
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
 
             if (paymentMethod === 'promptpay') {
+                // ➡️ ไปหน้าจ่ายเงิน พร้อมส่งข้อมูลที่จำเป็น
                 navigate('/test-payment', { 
                     state: { 
                         amount: amountToPay, 
@@ -65,37 +77,64 @@ export default function Checkout() {
                 navigate('/orders');
             }
 
-            // 🚨 ย้ายมาเคลียร์ตะกร้าบรรทัดสุดท้าย
-            clearCart(); 
+            // 🚨 ล้างตะกร้าเป็นลำดับสุดท้ายจริงๆ เพื่อให้ Navigate ทำงานจบก่อน
+            setTimeout(() => clearCart(), 100);
 
         } catch (err) {
             console.error('Firestore Error:', err.message);
             addToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
-        } finally {
-            setSubmitting(false);
+            setSubmitting(false); // ถ้า Error ให้ปลดล็อคเพื่อให้แก้ข้อมูลได้
         }
     };
 
     return (
-        <section className="max-w-7xl mx-auto px-4 py-10">
-            <h1 className="text-2xl font-bold mb-8 text-emerald-700">💳 ชำระเงิน</h1>
+        <section className="max-w-7xl mx-auto px-4 py-10 min-h-screen">
+            <h1 className="text-2xl font-bold mb-8 text-emerald-700 flex items-center gap-2">
+                <span>💳 ชำระเงิน</span>
+            </h1>
+            
             <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-                        <h3 className="font-bold mb-5">📍 ข้อมูลจัดส่ง</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <input name="name" value={form.name} onChange={handleChange} placeholder="ชื่อ-นามสกุล" required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50 dark:bg-gray-800 outline-none focus:border-emerald-500" />
-                            <input name="phone" value={form.phone} onChange={handleChange} placeholder="เบอร์โทรศัพท์" required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50 dark:bg-gray-800 outline-none focus:border-emerald-500" />
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+                        <h3 className="font-bold mb-6 text-lg">📍 ข้อมูลจัดส่ง</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-600">ชื่อ-นามสกุล</label>
+                                <input name="name" value={form.name} onChange={handleChange} required className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-gray-50 dark:bg-gray-800 focus:border-emerald-500 outline-none transition-all" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-600">เบอร์โทรศัพท์</label>
+                                <input name="phone" value={form.phone} onChange={handleChange} required type="tel" className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-gray-50 dark:bg-gray-800 focus:border-emerald-500 outline-none transition-all" />
+                            </div>
                         </div>
-                        <input name="address" value={form.address} onChange={handleChange} placeholder="ที่อยู่" required className="w-full mt-4 px-4 py-3 rounded-xl border-2 border-gray-100 bg-gray-50 dark:bg-gray-800 outline-none focus:border-emerald-500" />
+                        <div className="mt-5 space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">ที่อยู่จัดส่งโดยละเอียด</label>
+                            <textarea name="address" value={form.address} onChange={handleChange} required rows="3" className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-gray-50 dark:bg-gray-800 focus:border-emerald-500 outline-none transition-all" />
+                        </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 h-fit lg:sticky lg:top-24">
-                    <h3 className="font-bold text-lg mb-4">สรุปยอดชำระ</h3>
-                    <div className="text-2xl font-bold text-emerald-600 mb-6">{formatTHB(total)}</div>
-                    <button type="submit" disabled={submitting} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all disabled:opacity-50">
-                        {submitting ? 'กำลังส่งข้อมูล...' : '✅ ยืนยันการสั่งซื้อ'}
-                    </button>
+
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-xl border border-gray-50 dark:border-gray-800 h-fit lg:sticky lg:top-24">
+                        <h3 className="font-bold text-xl mb-6">สรุปยอดชำระ</h3>
+                        <div className="space-y-4 mb-8">
+                            <div className="flex justify-between text-gray-500"><span>ราคาสินค้า</span><span>{formatTHB(subtotal)}</span></div>
+                            <div className="flex justify-between text-gray-500"><span>ค่าจัดส่ง</span><span>{shipping === 0 ? 'ฟรี' : formatTHB(shipping)}</span></div>
+                            <div className="border-t pt-4 flex justify-between items-end">
+                                <span className="font-bold">ยอดสุทธิ</span>
+                                <span className="text-3xl font-black text-emerald-600">{formatTHB(total)}</span>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            disabled={submitting} 
+                            className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
+                        >
+                            {submitting ? 'กำลังบันทึกข้อมูล...' : '✅ ยืนยันการสั่งซื้อ'}
+                        </button>
+                        <p className="text-center text-xs text-gray-400 mt-4">ระบบจะพาคุณไปที่หน้าชำระเงิน PromptPay</p>
+                    </div>
                 </div>
             </form>
         </section>
