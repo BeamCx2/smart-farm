@@ -104,30 +104,8 @@ const handleUpdateStock = async (productId, currentStock, amount) => {
   } catch (e) {
     addToast('อัปเดตสต๊อกไม่สำเร็จ', 'error');
   }
-};
+}
 
-// --- ในส่วนของ JSX (ตารางสินค้า) ---
-<td className="px-5 py-3">
-  <div className="flex items-center gap-3">
-    <button 
-      onClick={() => handleUpdateStock(p.id, p.stock, -1)}
-      className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-    >
-      -
-    </button>
-    
-    <span className={`font-bold w-10 text-center ${p.stock < 10 ? 'text-red-500' : 'text-gray-700'}`}>
-      {p.stock}
-    </span>
-    
-    <button 
-      onClick={() => handleUpdateStock(p.id, p.stock, 1)}
-      className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100"
-    >
-      +
-    </button>
-  </div>
-</td>
 // --- ในส่วนของ JSX (ตารางสินค้า) ---
 <td className="px-5 py-3">
   <div className="flex items-center gap-3">
