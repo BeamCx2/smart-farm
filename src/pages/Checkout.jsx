@@ -184,4 +184,14 @@ export default function Checkout() {
                         </div>
                         <button
                             type="submit"
-                            disabled={sub
+                            disabled={submitting}
+                            className="w-full mt-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {submitting ? 'กำลังดำเนินการ...' : `✅ สั่งซื้อ — ${formatTHB(total)}`}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    );
+}
