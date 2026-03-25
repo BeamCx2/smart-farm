@@ -1,17 +1,48 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB } from '../lib/utils';
-import { Link, Navigate, useNavigate } from 'react-router-dom'; // ✅ เพิ่ม useNavigate ตรงนี้ครับ
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 export default function Orders() {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate(); // ✅ ประกาศตัวแปร navigate
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
-  
+
+  useEffect(() => {
+    if (!user) return;
+
+    // 🚨 ดึงข้อมูลโดยไม่ใช้ orderBy เพื่อเลี่ยงปัญหา Index ค้าง
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const orderData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // ✅ เรียงลำดับเองที่ฝั่งลูกค้า (ใหม่ไปเก่า)
+      const sortedOrders = orderData.sort((a, b) => {
+        const dateA = a.createdAt?.seconds || 0;
+        const dateB = b.createdAt?.seconds || 0;
+        return dateB - dateA;
+      });
+
+      setOrders(sortedOrders);
+      setLoading(false); 
+    }, (error) => {
+      console.error("Error fetching orders:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   if (authLoading) {
     return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังตรวจสอบสิทธิ์...</div>;
@@ -21,50 +52,16 @@ export default function Orders() {
     return <Navigate to="/register" replace />;
   }
 
-// ใน useEffect ของ Orders.jsx
-useEffect(() => {
-    if (!user) return;
-
-    // 🚨 เอา orderBy ออกจาก Query เพื่อเลี่ยงการใช้ Index
-    const q = query(
-        collection(db, 'orders'),
-        where('userId', '==', user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const orderData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-
-        // ✅ มาเรียงลำดับเองที่ฝั่งลูกค้า (Client-side sorting)
-        const sortedOrders = orderData.sort((a, b) => {
-            const dateA = a.createdAt?.seconds || 0;
-            const dateB = b.createdAt?.seconds || 0;
-            return dateB - dateA; // ใหม่ไปเก่า
-        });
-
-        setOrders(sortedOrders);
-        setLoading(false); // 👈 อย่าลืมปิด Loading ตรงนี้ด้วยครับบอส!
-    }, (error) => {
-        console.error("Error:", error);
-        setLoading(false);
-    });
-
-    return () => unsubscribe();
-}, [user]);
-
-    return () => unsubscribe(); // ล้างการเชื่อมต่อเมื่อปิดหน้า
-}, [user]);
-
-  if (loading) return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังโหลดประวัติการสั่งซื้อ...</div>;
+  if (loading) {
+    return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังโหลดประวัติการสั่งซื้อ...</div>;
+  }
 
   if (orders.length === 0) {
     return (
       <section className="max-w-4xl mx-auto px-4 py-20 text-center">
         <div className="text-8xl mb-6">📦</div>
-        <h2 className="text-2xl font-bold mb-2 text-gray-800">ยังไม่มีประวัติการสั่งซื้อ</h2>
-        <p className="text-gray-500 mb-8">เริ่มสั่งซื้อสินค้าสดๆ จากฟาร์มของเราได้เลยตอนนี้</p>
+        <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">ยังไม่มีประวัติการสั่งซื้อ</h2>
+        <p className="text-gray-500 mb-8 font-medium">เริ่มสั่งซื้อสินค้าสดๆ จากฟาร์มของเราได้เลยตอนนี้</p>
         <Link to="/products" className="inline-block px-10 py-4 bg-emerald-600 text-white rounded-full font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
           ไปช้อปเลย
         </Link>
@@ -75,8 +72,8 @@ useEffect(() => {
   return (
     <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
       <h1 className="text-2xl font-bold mb-8 flex items-center gap-3">
-        <span>📜 คำสั่งซื้อของฉัน</span>
-        <span className="text-sm font-medium px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500">
+        <span className="text-gray-800 dark:text-gray-100 uppercase tracking-tight">📜 คำสั่งซื้อของฉัน</span>
+        <span className="text-[10px] font-black px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-400 uppercase tracking-widest">
           {orders.length} รายการ
         </span>
       </h1>
@@ -85,10 +82,10 @@ useEffect(() => {
         {orders.map((order) => (
           <div 
             key={order.id} 
-            className={`bg-white dark:bg-gray-900 rounded-[2rem] border transition-all duration-300 overflow-hidden ${
+            className={`bg-white dark:bg-gray-900 rounded-[2.5rem] border transition-all duration-300 overflow-hidden ${
               expandedId === order.id 
               ? 'border-emerald-500 shadow-xl shadow-emerald-500/10' 
-              : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200 shadow-sm'
+              : 'border-gray-50 dark:border-gray-800 hover:border-emerald-200 shadow-sm'
             }`}
           >
             <div 
@@ -96,38 +93,39 @@ useEffect(() => {
               onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-xl">
-                  {order.status === 'paid' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
+                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                   {order.status === 'shipped' ? '🚚' : order.status === 'paid' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-800 dark:text-gray-100">#{order.orderId || order.id.slice(0, 8)}</h3>
+                  <h3 className="font-black text-gray-800 dark:text-gray-100 tracking-tight">#{order.orderId || order.id.slice(0, 8)}</h3>
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
-                    {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'Loading...'}
+                    {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'กำลังโหลดวันที่...'}
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center gap-6 ml-auto">
                 <div className="text-right hidden sm:block">
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">ยอดสุทธิ</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-[0.15em] mb-0.5">ยอดสุทธิ</p>
                   <p className="font-black text-emerald-600 text-lg">{formatTHB(order.total)}</p>
                 </div>
                 
                 <div className="flex flex-col items-end gap-2">
-                  <span className={`px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-tight ${
+                  <span className={`px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-tight ${
+                    order.status === 'shipped' ? 'bg-blue-100 text-blue-600' :
                     order.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 
                     order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
                     'bg-amber-100 text-amber-600'
                   }`}>
-                    {order.status === 'paid' ? 'ชำระแล้ว' : 
+                    {order.status === 'shipped' ? 'จัดส่งแล้ว' : 
+                     order.status === 'paid' ? 'ชำระแล้ว' : 
                      order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
                   </span>
 
-                  {/* 🚨 ปุ่มชำระเงินสำหรับออเดอร์ที่ค้างชำระ */}
                   {order.status === 'pending' && (
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // กันไม่ให้กดแล้วไปกาง Accordion
+                        e.stopPropagation();
                         navigate('/test-payment', { 
                           state: { 
                             amount: order.total, 
@@ -136,7 +134,7 @@ useEffect(() => {
                           } 
                         });
                       }}
-                      className="text-[10px] bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+                      className="text-[9px] bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
                     >
                       💳 ชำระเงินที่นี่
                     </button>
@@ -144,19 +142,19 @@ useEffect(() => {
                 </div>
 
                 <span className={`text-gray-300 transition-transform duration-300 ${expandedId === order.id ? 'rotate-180' : ''}`}>
-                  ▼
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path d="m19 9-7 7-7-7" /></svg>
                 </span>
               </div>
             </div>
 
             {expandedId === order.id && (
-              <div className="px-8 pb-8 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 animate-in fade-in slide-in-from-top-3">
+              <div className="px-8 pb-8 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/20 animate-in fade-in slide-in-from-top-3">
                 <div className="py-4">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em]">สรุปรายการสินค้า</h4>
+                  <h4 className="text-[10px] font-black text-gray-300 uppercase mb-5 tracking-[0.2em]">รายการสั่งซื้อ</h4>
                   <div className="space-y-4">
                     {order.items?.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-5">
-                        <div className="w-14 h-14 rounded-2xl bg-white overflow-hidden shrink-0 border border-gray-100 shadow-sm p-1">
+                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 overflow-hidden shrink-0 border border-gray-100 dark:border-gray-700 shadow-sm p-1">
                           <img 
                             src={item.image || 'https://placehold.co/100x100?text=ผัก'} 
                             alt={item.name} 
@@ -173,18 +171,18 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-200/60 dark:border-gray-700/60 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/50 dark:bg-gray-800/50 p-5 rounded-3xl border border-gray-100 dark:border-gray-700">
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-[0.2em]">จัดส่งที่</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
-                      <span className="text-gray-900 dark:text-white font-bold">{order.customer?.name}</span> <span className="text-xs text-gray-400">({order.customer?.phone})</span><br />
+                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/50 dark:bg-gray-800/50 p-5 rounded-3xl border border-gray-50 dark:border-gray-700">
+                    <h4 className="text-[10px] font-black text-gray-300 uppercase mb-3 tracking-[0.2em]">ข้อมูลที่อยู่</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-bold">
+                      <span className="text-gray-800 dark:text-white">{order.customer?.name}</span> <span className="text-gray-400 font-medium">({order.customer?.phone})</span><br />
                       {order.customer?.address} {order.customer?.district}<br />
                       {order.customer?.province} {order.customer?.zipcode}
                     </p>
                   </div>
                   <div className="flex flex-col justify-end items-end space-y-1">
-                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">การชำระเงิน</p>
-                     <p className="text-sm font-black text-gray-700 dark:text-gray-200 uppercase">{order.paymentMethod || 'PromptPay'}</p>
+                     <p className="text-[10px] text-gray-300 font-black uppercase tracking-widest">การชำระเงิน</p>
+                     <p className="text-xs font-black text-emerald-600 uppercase bg-emerald-50 dark:bg-emerald-900/10 px-3 py-1 rounded-lg border border-emerald-100 dark:border-emerald-800">{order.paymentMethod || 'PromptPay'}</p>
                   </div>
                 </div>
               </div>
