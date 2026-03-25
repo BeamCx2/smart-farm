@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -17,50 +17,47 @@ import Register from './pages/Register';
 import Dashboard from './pages/admin/Dashboard';
 import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
-import { useLocation } from 'react-router-dom';
-// 1. ตัด export default ออก ให้เหลือแค่ function ธรรมดา
-// ... (imports เดิมของคุณ)
 
+// --- ฟังก์ชันสำหรับหน้าชำระเงิน ---
 function PaymentComponent() {
   const location = useLocation();
-  // ดึงยอดเงินที่ส่งมา ถ้าไม่มีให้ใช้ 1.00 เป็นค่าเริ่มต้น (ป้องกัน Error)
-  const amountToPay = location.state?.amount || 1.00; 
+  const [qrData, setQrData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  // ดึงยอดเงินที่ส่งมาจากหน้า Checkout (ถ้าไม่มีให้ใช้ 1.00)
+  const amountToPay = location.state?.amount || 1.00;
+
+  // 1. ฟังก์ชันสร้าง QR Code
   const handlePayment = async () => {
     setLoading(true);
     try {
       const tokenRes = await fetch('/.netlify/functions/get-kbank-token');
       const tokenData = await tokenRes.json();
-      
-      // ส่ง amountToPay ไปที่ฟังก์ชันสร้าง QR ด้วย
+      const token = tokenData.access_token;
+
+      if (!token) throw new Error("Token ไม่มาตามนัด");
+
       const qrRes = await fetch('/.netlify/functions/generate-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          accessToken: tokenData.access_token, 
-          amount: amountToPay // 👈 ใช้ยอดเงินจริงจากตะกร้าแล้ว!
+          accessToken: token, 
+          amount: amountToPay 
         })
       });
-      
       const qrResult = await qrRes.json();
-      // ... โค้ดส่วนที่เหลือเหมือนเดิม ...
+
+      if (qrResult.qrImage || qrResult.qrCode) {
+        setQrData(qrResult);
+      } else {
+        alert("KBank: " + (qrResult.message || "สร้าง QR ไม่สำเร็จ"));
+      }
     } catch (error) {
       alert("ระบบขัดข้อง: " + error.message);
     } finally {
       setLoading(false);
     }
   };
-
-  return (
-    <div>
-      {/* แก้ไขหัวข้อให้โชว์ยอดเงินจริง */}
-      <button onClick={handlePayment}>
-        {loading ? 'กำลังดำเนินการ...' : `สร้าง QR ${amountToPay} บาท`}
-      </button>
-      {/* ... */}
-    </div>
-  );
-}
 
   // 2. ฟังก์ชันตรวจสอบสถานะ (Inquiry)
   const checkStatus = async () => {
@@ -93,23 +90,25 @@ function PaymentComponent() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4">
+    <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg m-4 min-h-[400px]">
       <h2 className="text-xl font-bold mb-6 text-emerald-700">ระบบชำระเงิน Smart Farm</h2>
       
+      <p className="mb-4 text-lg font-semibold text-gray-700">
+        ยอดชำระทั้งหมด: <span className="text-emerald-600">฿{amountToPay.toLocaleString()}</span>
+      </p>
+
       <button 
         onClick={handlePayment} 
         disabled={loading}
         className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md"
       >
-        {loading ? 'กำลังดำเนินการ...' : 'สร้าง QR 1 บาท'}
+        {loading && !qrData ? 'กำลังดำเนินการ...' : qrData ? 'สร้าง QR ใหม่' : `สร้าง QR ${amountToPay} บาท`}
       </button>
 
       {qrData && (
         <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-500">
           <p className="mb-3 font-semibold text-emerald-800 underline decoration-emerald-200 decoration-4">สแกนชำระเงิน</p>
           <div className="bg-white p-4 rounded-2xl border-2 border-emerald-500 shadow-xl">
-            
-            {/* 🚨 ส่วนที่เปลี่ยน: เช็คว่า KBank ส่งไฟล์ภาพ หรือส่งมาแค่ข้อความ 🚨 */}
             {qrData.qrImage ? (
               <img 
                 src={`data:image/png;base64,${qrData.qrImage}`} 
@@ -123,8 +122,6 @@ function PaymentComponent() {
                 className="w-64 h-64 object-contain" 
               />
             )}
-            {/* 🚨 จบส่วนที่เปลี่ยน 🚨 */}
-
           </div>
           <p className="mt-4 text-xs text-gray-400 font-mono">Ref: {qrData.partnerTxnUid}</p>
 
@@ -139,8 +136,9 @@ function PaymentComponent() {
       )}
     </div>
   );
-} // ปิดฟังก์ชัน PaymentComponent (ตัวเดียวพอครับ!)
+}
 
+// --- ฟังก์ชันหลักของ App ---
 export default function App() {
   return (
     <BrowserRouter>
@@ -156,7 +154,7 @@ export default function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   
-                  {/* 2. เพิ่มทางเข้าหน้าทดสอบจ่ายเงินตรงนี้ */}
+                  {/* ทางเข้าหน้าทดสอบจ่ายเงิน */}
                   <Route path="/test-payment" element={<PaymentComponent />} />
 
                   <Route path="/orders" element={<Orders />} />
