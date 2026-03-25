@@ -15,10 +15,19 @@ export default function Orders() {
         if (authLoading) return;
 
 async function load() {
-    if (!isFirebaseConfigured) { // 👈 ลบก้อน if นี้ทิ้งไปเลยครับ
-        setOrders([]);
+    try {
+        let q;
+        if (user?.uid) {
+            q = query(collection(db, 'orders'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+        } else {
+            q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(10));
+        }
+        const snap = await getDocs(q);
+        setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+        console.error(err);
+    } finally {
         setLoading(false);
-        return;
     }
 }
 
