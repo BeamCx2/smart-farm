@@ -3,12 +3,13 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB } from '../lib/utils';
+import { Link } from 'react-router-dom'; // 🚨 เพิ่มตัวนี้ด้วยครับบอส
 
 export default function Orders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState(null); // 🚨 สำหรับเก็บว่ากำลังเปิดดูออเดอร์ไหน
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -27,14 +28,16 @@ export default function Orders() {
     return unsubscribe;
   }, [user]);
 
-  if (loading) return <div className="p-20 text-center text-emerald-600 animate-pulse">กำลังโหลดประวัติการสั่งซื้อ...</div>;
+  if (loading) return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังโหลดประวัติการสั่งซื้อ...</div>;
 
-  return (
+  // ✅ ย้ายมาไว้ตรงนี้ (หลัง loading และต้องอยู่ในฟังก์ชัน Orders)
+  if (orders.length === 0) {
+    return (
       <section className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <div className="text-6xl mb-4">📦</div>
-        <h2 className="text-xl font-bold mb-2">ยังไม่มีประวัติการสั่งซื้อ</h2>
+        <div className="text-8xl mb-6">📦</div>
+        <h2 className="text-2xl font-bold mb-2">ยังไม่มีประวัติการสั่งซื้อ</h2>
         <p className="text-gray-500 mb-8">เริ่มสั่งซื้อสินค้าสดๆ จากฟาร์มของเราได้เลยตอนนี้</p>
-        <Link to="/products" className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold shadow-lg shadow-emerald-600/20">
+        <Link to="/products" className="inline-block px-10 py-4 bg-emerald-600 text-white rounded-full font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
           ไปช้อปเลย
         </Link>
       </section>
@@ -42,18 +45,22 @@ export default function Orders() {
   }
 
   return (
-    <section className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+    <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
+      <h1 className="text-2xl font-bold mb-8 flex items-center gap-3">
         <span>📜 คำสั่งซื้อของฉัน</span>
-        <span className="text-sm font-normal text-gray-400">({orders.length} รายการ)</span>
+        <span className="text-sm font-medium px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500">
+          {orders.length} รายการ
+        </span>
       </h1>
 
       <div className="space-y-4">
         {orders.map((order) => (
           <div 
             key={order.id} 
-            className={`bg-white dark:bg-gray-900 rounded-3xl border shadow-sm overflow-hidden transition-all ${
-              expandedId === order.id ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200'
+            className={`bg-white dark:bg-gray-900 rounded-[2rem] border transition-all duration-300 overflow-hidden ${
+              expandedId === order.id 
+              ? 'border-emerald-500 shadow-xl shadow-emerald-500/10' 
+              : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200 shadow-sm'
             }`}
           >
             {/* Header */}
@@ -61,20 +68,25 @@ export default function Orders() {
               className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer select-none"
               onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
             >
-              <div>
-                <h3 className="font-bold text-emerald-700 dark:text-emerald-400">#{order.orderId || order.id.slice(0, 8)}</h3>
-                <p className="text-xs text-gray-400 mt-1">
-                  {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'กำลังโหลด...'}
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-xl">
+                  {order.status === 'paid' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 dark:text-gray-100">#{order.orderId || order.id.slice(0, 8)}</h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
+                    {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'Loading...'}
+                  </p>
+                </div>
               </div>
               
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 ml-auto">
                 <div className="text-right hidden sm:block">
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">ยอดสุทธิ</p>
-                  <p className="font-black text-emerald-600">{formatTHB(order.total)}</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">ยอดสุทธิ</p>
+                  <p className="font-black text-emerald-600 text-lg">{formatTHB(order.total)}</p>
                 </div>
                 
-                <span className={`px-4 py-1.5 rounded-full text-xs font-bold ${
+                <span className={`px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-tight ${
                   order.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 
                   order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
                   'bg-amber-100 text-amber-600'
@@ -89,40 +101,48 @@ export default function Orders() {
               </div>
             </div>
 
-            {/* Details (Accordion) */}
+            {/* Content (Accordion) */}
             {expandedId === order.id && (
-              <div className="px-6 pb-6 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 animate-in fade-in slide-in-from-top-2">
-                <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-4 tracking-[0.2em]">รายการสินค้า</h4>
-                <div className="space-y-3">
-                  {order.items?.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
-                        <img 
-                          src={item.image || 'https://placehold.co/100x100?text=ผัก'} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover"
-                        />
+              <div className="px-8 pb-8 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 animate-in fade-in slide-in-from-top-3">
+                <div className="py-4">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em]">สรุปรายการสินค้า</h4>
+                  <div className="space-y-4">
+                    {order.items?.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-white overflow-hidden shrink-0 border border-gray-100 shadow-sm p-1">
+                          <img 
+                            src={item.image || 'https://placehold.co/100x100?text=PRODUCT'} 
+                            alt={item.name} 
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">{item.name}</p>
+                          <p className="text-xs text-gray-500 font-medium">{formatTHB(item.price)} x {item.qty}</p>
+                        </div>
+                        <p className="font-black text-sm text-gray-700 dark:text-gray-200">{formatTHB(item.price * item.qty)}</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate">{item.name}</p>
-                        <p className="text-xs text-gray-500">{formatTHB(item.price)} x {item.qty}</p>
-                      </div>
-                      <p className="font-bold text-sm">{formatTHB(item.price * item.qty)}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                {/* Shipping Info */}
-                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-[0.2em]">ที่อยู่จัดส่ง</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                      <strong>{order.customer?.name}</strong> <span className="text-gray-400">({order.customer?.phone})</span><br />
-                      {order.customer?.address} {order.customer?.district} {order.customer?.province} {order.customer?.zipcode}
+                {/* Footer Info */}
+                <div className="mt-6 pt-6 border-t border-gray-200/60 dark:border-gray-700/60 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/50 dark:bg-gray-800/50 p-5 rounded-3xl border border-gray-100 dark:border-gray-700">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-[0.2em]">จัดส่งที่</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
+                      <span className="text-gray-900 dark:text-white font-bold">{order.customer?.name}</span> <span className="text-xs text-gray-400">({order.customer?.phone})</span><br />
+                      {order.customer?.address} {order.customer?.district}<br />
+                      {order.customer?.province} {order.customer?.zipcode}
                     </p>
                   </div>
-                  <div className="sm:text-right flex flex-col sm:justify-end">
-                     <p className="text-xs text-gray-400">วิธีชำระเงิน: <span className="text-gray-900 dark:text-gray-100 font-medium uppercase">{order.paymentMethod || 'PromptPay'}</span></p>
+                  <div className="flex flex-col justify-end items-end space-y-1">
+                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">การชำระเงิน</p>
+                     <p className="text-sm font-black text-gray-700 dark:text-gray-200 uppercase">{order.paymentMethod || 'PromptPay'}</p>
+                     <div className="pt-2 sm:hidden text-right w-full">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">ยอดรวมทั้งสิ้น</p>
+                        <p className="font-black text-emerald-600 text-xl">{formatTHB(order.total)}</p>
+                     </div>
                   </div>
                 </div>
               </div>
@@ -132,3 +152,4 @@ export default function Orders() {
       </div>
     </section>
   );
+}
