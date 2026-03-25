@@ -81,27 +81,33 @@ export default function ProductManager() {
         reader.readAsDataURL(file);
     };
 
-    const handleSave = async (e) => {
-        e.preventDefault();
-        if (!form.name || !form.price || !form.category) { addToast('กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-        setSaving(true);
-        const data = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) || 0 };
-        try {
-            if (editId) {
-                await updateDoc(doc(db, 'products', editId), data);
-                addToast('แก้ไขสินค้าสำเร็จ!', 'success');
-            } else {
-                await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
-                addToast('เพิ่มสินค้าสำเร็จ!', 'success');
-            }
-            setModalOpen(false);
-            load();
-        } catch (err) {
-            addToast('ไม่สามารถบันทึกได้: ' + err.message, 'error');
-        } finally {
-            setSaving(false);
-        }
+    // 🚨 แก้ไขจุดนี้ในไฟล์ ProductManager.jsx
+const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    // บังคับให้สต๊อกเป็น Number ก่อนส่งขึ้น Cloud
+    const data = { 
+        ...form, 
+        price: Number(form.price), 
+        stock: Number(form.stock) || 0 // ✅ มั่นใจว่าเป็นตัวเลข
     };
+
+    try {
+        if (editId) {
+            await updateDoc(doc(db, 'products', editId), data);
+        } else {
+            await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
+        }
+        addToast('บันทึกสต๊อกลง Firebase แล้ว!', 'success');
+        setModalOpen(false);
+        load();
+    } catch (err) {
+        addToast('Error: ' + err.message, 'error');
+    } finally {
+        setSaving(false);
+    }
+};
 
     const handleDelete = async (id) => {
         if (!confirm('คุณต้องการลบสินค้านี้?')) return;
