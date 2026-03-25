@@ -3,29 +3,26 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB } from '../lib/utils';
-import { Link, Navigate } from 'react-router-dom'; // 🚨 เพิ่ม Navigate ตรงนี้ด้วย
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom'; // ✅ รวมไว้ที่บรรทัดเดียวพอครับ
+
 export default function Orders() {
-  const { user, loading: authLoading } = useAuth(); // 🚨 ดึง loading ของ auth มาด้วย
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
 
-  // 🚨 1. ถ้า Auth กำลังโหลด ให้โชว์ Loading ก่อน
+  // 1. เช็คว่าโหลด Auth เสร็จหรือยัง
   if (authLoading) {
     return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังตรวจสอบสิทธิ์...</div>;
   }
 
-  // 🚨 2. ถ้าไม่มี User (ไม่ได้ล็อกอิน) ให้ดีดไปหน้าสมัครสมาชิกทันที
+  // 2. ถ้าไม่ได้ล็อกอิน ให้ดีดไปหน้าสมัครสมาชิก
   if (!user) {
     return <Navigate to="/register" replace />;
   }
 
-  // ... โค้ด useEffect และ logic อื่นๆ ของเดิมของบอส ...
-
+  // 3. ดึงข้อมูลจาก Firebase
   useEffect(() => {
-    if (!user) return;
-
     const q = query(
       collection(db, 'orders'),
       where('userId', '==', user.uid),
@@ -42,12 +39,11 @@ export default function Orders() {
 
   if (loading) return <div className="p-20 text-center text-emerald-600 animate-pulse font-bold">กำลังโหลดประวัติการสั่งซื้อ...</div>;
 
-  // ✅ ย้ายมาไว้ตรงนี้ (หลัง loading และต้องอยู่ในฟังก์ชัน Orders)
   if (orders.length === 0) {
     return (
       <section className="max-w-4xl mx-auto px-4 py-20 text-center">
         <div className="text-8xl mb-6">📦</div>
-        <h2 className="text-2xl font-bold mb-2">ยังไม่มีประวัติการสั่งซื้อ</h2>
+        <h2 className="text-2xl font-bold mb-2 text-gray-800">ยังไม่มีประวัติการสั่งซื้อ</h2>
         <p className="text-gray-500 mb-8">เริ่มสั่งซื้อสินค้าสดๆ จากฟาร์มของเราได้เลยตอนนี้</p>
         <Link to="/products" className="inline-block px-10 py-4 bg-emerald-600 text-white rounded-full font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
           ไปช้อปเลย
@@ -55,51 +51,7 @@ export default function Orders() {
       </section>
     );
   }
-function RootRedirect() {
-  const { user, loading } = useAuth();
 
-  // ช่วงที่ Firebase กำลังเช็คสถานะล็อกอิน ให้แสดงหน้าว่างหรือ Loading แวบหนึ่ง
-  if (loading) return null; 
-
-  // 🚨 เงื่อนไข: ถ้ามี User (ล็อกอินแล้ว) ให้ไปหน้า Products 
-  // แต่ถ้าไม่มี (ยังไม่ได้สมัคร) ให้ดีดไปหน้า Register ทันที
-  return user ? <Navigate to="/products" replace /> : <Navigate to="/register" replace />;
-}
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      {/* ... Providers ต่างๆ ของบอส ... */}
-      <Routes>
-        <Route element={<Layout />}>
-          
-          {/* 🚨 จุดที่ต้องแก้: หน้าแรกสุด (/) ให้ใช้ RootRedirect คุม */}
-          <Route path="/" element={<RootRedirect />} />
-
-          {/* หน้าอื่นๆ ของระบบ */}
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/test-payment" element={<PaymentComponent />} />
-          <Route path="/orders" element={<Orders />} />
-
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="products" element={<ProductManager />} />
-            <Route path="orders" element={<OrderManager />} />
-          </Route>
-
-          {/* 404 Page */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
-}
   return (
     <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
       <h1 className="text-2xl font-bold mb-8 flex items-center gap-3">
@@ -119,7 +71,6 @@ export default function App() {
               : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200 shadow-sm'
             }`}
           >
-            {/* Header */}
             <div 
               className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer select-none"
               onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
@@ -157,7 +108,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Content (Accordion) */}
             {expandedId === order.id && (
               <div className="px-8 pb-8 pt-2 border-t border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 animate-in fade-in slide-in-from-top-3">
                 <div className="py-4">
@@ -167,7 +117,7 @@ export default function App() {
                       <div key={idx} className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-2xl bg-white overflow-hidden shrink-0 border border-gray-100 shadow-sm p-1">
                           <img 
-                            src={item.image || 'https://placehold.co/100x100?text=PRODUCT'} 
+                            src={item.image || 'https://placehold.co/100x100?text=ผัก'} 
                             alt={item.name} 
                             className="w-full h-full object-cover rounded-xl"
                           />
@@ -182,7 +132,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Footer Info */}
                 <div className="mt-6 pt-6 border-t border-gray-200/60 dark:border-gray-700/60 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white/50 dark:bg-gray-800/50 p-5 rounded-3xl border border-gray-100 dark:border-gray-700">
                     <h4 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-[0.2em]">จัดส่งที่</h4>
@@ -195,10 +144,6 @@ export default function App() {
                   <div className="flex flex-col justify-end items-end space-y-1">
                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">การชำระเงิน</p>
                      <p className="text-sm font-black text-gray-700 dark:text-gray-200 uppercase">{order.paymentMethod || 'PromptPay'}</p>
-                     <div className="pt-2 sm:hidden text-right w-full">
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">ยอดรวมทั้งสิ้น</p>
-                        <p className="font-black text-emerald-600 text-xl">{formatTHB(order.total)}</p>
-                     </div>
                   </div>
                 </div>
               </div>
