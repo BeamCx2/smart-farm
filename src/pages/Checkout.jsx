@@ -6,31 +6,8 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
-import { useNavigate } from 'react-router-dom';
-
-// 1. ตัวอย่างการคำนวณ (ในหน้า Checkout ของคุณน่าจะมีส่วนนี้อยู่แล้ว)
-const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-const shippingFee = 100.00;
-const totalAmount = subtotal + shippingFee; // นี่คือยอดจริงที่จะส่งไป
-
-// 2. ฟังก์ชันเมื่อกดปุ่ม "สั่งซื้อ"
-const handleCheckout = () => {
-  if (totalAmount <= 0) {
-    alert("กรุณาเลือกสินค้าก่อนสั่งซื้อ");
-    return;
-  }
-
-  // ส่งค่า totalAmount ที่คำนวณได้จริงไปยังหน้า Payment
-  navigate('/test-payment', { 
-    state: { 
-      amount: totalAmount,
-      orderId: "ORDER-" + Date.now() // (แถม) ส่งเลขที่สั่งซื้อไปด้วยก็ได้ครับ
-    } 
-  });
-};
 
 const PAYMENT_METHODS = [
-    // { id: 'card', label: '💳 บัตรเครดิต / เดบิต', desc: 'Visa, Mastercard, JCB' },
     { id: 'promptpay', label: '📱 PromptPay QR', desc: 'สแกนจ่ายผ่าน QR Code' },
     { id: 'bank', label: '🏦 โอนเงินผ่านธนาคาร', desc: 'โอนตรงเข้าบัญชี' },
 ];
@@ -40,11 +17,18 @@ export default function Checkout() {
     const { user } = useAuth();
     const { addToast } = useToast();
     const navigate = useNavigate();
-    const [paymentMethod, setPaymentMethod] = useState('card');
+    
+    // ตั้งค่าเริ่มต้นเป็น promptpay เพื่อให้ตรงกับระบบที่เราทำไว้
+    const [paymentMethod, setPaymentMethod] = useState('promptpay');
     const [submitting, setSubmitting] = useState(false);
     const [form, setForm] = useState({
-        name: user?.displayName || '', phone: '', email: user?.email || '',
-        address: '', district: '', province: '', zipcode: '',
+        name: user?.displayName || '', 
+        phone: '', 
+        email: user?.email || '',
+        address: '', 
+        district: '', 
+        province: '', 
+        zipcode: '',
     });
 
     if (items.length === 0) {
@@ -58,12 +42,16 @@ export default function Checkout() {
         e.preventDefault();
         setSubmitting(true);
 
+        const currentOrderId = generateOrderId();
+
         const order = {
-            orderId: generateOrderId(),
+            orderId: currentOrderId,
             userId: user?.uid || 'guest',
             customer: { ...form },
             items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, image: i.image })),
-            subtotal, shipping, total,
+            subtotal, 
+            shipping, 
+            total,
             totalSatang: toSatang(total),
             paymentMethod,
             status: 'pending',
@@ -71,15 +59,32 @@ export default function Checkout() {
         };
 
         try {
+            // 1. บันทึกข้อมูลลง Firebase
             await addDoc(collection(db, 'orders'), order);
-        } catch (e) {
-            console.warn('Could not save order to Firestore:', e.message);
-        }
+            
+            addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
+            clearCart();
 
-        clearCart();
-        addToast('สั่งซื้อสำเร็จ!', 'success');
-        navigate('/orders');
-        setSubmitting(false);
+            // 2. ตรวจสอบวิธีชำระเงิน
+            if (paymentMethod === 'promptpay') {
+                // ถ้าเป็น PromptPay ให้กระโดดไปหน้าจ่ายเงิน พร้อมส่งยอด total ไปด้วย
+                navigate('/test-payment', { 
+                    state: { 
+                        amount: total,
+                        orderId: currentOrderId 
+                    } 
+                });
+            } else {
+                // ถ้าเป็นโอนเงินปกติ ให้ไปหน้าดูรายการสั่งซื้อ
+                navigate('/orders');
+            }
+
+        } catch (err) {
+            console.error('Error:', err.message);
+            addToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -91,7 +96,6 @@ export default function Checkout() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left — Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Shipping */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                             <h3 className="font-bold mb-5">📍 ข้อมูลจัดส่ง</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -128,7 +132,6 @@ export default function Checkout() {
                             </div>
                         </div>
 
-                        {/* Payment */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                             <h3 className="font-bold mb-5">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
@@ -141,37 +144,6 @@ export default function Checkout() {
                                         </div>
                                     </label>
                                 ))}
-                            </div>
-
-                            {/* Payment details */}
-                            <div className="mt-6">
-                                {paymentMethod === 'card' && (
-                                    <div className="space-y-4">
-                                        <div><label className="block text-sm font-semibold mb-1.5">หมายเลขบัตร</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="1234 5678 9012 3456" maxLength={19} /></div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div><label className="block text-sm font-semibold mb-1.5">วันหมดอายุ</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="MM/YY" maxLength={5} /></div>
-                                            <div><label className="block text-sm font-semibold mb-1.5">CVV</label><input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="123" maxLength={4} type="password" /></div>
-                                        </div>
-                                    </div>
-                                // )}
-                                // {paymentMethod === 'promptpay' && (
-                                //     <div className="text-center py-6">
-                                //         <div className="w-48 h-48 mx-auto mb-4 bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center">
-                                //             <svg viewBox="0 0 200 200" width="160" height="160"><rect width="200" height="200" fill="white" /><g fill="black"><rect x="10" y="10" width="50" height="50" /><rect x="18" y="18" width="34" height="34" fill="white" /><rect x="26" y="26" width="18" height="18" /><rect x="140" y="10" width="50" height="50" /><rect x="148" y="18" width="34" height="34" fill="white" /><rect x="156" y="26" width="18" height="18" /><rect x="10" y="140" width="50" height="50" /><rect x="18" y="148" width="34" height="34" fill="white" /><rect x="26" y="156" width="18" height="18" />{Array.from({ length: 80 }, (_, i) => { const x = 70 + (i % 8) * 8; const y = 10 + Math.floor(i / 8) * 8; return Math.random() > 0.5 ? `<rect x="${x}" y="${y}" width="7" height="7"/>` : ''; }).join('')}</g></svg>
-                                //         </div>
-                                //         <p className="font-semibold mb-1">สแกน QR Code เพื่อชำระเงิน</p>
-                                //         <p className="text-sm text-gray-500">เปิดแอปธนาคารและสแกน QR Code ด้านบน</p>
-                                //     </div>
-                                )}
-                                {paymentMethod === 'bank' && (
-                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 space-y-2 text-sm">
-                                        <h4 className="font-bold mb-3">ข้อมูลบัญชีธนาคาร</h4>
-                                        <div className="flex justify-between"><span className="text-gray-500">ธนาคาร</span><strong>กสิกรไทย (KBank)</strong></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">ชื่อบัญชี</span><strong>Smart Farm จำกัด</strong></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">เลขบัญชี</span><strong>123-4-56789-0</strong></div>
-                                        <p className="text-xs text-gray-400 mt-3">กรุณาโอนยอดที่ถูกต้องและใช้หมายเลขคำสั่งซื้อเป็นอ้างอิง</p>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
