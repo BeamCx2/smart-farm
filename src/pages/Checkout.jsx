@@ -53,7 +53,7 @@ const handleSubmit = async (e) => {
         setSubmitting(true);
 
         const currentOrderId = generateOrderId();
-        // 🚨 1. เก็บค่ายอดเงินปัจจุบันไว้ในตัวแปรก่อน (ห้ามใช้ total ตรงๆ หลังจากเคลียร์ตะกร้า)
+        // 🚨 1. เก็บค่ายอดเงินปัจจุบันไว้ในตัวแปรแยก (ป้องกันค่าหายตอนเคลียร์ตะกร้า)
         const amountToPay = total; 
 
         const orderData = {
@@ -69,7 +69,7 @@ const handleSubmit = async (e) => {
             })),
             subtotal, 
             shipping, 
-            total: amountToPay, // ใช้ค่าที่เราเก็บไว้
+            total: amountToPay,
             totalSatang: toSatang(amountToPay),
             paymentMethod,
             status: 'pending',
@@ -78,27 +78,26 @@ const handleSubmit = async (e) => {
 
         try {
             console.log("🚀 กำลังบันทึกออเดอร์...");
-            // 2. บันทึกลง Firebase
             const docRef = await addDoc(collection(db, 'orders'), orderData);
             
-            console.log("✅ บันทึกสำเร็จ! กำลังไปหน้าชำระเงินด้วยยอด:", amountToPay);
+            console.log("✅ บันทึกสำเร็จ! กำลังไปหน้าชำระเงิน...");
             addToast('บันทึกคำสั่งซื้อเรียบร้อย', 'success');
-            
-            // 3. 🚨 เคลียร์ตะกร้า "หลังจาก" บันทึกสำเร็จ
-            clearCart();
 
-            // 4. เปลี่ยนหน้าไปที่ /test-payment
+            // 🚨 2. เปลี่ยนหน้าไปก่อน แล้วค่อยเคลียร์ตะกร้าทีหลัง หรือส่งค่า amountToPay ไป
             if (paymentMethod === 'promptpay') {
                 navigate('/test-payment', { 
                     state: { 
-                        amount: amountToPay, // ส่งค่าคงที่ไป
+                        amount: amountToPay, // ใช้ตัวแปรที่เก็บไว้
                         orderId: currentOrderId,
-                        firebaseDocId: docRef.id // ส่ง ID ไปอัปเดตสถานะตอนจ่ายเสร็จ
+                        firebaseDocId: docRef.id 
                     } 
                 });
             } else {
                 navigate('/orders');
             }
+            
+            // 🚨 3. ย้ายมาไว้บรรทัดสุดท้ายตรงนี้ครับ
+            clearCart();
 
         } catch (err) {
             console.error('Firestore Error:', err.message);
