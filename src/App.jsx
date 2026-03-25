@@ -1,3 +1,5 @@
+import { doc, updateDoc } from 'firebase/firestore'; 
+import { db } from './lib/firebase'; // เช็ค Path ให้ถูกนะครับ ปกติคือ ./lib/firebase
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
