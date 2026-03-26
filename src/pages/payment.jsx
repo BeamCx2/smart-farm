@@ -37,44 +37,47 @@ export default function Payment() {
 
   // 🚀 ฟังก์ชันอัปโหลดสลิปและอัปเดตสถานะ
   // 🚀 แก้ฟังก์ชันอัปโหลดสลิปใน Payment.jsx (จุดที่ Error)
+// 🚀 แก้ฟังก์ชันอัปโหลดสลิปใน Payment.jsx
 const handleUploadSlip = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-  setUploading(true);
-  try {
-    // 1. อัปโหลดไป Storage (อันนี้ผ่านแล้ว)
-    const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
+    setUploading(true);
+    try {
+        // 1. อัปโหลดรูปไปที่ Firebase Storage (อันนี้บอสทำผ่านแล้ว)
+        const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
 
-    // 2. ค้นหาเอกสารในคอลเลกชัน 'orders' ที่มีฟิลด์ orderId ตรงกับที่เรามี
-    const { collection, query, where, getDocs, updateDoc, doc } = await import('firebase/firestore');
-    const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('orderId', '==', orderId)); // หาออเดอร์ที่ orderId ตรงกัน
-    const querySnapshot = await getDocs(q);
+        // 2. ใช้ query ค้นหาออเดอร์จาก 'orderId' ที่เก็บไว้ข้างใน (แทนการระบุ Document ID)
+        const { collection, query, where, getDocs, updateDoc } = await import('firebase/firestore');
+        const ordersRef = collection(db, 'orders');
+        const q = query(ordersRef, where('orderId', '==', orderId)); // หาชิ้นที่ orderId ตรงกัน
+        const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
-      // ถ้าเจอ ให้หยิบเอกสารตัวแรกมาอัปเดต
-      const orderDoc = querySnapshot.docs[0].ref;
-      await updateDoc(orderDoc, {
-        status: 'waiting_verify',
-        slipUrl: downloadURL,
-        updatedAt: new Date()
-      });
-      alert("อัปโหลดสลิปสำเร็จ! รอแอดมินตรวจสอบครับ");
-      navigate('/orders');
-    } else {
-      alert("หาออเดอร์ไม่เจอในระบบครับบอส!");
-      console.error("Order ID not found in Firestore:", orderId);
+        if (!querySnapshot.empty) {
+            // ✅ ถ้าเจอ (ซึ่งต้องเจออยู่แล้ว) ให้หยิบชิ้นแรกมาอัปเดต
+            const orderDoc = querySnapshot.docs[0].ref;
+            await updateDoc(orderDoc, {
+                status: 'waiting_verify', // เปลี่ยนสถานะเป็นรอตรวจสอบ
+                slipUrl: downloadURL,      // เก็บ URL รูปสลิป
+                updatedAt: new Date()
+            });
+
+            alert("อัปโหลดสลิปสำเร็จ! รอแอดมินตรวจสอบครับ");
+            navigate('/orders'); // โอนเสร็จส่งกลับหน้าออเดอร์
+        } else {
+            // 🚨 ถ้า Error 8101 หรือหาไม่เจอ จะเด้งตรงนี้
+            console.error("หา Order ID ใน Firestore ไม่เจอครับบอส:", orderId);
+            alert("ไม่พบข้อมูลออเดอร์ในระบบ กรุณาตรวจสอบอีกครั้ง");
+        }
+
+    } catch (error) {
+        console.error("Upload Error:", error);
+        alert("อัปโหลดพลาดครับบอส! เช็ค Console ดูรายละเอียดนะ");
+    } finally {
+        setUploading(false);
     }
-
-  } catch (error) {
-    console.error("Upload Error:", error);
-    alert("อัปโหลดพลาดครับบอส!");
-  } finally {
-    setUploading(false);
-  }
 };
 
   return (
