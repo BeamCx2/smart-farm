@@ -193,4 +193,4 @@ export default function Checkout() {
             </form>
         </section>
     );
-} // <--- ตัวนี้คือตัวปิดฟังก์ชัน Checkout ที่หายไปครับ!
+}
