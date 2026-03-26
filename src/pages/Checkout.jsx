@@ -7,6 +7,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
 
+// ✅ ประกาศตัวแปรชำระเงิน (ไว้นอก Component)
+const PAYMENT_METHODS = [
+    { id: 'promptpay', label: '📱 PromptPay QR', desc: 'สแกนจ่ายผ่าน QR Code' },
+    { id: 'bank', label: '🏦 โอนเงินผ่านธนาคาร', desc: 'โอนตรงเข้าบัญชี' },
+];
+
 export default function Checkout() {
     const { items, subtotal, shipping, total, clearCart } = useCart();
     const { user, loading: authLoading } = useAuth();
@@ -16,7 +22,7 @@ export default function Checkout() {
     const [submitting, setSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('promptpay');
     
-    // ✅ State สำหรับฐานข้อมูลที่อยู่
+    // ✅ ฐานข้อมูลที่อยู่
     const [allAddresses, setAllAddresses] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOptions, setShowOptions] = useState(false);
@@ -32,13 +38,11 @@ export default function Checkout() {
         zipcode: '',    
     });
 
-    // ✅ 1. ดึงข้อมูลและกางโครงสร้าง (Flatten) ให้ถูกต้องตาม Format ของ API
+    // ✅ 1. โหลดข้อมูลที่อยู่จาก GitHub API
     useEffect(() => {
         fetch('https://raw.githubusercontent.com/earthchie/jquery.Thailand.js/master/jquery.Thailand.js/database/db.json')
             .then(res => res.json())
             .then(result => {
-                // API ตัวนี้เก็บข้อมูลเป็น Array ซ้อน Array [ตำบล, อำเภอ, จังหวัด, รหัส]
-                // เราต้องแปลงให้เป็น Object เพื่อให้ filter ทำงานได้ครับ
                 if (result && result.data) {
                     const mappedData = result.data.map(item => ({
                         district: item[0],
@@ -49,13 +53,10 @@ export default function Checkout() {
                     setAllAddresses(mappedData);
                 }
             })
-            .catch(err => {
-                console.error("Error fetching address database:", err);
-                addToast("โหลดข้อมูลที่อยู่ไม่สำเร็จ กรุณาลองใหม่", "error");
-            });
+            .catch(err => console.error("Error fetching address:", err));
     }, []);
 
-    // ✅ 2. ระบบค้นหา (ใช้ useMemo เพื่อความลื่นไหล)
+    // ✅ 2. ระบบค้นหา (Search)
     const filteredResults = useMemo(() => {
         const query = searchTerm.trim();
         if (query.length < 2 || !Array.isArray(allAddresses)) return [];
@@ -134,6 +135,7 @@ export default function Checkout() {
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
+                        {/* 🏠 ส่วนที่อยู่จัดส่ง */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold mb-5 flex items-center gap-2 text-emerald-700">📍 ข้อมูลจัดส่ง</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -142,7 +144,6 @@ export default function Checkout() {
                             </div>
                             <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 mt-4" placeholder="บ้านเลขที่, หมู่, ซอย, ถนน *" />
 
-                            {/* 🚀 ระบบ Search ที่แก้ปัญหาหน้าขาวแล้ว */}
                             <div className="mt-6 relative">
                                 <label className="block text-sm font-bold mb-1.5 text-emerald-600 uppercase tracking-wider">🔎 ค้นหา ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์</label>
                                 <input 
@@ -150,12 +151,11 @@ export default function Checkout() {
                                     onChange={(e) => { setSearchTerm(e.target.value); setShowOptions(true); }}
                                     onFocus={() => setShowOptions(true)}
                                     className="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 bg-emerald-50/30 outline-none focus:border-emerald-400 font-medium"
-                                    placeholder={allAddresses.length === 0 ? "กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา... (เช่น ลาดยาว หรือ 10900)"}
+                                    placeholder={allAddresses.length === 0 ? "กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา..."}
                                     disabled={allAddresses.length === 0}
                                 />
-                                
                                 {showOptions && filteredResults.length > 0 && (
-                                    <div className="absolute z-50 w-full mt-2 bg-white border border-emerald-50 rounded-2xl shadow-2xl max-h-72 overflow-y-auto border-gray-200">
+                                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-72 overflow-y-auto">
                                         {filteredResults.map((addr, idx) => (
                                             <div key={idx} onClick={() => handleSelectAddress(addr)} className="px-5 py-3 hover:bg-emerald-50 cursor-pointer text-sm border-b border-gray-50 transition-colors">
                                                 <span className="font-bold text-emerald-800">{addr.district}</span> » {addr.amphoe} » {addr.province} » <span className="text-gray-400">{addr.zipcode}</span>
@@ -165,32 +165,39 @@ export default function Checkout() {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
                                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">ตำบล</p>
-                                    <p className="text-sm font-semibold text-gray-700">{form.district || '-'}</p>
+                                    <p className="font-bold text-gray-400 mb-1">ตำบล</p>
+                                    <p className="font-semibold text-gray-700">{form.district || '-'}</p>
                                 </div>
                                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">อำเภอ</p>
-                                    <p className="text-sm font-semibold text-gray-700">{form.amphoe || '-'}</p>
+                                    <p className="font-bold text-gray-400 mb-1">อำเภอ</p>
+                                    <p className="font-semibold text-gray-700">{form.amphoe || '-'}</p>
                                 </div>
                                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">จังหวัด</p>
-                                    <p className="text-sm font-semibold text-gray-700">{form.province || '-'}</p>
+                                    <p className="font-bold text-gray-400 mb-1">จังหวัด</p>
+                                    <p className="font-semibold text-gray-700">{form.province || '-'}</p>
                                 </div>
                                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">รหัสไปรษณีย์</p>
-                                    <p className="text-sm font-semibold text-gray-700">{form.zipcode || '-'}</p>
+                                    <p className="font-bold text-gray-400 mb-1">รหัสไปรษณีย์</p>
+                                    <p className="font-semibold text-gray-700">{form.zipcode || '-'}</p>
                                 </div>
                             </div>
                         </div>
 
+                        {/* 💰 ส่วนชำระเงิน (ตัวการที่หายไปเมื่อกี้) */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold mb-5 text-emerald-700">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
                                 {PAYMENT_METHODS.map((m) => (
                                     <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
-                                        <input type="radio" checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-4 h-4" />
+                                        <input 
+                                            type="radio" 
+                                            name="payment-method"
+                                            checked={paymentMethod === m.id} 
+                                            onChange={() => setPaymentMethod(m.id)} 
+                                            className="accent-emerald-600 w-4 h-4" 
+                                        />
                                         <div>
                                             <div className="font-semibold text-sm">{m.label}</div>
                                             <div className="text-xs text-gray-500">{m.desc}</div>
@@ -201,6 +208,7 @@ export default function Checkout() {
                         </div>
                     </div>
 
+                    {/* สรุปรายการ */}
                     <div className="bg-white rounded-2xl p-8 shadow-md h-fit lg:sticky lg:top-24 border border-gray-100">
                         <h3 className="font-bold text-lg mb-4 text-emerald-900">📋 สรุปรายการ</h3>
                         <div className="flex justify-between text-lg font-black pt-1 text-emerald-900 mb-6"><span>ยอดสุทธิ</span><span>{formatTHB(total)}</span></div>
