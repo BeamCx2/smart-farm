@@ -13,13 +13,9 @@ function OrderTimer({ createdAt }) {
         if (!createdAt || !createdAt.seconds) return;
 
         const calculateTime = () => {
-            // 1. เวลาเริ่มจาก Firebase (วินาที)
             const startTime = createdAt.seconds;
-            // 2. เวลาหมดอายุ (สร้าง + 24 ชม.)
             const expiryTime = startTime + (24 * 60 * 60);
-            // 3. เวลาปัจจุบันของเครื่องลูกค้า (วินาที)
             const now = Math.floor(Date.now() / 1000);
-            
             const diff = expiryTime - now;
 
             if (diff <= 0) {
@@ -28,8 +24,6 @@ function OrderTimer({ createdAt }) {
                 const h = Math.floor(diff / 3600);
                 const m = Math.floor((diff % 3600) / 60);
                 const s = diff % 60;
-                
-                // Format: 23:59:59
                 setTimeLeft(`${h.toString().padStart(2, '0')}ชม. ${m.toString().padStart(2, '0')}น. ${s.toString().padStart(2, '0')}ว.`);
             }
         };
@@ -63,7 +57,6 @@ export default function Orders() {
                 ...doc.data()
             }));
 
-            // จัดเรียงตามเวลาล่าสุด
             const sortedOrders = orderData.sort((a, b) => {
                 const dateA = a.createdAt?.seconds || 0;
                 const dateB = b.createdAt?.seconds || 0;
@@ -101,6 +94,8 @@ export default function Orders() {
             <div className="space-y-6">
                 {orders.map((order) => {
                     const isPending = order.status === 'pending';
+                    const isShipped = order.status === 'shipped';
+                    
                     return (
                         <div key={order.id} className={`bg-white rounded-[2.5rem] border transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md
                             ${isPending ? 'border-amber-200 ring-4 ring-amber-50' : 'border-gray-100'}`}>
@@ -109,8 +104,8 @@ export default function Orders() {
                                 {/* Left Section: ID & Date */}
                                 <div className="flex items-center gap-5 cursor-pointer flex-1" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
                                     <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-inner
-                                        ${isPending ? 'bg-amber-50 text-amber-500' : 'bg-gray-50 text-emerald-500'}`}>
-                                        {order.status === 'completed' || order.status === 'paid' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
+                                        ${isPending ? 'bg-amber-50 text-amber-500' : isShipped ? 'bg-blue-50 text-blue-500' : 'bg-gray-50 text-emerald-500'}`}>
+                                        {order.status === 'finished' || order.status === 'paid' ? '✅' : order.status === 'shipped' ? '🚚' : order.status === 'cancelled' ? '❌' : '⏳'}
                                     </div>
                                     <div>
                                         <h3 className="font-black text-gray-900 text-base tracking-tight">#{order.orderId || order.id.slice(0, 8)}</h3>
@@ -129,6 +124,15 @@ export default function Orders() {
                                                 </p>
                                             </div>
                                         )}
+
+                                        {/* ✨ แสดงเลขพัสดุให้ลูกค้าเห็นตรงนี้ครับ */}
+                                        {isShipped && order.trackingNumber && (
+                                            <div className="mt-2 flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 w-fit animate-in fade-in zoom-in duration-500">
+                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                                    📍 เลขพัสดุ: <span className="select-all">{order.trackingNumber}</span>
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -142,9 +146,13 @@ export default function Orders() {
                                     <div className="flex flex-col items-end gap-3">
                                         <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border
                                             ${isPending ? 'bg-amber-100 text-amber-600 border-amber-200' : 
+                                              isShipped ? 'bg-blue-100 text-blue-600 border-blue-200' :
                                               order.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' : 
                                               'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                                            {order.status === 'paid' ? 'ชำระเงินแล้ว' : order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
+                                            {order.status === 'paid' ? 'ชำระเงินแล้ว' : 
+                                             order.status === 'shipped' ? 'จัดส่งแล้ว' :
+                                             order.status === 'finished' ? 'สำเร็จแล้ว' :
+                                             order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
                                         </span>
 
                                         {isPending && (
