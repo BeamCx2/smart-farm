@@ -100,11 +100,10 @@ export default function Orders() {
                                     <p className="text-gray-900 text-xl leading-none">{formatTHB(order.total)}</p>
                                 </div>
                                 
-                                {/* 🚀 📍 ส่วนของปุ่มตามสถานะ 📍 🚀 */}
                                 {isPending ? (
                                     <button
                                         onClick={(e) => {
-                                            e.stopPropagation(); // กันไม่ให้ไปเปิด Modal
+                                            e.stopPropagation();
                                             navigate('/payment', { 
                                                 state: { 
                                                     amount: order.total, 
@@ -130,7 +129,7 @@ export default function Orders() {
                 })}
             </div>
 
-            {/* Modal รายละเอียด (เหมือนเดิม) */}
+            {/* 🚀 Modal รายละเอียด (ฉบับสมบูรณ์ ดึงที่อยู่ละเอียด) */}
             {viewOrder && (
                 <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
                     <div className="bg-white rounded-[3.5rem] p-10 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl scale-in-center font-black">
@@ -148,10 +147,16 @@ export default function Orders() {
                         )}
 
                         <div className="space-y-6">
-                            <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100">
-                                <p className="text-[10px] text-gray-300 uppercase tracking-widest mb-3 leading-none">📍 Shipping Address</p>
+                            {/* 📍 ส่วนที่อยู่จัดส่งแบบละเอียด */}
+                            <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 font-black">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-3 leading-none">📍 Shipping Address</p>
                                 <p className="text-gray-900 text-sm mb-1 leading-none">{viewOrder.customer?.name}</p>
-                                <p className="text-[11px] text-gray-400 font-bold leading-relaxed lowercase tracking-tight italic">{viewOrder.customer?.address}</p>
+                                <p className="text-[11px] text-emerald-600 font-black mb-2 leading-none">📞 {viewOrder.customer?.phone}</p>
+                                <p className="text-[11px] text-gray-400 font-bold leading-relaxed lowercase tracking-tight italic">
+                                    {viewOrder.customer?.address} <br/>
+                                    ต.{viewOrder.customer?.subDistrict} อ.{viewOrder.customer?.district} <br/>
+                                    จ.{viewOrder.customer?.province} {viewOrder.customer?.zipcode}
+                                </p>
                             </div>
 
                             <div className="space-y-3">
