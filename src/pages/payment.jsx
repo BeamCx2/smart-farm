@@ -41,40 +41,46 @@ export default function Payment() {
 
   // 🚀 2. ฟังก์ชันตรวจสอบสลิปอัตโนมัติ (EasySlip) + อัปเดต Firebase
   const handleUploadSlip = async (e) => {
+const handleUploadSlip = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploading(true);
     
-    // แปลงไฟล์เป็น Base64 เพื่อส่งไปตรวจ
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
       const base64Image = reader.result.split(',')[1];
 
       try {
-        // --- ส่วนที่ 1: ส่งไปเช็คที่ Netlify Function ---
-        const verifyRes = await fetch('/.netlify/functions/verify-slip', {
+        const verifyRes = await fetch('functions/verify-slip', {
           method: 'POST',
           body: JSON.stringify({ imageBase64: base64Image })
         });
         
         const result = await verifyRes.json();
+        console.log("🔍 EasySlip Raw Data:", result); // บอสดูใน Console นะครับ
 
         if (result.status === 200) {
           const slipData = result.data;
           
-          // 🚨 เช็คยอดเงิน และ ชื่อบัญชีผู้รับ (บอสต้องเปลี่ยนชื่อบัญชีในเครื่องหมายคำพูดนะครับ)
-          const isAmountCorrect = Math.abs(slipData.amount.amount - amount) < 0.01; // ป้องกันทศนิยมคลาดเคลื่อน
-          const isReceiverCorrect = slipData.receiver.displayName.includes("ชื่อบัญชีฟาร์มของบอส");
+          // 🚨 จุดแก้ไข 1: แปลงยอดเงินเป็น Number ทั้งคู่ก่อนเทียบ
+          const slipAmount = Number(slipData.amount.amount);
+          const targetAmount = Number(amount);
+          
+          const isAmountCorrect = Math.abs(slipAmount - targetAmount) < 0.01;
+
+          // 🚨 จุดแก้ไข 2: บอสต้องเปลี่ยนคำว่า "ณัฐวุฒิ" ให้ตรงกับชื่อบัญชีที่ EasySlip อ่านได้
+          // ผมแนะนำให้บอสดูจาก Console ว่า result.data.receiver.displayName มันคือคำว่าอะไร
+          const isReceiverCorrect = slipData.receiver.displayName.includes("ณัฐวุฒิ"); 
 
           if (isAmountCorrect && isReceiverCorrect) {
-            // --- ส่วนที่ 2: ถ้าสลิปถูกต้อง -> อัปโหลดรูปเก็บไว้ใน Storage ---
+            // ✅ สลิปถูกต้อง -> อัปโหลดรูปเก็บไว้
             const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
-            // --- ส่วนที่ 3: อัปเดตสถานะใน Firestore เป็น 'paid' ---
+            // อัปเดต Firestore
             const ordersRef = collection(db, 'orders');
             const q = query(ordersRef, where('orderId', '==', orderId));
             const querySnapshot = await getDocs(q);
@@ -82,25 +88,27 @@ export default function Payment() {
             if (!querySnapshot.empty) {
               const orderDoc = querySnapshot.docs[0].ref;
               await updateDoc(orderDoc, {
-                status: 'paid',         // เปลี่ยนเป็นจ่ายแล้วทันที
+                status: 'paid',
                 slipUrl: downloadURL,
                 verifiedBy: 'EasySlip Auto',
                 updatedAt: new Date(),
-                transRef: slipData.transRef // เก็บเลขที่อ้างอิงกันสลิปซ้ำ
+                transRef: slipData.transRef
               });
 
               alert("✅ ชำระเงินสำเร็จ! ระบบตรวจสอบสลิปเรียบร้อยครับ");
               navigate('/orders'); 
             }
           } else {
-            alert("❌ ยอดเงินไม่ตรง หรือโอนผิดบัญชีครับ (ยอดที่ต้องโอน: " + amount + " บาท)");
+            // 💡 ถ้าไม่ผ่าน จะได้รู้ว่าตัวไหนพัง!
+            alert(`❌ ข้อมูลไม่ตรงครับบอส!\n\nยอดเงินตรงมั้ย: ${isAmountCorrect} (สลิป: ${slipAmount} | เป้าหมาย: ${targetAmount})\nชื่อบัญชีตรงมั้ย: ${isReceiverCorrect} (ในสลิปอ่านได้: ${slipData.receiver.displayName})`);
           }
         } else {
-          alert("❌ สลิปไม่ถูกต้อง หรืออาจจะเคยใช้ไปแล้วครับ");
+          // ถ้า EasySlip ปฏิเสธ (เช่น สลิปเก่า หรือรูปไม่ชัด)
+          alert(`❌ สลิปไม่ถูกต้อง: ${result.message || "กรุณาใช้สลิปใหม่ที่ชัดเจน"}`);
         }
       } catch (error) {
         console.error("Verification Error:", error);
-        alert("⚠️ ระบบตรวจสอบขัดข้อง กรุณาติดต่อแอดมินครับ");
+        alert("⚠️ ระบบตรวจสอบขัดข้อง (เช็คเน็ตหรือเช็ค Token ใน Function นะครับ)");
       } finally {
         setUploading(false);
       }
