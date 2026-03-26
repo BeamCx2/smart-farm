@@ -73,42 +73,30 @@ export default function Checkout() {
             createdAt: serverTimestamp(),
         };
 
-        try {
-            // 3. สั่งเพิ่มออเดอร์ลงใน Batch
-            batch.set(newOrderRef, orderData);
-
-            // 4. สั่งตัดสต๊อกสินค้าแต่ละชิ้นใน Batch
-            items.forEach((item) => {
-                const productRef = doc(db, 'products', item.id);
-                batch.update(productRef, {
-                    stock: increment(-item.qty) // ✅ ลดจำนวนสต๊อกตามที่ซื้อจริง
-                });
-            });
-
-            // 5. บันทึกข้อมูลทั้งหมดลงฐานข้อมูล (ถ้าอันไหนพังจะยกเลิกทั้งหมด)
+       try {
+            // ... โค้ดส่วน batch.commit() ...
             await batch.commit();
 
             addToast('สั่งซื้อและตัดสต๊อกเรียบร้อย', 'success');
             clearCart();
 
-navigate('/payment', { 
-    state: { 
-        amount: amountToPay, 
-        orderId: currentOrderId,
-        firebaseDocId: newOrderRef.id 
-    } 
-});
+            if (paymentMethod === 'promptpay') {
+                navigate('/payment', { // ✅ เปลี่ยนจาก /test-payment เป็น /payment
+                    state: { 
+                        amount: amountToPay, 
+                        orderId: currentOrderId,
+                        firebaseDocId: newOrderRef.id 
+                    } 
+                });
             } else {
                 navigate('/orders');
             }
 
-        } catch (err) {
+        } catch (err) { // 👈 เช็คดูว่ามีปีกกาปิดก่อนเริ่ม catch ไหม
             console.error('Checkout Error:', err.message);
             addToast('การสั่งซื้อล้มเหลว: ' + err.message, 'error');
             setSubmitting(false);
         }
-    };
-
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
             {/* ... JSX ส่วนที่เหลือของบอสเหมือนเดิมทุกอย่างครับ ... */}
