@@ -12,8 +12,9 @@ export default function Payment() {
   const [qrRawData, setQrRawData] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const functions = getFunctions();
-  const getSCBQR = httpsCallable(functions, 'getSCBQR');
+// ในไฟล์ payment.jsx
+const functions = getFunctions(app, 'https://asia-southeast1-smart-farm-c69be.cloudfunctions.net/getSCBQR');
+const getSCBQR = httpsCallable(functions, 'getSCBQR');
 
   const handleGenerateQR = async () => {
     setLoading(true);
