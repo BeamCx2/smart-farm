@@ -92,7 +92,7 @@ export default function Checkout() {
             clearCart();
 
             if (paymentMethod === 'promptpay') {
-                navigate('/test-payment', { 
+                navigate('/payment', { 
                     state: { 
                         amount: amountToPay, 
                         orderId: currentOrderId,
