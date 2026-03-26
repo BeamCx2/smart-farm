@@ -130,10 +130,10 @@ export default function Checkout() {
                             <div className="mt-4">
                                 <label className="block text-sm font-bold mb-1.5 text-emerald-600 uppercase tracking-wider">ค้นหา ตำบล / อำเภอ / รหัสไปรษณีย์ *</label>
                                 <ThailandAddressTypeahead 
-                                    onSelect={onAddressSelect}
-                                    inputClassName="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 focus:border-emerald-400 bg-emerald-50/30 outline-none transition-all text-sm font-medium"
-                                    placeholder="พิมพ์ค้นหา... (เช่น จตุจักร หรือ 10900)"
-                                />
+    onSelect={onAddressSelect}
+    inputClassName="..."
+    placeholder="..."
+/>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
