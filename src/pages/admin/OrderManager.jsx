@@ -4,11 +4,6 @@ import { db } from '../../lib/firebase';
 import { formatTHB, formatDateTime, ORDER_STATUSES } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 
-// 🛡️ ฟังก์ชันล้าง Emoji ส่วนเกิน
-// const clearEmoji = (text) => {
-//     return text.replace(/[\u2300-\u23FF\u2B05-\u2B07\u2190-\u21FF\u2700-\u27BF\u1F300-\u1F64F\u1F680-\u1F6FF\u1F900-\u1F9FF]/g, '').trim();
-// };
-
 export default function OrderManager() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -41,19 +36,16 @@ export default function OrderManager() {
 
     return (
         <div className="p-4 font-sans min-h-screen bg-gray-50/30">
-            <h1 className="text-2xl font-black mb-10 text-emerald-900 uppercase tracking-tighter flex items-center gap-3">
-                <span className="p-2 bg-emerald-100 rounded-xl shadow-sm">🛒</span> ORDER MANAGEMENT
-            </h1>
+            <h1 className="text-2xl font-black mb-10 text-emerald-900 uppercase tracking-tighter">🛒 ORDER MANAGEMENT</h1>
 
-            {/* 📋 Table Section */}
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
                 <table className="w-full text-sm">
-                    <thead className="bg-gray-50/80 border-b border-gray-50">
+                    <thead className="bg-gray-50/80 border-b border-gray-50 font-black uppercase text-[9px] text-gray-400 tracking-widest">
                         <tr>
-                            <th className="px-6 py-5 text-left text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Order ID</th>
-                            <th className="px-6 py-5 text-left text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Customer</th>
-                            <th className="px-6 py-5 text-center text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Status</th>
-                            <th className="px-6 py-5 text-right text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Total</th>
+                            <th className="px-6 py-5 text-left">Order ID</th>
+                            <th className="px-6 py-5 text-left">Customer</th>
+                            <th className="px-6 py-5 text-center">Status</th>
+                            <th className="px-6 py-5 text-right">Total</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -64,17 +56,18 @@ export default function OrderManager() {
                                     <td onClick={() => { setSelectedOrder(o); setTrackingNum(o.trackingNumber || ''); }} className="px-6 py-7 font-black text-emerald-600 cursor-pointer hover:underline uppercase tracking-tighter">
                                         #{o.orderId || o.id.slice(0, 8)}
                                     </td>
-                                    <td className="px-6 py-7">
-                                        <div className="font-black text-gray-900 text-xs uppercase">{o.customer?.name}</div>
-                                        <div className="text-[9px] text-gray-400 font-bold tracking-widest mt-1 uppercase leading-none">{o.customer?.phone}</div>
+                                    <td className="px-6 py-7 font-black">
+                                        <div className="text-gray-900 text-xs uppercase">{o.customer?.name}</div>
+                                        <div className="text-[9px] text-gray-400 tracking-widest mt-1 leading-none">{o.customer?.phone}</div>
                                     </td>
                                     <td className="px-6 py-7 text-center">
-                                        <div className={`px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border inline-flex items-center gap-2 shadow-sm
-                                            ${statusCfg.color === 'green' ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 
-                                              statusCfg.color === 'yellow' ? 'bg-amber-50 text-amber-900 border-amber-200' : 
-                                              statusCfg.color === 'blue' ? 'bg-blue-50 text-blue-900 border-blue-200' : 'bg-red-50 text-red-900 border-red-200'}`}>
-                                            <span>{o.status === 'pending' ? '⏳' : o.status === 'paid' ? '💰' : o.status === 'shipped' ? '🚚' : o.status === 'finished' ? '✅' : '❌'}</span>
-                                            {clearEmoji(statusCfg.label)}
+                                        {/* 📍 ดึงตรงๆ จาก utils.js (label) ไม่ต้องแต่งเติมในโค้ดนี้ครับ */}
+                                        <div className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border inline-flex items-center justify-center shadow-sm min-w-[140px]
+                                            ${statusCfg.color === 'green' ? 'bg-emerald-600 text-white border-emerald-600' : 
+                                              statusCfg.color === 'yellow' ? 'bg-amber-500 text-white border-amber-500' : 
+                                              statusCfg.color === 'blue' ? 'bg-blue-600 text-white border-blue-600' : 
+                                              'bg-red-600 text-white border-red-600'}`}>
+                                            {statusCfg.label}
                                         </div>
                                     </td>
                                     <td className="px-6 py-7 text-right font-black text-gray-900 text-base">{formatTHB(o.total)}</td>
@@ -85,55 +78,48 @@ export default function OrderManager() {
                 </table>
             </div>
 
-            {/* 🚀 Modal: Order Overview */}
             {selectedOrder && (
-                <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[3.5rem] p-10 max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-white/10 overflow-hidden scale-in-center">
-                        
-                        <div className="flex justify-between items-center mb-10 shrink-0">
-                            <div>
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">Order Overview</h2>
-                                <p className="text-[10px] font-black text-emerald-600 tracking-[0.3em] uppercase mt-2 leading-none">ID: #{selectedOrder.orderId || selectedOrder.id.slice(0, 8)}</p>
-                            </div>
+                <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[999]">
+                    <div className="bg-white rounded-[3.5rem] p-10 max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden scale-in-center border border-white/10">
+                        <div className="flex justify-between items-center mb-8 shrink-0">
+                            <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase leading-none">Order Overview</h2>
                             <button onClick={() => setSelectedOrder(null)} className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 shadow-inner">✕</button>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-hidden flex-1 mb-8">
-                            {/* Left: Info */}
-                            <div className="lg:col-span-5 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
+                            {/* ข้อมูลลูกค้า/สินค้า */}
+                            <div className="lg:col-span-5 space-y-6 overflow-y-auto pr-4 custom-scrollbar font-black uppercase">
                                 <div className="bg-gray-50/50 p-7 rounded-[2.5rem] border border-gray-100">
-                                    <h4 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">📍 Delivery Info</h4>
-                                    <p className="font-black text-xl text-gray-900 mb-1 leading-none">{selectedOrder.customer?.name}</p>
-                                    <p className="text-xs font-black text-emerald-600 mb-4 uppercase">📞 {selectedOrder.customer?.phone}</p>
-                                    <p className="text-[11px] text-gray-500 font-bold uppercase leading-relaxed tracking-wider italic">{selectedOrder.customer?.address}</p>
+                                    <h4 className="text-[10px] text-gray-300 tracking-widest mb-4">📍 Delivery Info</h4>
+                                    <p className="text-xl text-gray-900 mb-1 leading-none">{selectedOrder.customer?.name}</p>
+                                    <p className="text-xs text-emerald-600 mb-4 tracking-tighter">📞 {selectedOrder.customer?.phone}</p>
+                                    <p className="text-[11px] text-gray-500 tracking-wider italic">{selectedOrder.customer?.address}</p>
                                 </div>
                                 <div className="space-y-3">
                                     {(selectedOrder.items || []).map((item, i) => (
                                         <div key={i} className="flex justify-between items-center p-4 bg-white border border-gray-50 rounded-2xl shadow-sm">
-                                            <div className="font-black text-xs text-gray-800 uppercase tracking-tight">{item.name} <span className="text-emerald-500 ml-2">x{item.qty}</span></div>
-                                            <span className="font-black text-xs text-gray-500">{formatTHB(item.price * item.qty)}</span>
+                                            <div className="text-xs text-gray-800 tracking-tight">{item.name} <span className="text-emerald-500 ml-2">x{item.qty}</span></div>
+                                            <span className="text-xs text-gray-500">{formatTHB(item.price * item.qty)}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Right: Payment & Status */}
+                            {/* จัดการสถานะ/สลิป */}
                             <div className="lg:col-span-7 flex flex-col space-y-6 overflow-hidden">
-                                <div className="bg-emerald-900 text-white p-8 rounded-[2.5rem] shadow-xl shrink-0">
-                                    <p className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-2 text-center">Total Amount</p>
-                                    <p className="text-4xl font-black tracking-tighter text-center leading-none">{formatTHB(selectedOrder.total)}</p>
+                                <div className="bg-emerald-900 text-white p-8 rounded-[2.5rem] shadow-xl shrink-0 text-center font-black">
+                                    <p className="text-[10px] opacity-50 uppercase tracking-widest mb-2">Total Amount</p>
+                                    <p className="text-4xl tracking-tighter leading-none">{formatTHB(selectedOrder.total)}</p>
                                 </div>
 
-                                {/* Payment Slip */}
                                 <div className="flex-1 bg-gray-50 rounded-[2.5rem] border-2 border-emerald-50 overflow-hidden relative group min-h-[200px]">
                                     {selectedOrder.slipUrl ? (
                                         <img src={selectedOrder.slipUrl} alt="Slip" className="w-full h-full object-contain p-4 bg-white cursor-zoom-in" onClick={() => window.open(selectedOrder.slipUrl, '_blank')} />
                                     ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-gray-300 opacity-40 uppercase font-black text-[9px] tracking-widest">Waiting for Slip...</div>
+                                        <div className="h-full flex flex-col items-center justify-center text-gray-300 font-black text-[9px] tracking-widest">Waiting for Slip...</div>
                                     )}
                                 </div>
 
-                                {/* ✨ Status Buttons (High Contrast สีชัดเจน) */}
                                 <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm shrink-0">
                                     <h4 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4 text-center">Update Status</h4>
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -141,7 +127,7 @@ export default function OrderManager() {
                                             <button 
                                                 key={key} 
                                                 onClick={() => { if (key !== 'shipped') updateStatus(selectedOrder.id, key); else setSelectedOrder({...selectedOrder, status: 'shipped'}); }}
-                                                className={`py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all flex flex-col items-center gap-1 shadow-sm
+                                                className={`py-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all shadow-sm
                                                     ${selectedOrder.status === key 
                                                         ? (
                                                             key === 'pending' ? 'bg-amber-500 border-amber-500 text-white' :
@@ -150,29 +136,13 @@ export default function OrderManager() {
                                                             key === 'finished' ? 'bg-emerald-600 border-emerald-600 text-white' :
                                                             'bg-red-600 border-red-600 text-white'
                                                           )
-                                                        : 'border-gray-50 bg-white text-gray-400 hover:border-gray-200 hover:text-gray-600'}`}
+                                                        : 'border-gray-50 bg-white text-gray-400 hover:border-gray-200'}`}
                                             >
-                                                <span className="text-sm leading-none">{key === 'pending' ? '⏳' : key === 'paid' ? '💰' : key === 'shipped' ? '🚚' : key === 'finished' ? '✅' : '❌'}</span>
-                                                {clearEmoji(val.label)}
+                                                {/* 📍 ดึงตรงๆ จาก utils.js (label) จบเลยครับ */}
+                                                {val.label}
                                             </button>
                                         ))}
                                     </div>
                                     {selectedOrder.status === 'shipped' && (
                                         <div className="mt-4 flex gap-2 animate-in slide-in-from-top-4">
-                                            <input type="text" value={trackingNum} onChange={(e) => setTrackingNum(e.target.value)} className="flex-1 px-4 py-3 bg-gray-50 border border-blue-100 rounded-xl text-xs font-black text-blue-600 outline-none uppercase shadow-inner" placeholder="Tracking ID..." />
-                                            <button onClick={() => updateStatus(selectedOrder.id, 'shipped', trackingNum)} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-[9px] uppercase shadow-lg shadow-blue-100">Save</button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <button onClick={() => setSelectedOrder(null)} className="w-full py-5 bg-gray-900 text-white font-black text-[11px] uppercase tracking-[0.5em] rounded-2xl shadow-xl transition-all hover:bg-black active:scale-[0.98]">
-                            Close Details
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
+                                            <input type="text" value={trackingNum} onChange={(e) => setTrackingNum(e.target.value)} className="flex-1 px-4 py-3 bg-gray-50 border border-blue-100 rounded-xl text-xs font-black text
