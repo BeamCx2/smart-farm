@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
 
-// ✅ ประกาศตัวแปรชำระเงิน (ไว้นอก Component)
+// ✅ ตัวแปรชำระเงิน
 const PAYMENT_METHODS = [
     { id: 'promptpay', label: '📱 PromptPay QR', desc: 'สแกนจ่ายผ่าน QR Code' },
     { id: 'bank', label: '🏦 โอนเงินผ่านธนาคาร', desc: 'โอนตรงเข้าบัญชี' },
@@ -38,17 +38,17 @@ export default function Checkout() {
         zipcode: '',    
     });
 
-    // ✅ 1. โหลดข้อมูลที่อยู่จาก GitHub API
+    // ✅ 1. โหลดข้อมูลที่อยู่ (Flatten ข้อมูลให้ปลอดภัย)
     useEffect(() => {
         fetch('https://raw.githubusercontent.com/earthchie/jquery.Thailand.js/master/jquery.Thailand.js/database/db.json')
             .then(res => res.json())
             .then(result => {
                 if (result && result.data) {
                     const mappedData = result.data.map(item => ({
-                        district: item[0],
-                        amphoe: item[1],
-                        province: item[2],
-                        zipcode: item[3]
+                        district: item[0] || '',
+                        amphoe: item[1] || '',
+                        province: item[2] || '',
+                        zipcode: item[3] || ''
                     }));
                     setAllAddresses(mappedData);
                 }
@@ -56,17 +56,23 @@ export default function Checkout() {
             .catch(err => console.error("Error fetching address:", err));
     }, []);
 
-    // ✅ 2. ระบบค้นหา (Search)
+    // ✅ 2. ระบบค้นหาแบบ "Ultra Safe" (ป้องกันหน้าขาว 100%)
     const filteredResults = useMemo(() => {
-        const query = searchTerm.trim();
+        const query = searchTerm.trim().toLowerCase();
         if (query.length < 2 || !Array.isArray(allAddresses)) return [];
 
-        return allAddresses.filter(item => 
-            (item.district && item.district.includes(query)) || 
-            (item.amphoe && item.amphoe.includes(query)) || 
-            (item.province && item.province.includes(query)) || 
-            (item.zipcode && item.zipcode.toString().includes(query))
-        ).slice(0, 10);
+        return allAddresses.filter(item => {
+            // ดึงค่ามาทำเป็น String และเช็คว่ามีค่าไหมก่อนค้นหา
+            const d = String(item.district || '').toLowerCase();
+            const a = String(item.amphoe || '').toLowerCase();
+            const p = String(item.province || '').toLowerCase();
+            const z = String(item.zipcode || '');
+
+            return d.includes(query) || 
+                   a.includes(query) || 
+                   p.includes(query) || 
+                   z.includes(query);
+        }).slice(0, 10);
     }, [searchTerm, allAddresses]);
 
     const handleSelectAddress = (addr) => {
@@ -128,22 +134,23 @@ export default function Checkout() {
     };
 
     return (
-        <section className="max-w-7xl mx-auto px-4 py-10 font-sans text-left">
+        <section className="max-w-7xl mx-auto px-4 py-10 font-sans text-left min-h-screen bg-gray-50/30">
             <h1 className="text-2xl font-bold mb-2 text-emerald-900">💳 ชำระเงิน</h1>
             <p className="text-gray-500 mb-8 font-medium">ระบุที่อยู่จัดส่งสินค้าจากฟาร์ม</p>
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        {/* 🏠 ส่วนที่อยู่จัดส่ง */}
+                        {/* 📍 ส่วนที่อยู่จัดส่ง */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold mb-5 flex items-center gap-2 text-emerald-700">📍 ข้อมูลจัดส่ง</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <input name="name" value={form.name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400" placeholder="ชื่อ-นามสกุล *" />
-                                <input name="phone" value={form.phone} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400" placeholder="เบอร์โทรศัพท์ *" />
+                                <input name="name" value={form.name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 bg-white" placeholder="ชื่อ-นามสกุล *" />
+                                <input name="phone" value={form.phone} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 bg-white" placeholder="เบอร์โทรศัพท์ *" />
                             </div>
-                            <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 mt-4" placeholder="บ้านเลขที่, หมู่, ซอย, ถนน *" />
+                            <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 mt-4 bg-white" placeholder="บ้านเลขที่, หมู่, ซอย, ถนน *" />
 
+                            {/* 🚀 ระบบ Search (ตัวเทพที่แก้หน้าขาวแล้ว) */}
                             <div className="mt-6 relative">
                                 <label className="block text-sm font-bold mb-1.5 text-emerald-600 uppercase tracking-wider">🔎 ค้นหา ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์</label>
                                 <input 
@@ -151,13 +158,15 @@ export default function Checkout() {
                                     onChange={(e) => { setSearchTerm(e.target.value); setShowOptions(true); }}
                                     onFocus={() => setShowOptions(true)}
                                     className="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 bg-emerald-50/30 outline-none focus:border-emerald-400 font-medium"
-                                    placeholder={allAddresses.length === 0 ? "กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา..."}
+                                    placeholder={allAddresses.length === 0 ? "⏳ กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา..."}
                                     disabled={allAddresses.length === 0}
+                                    autoComplete="off"
                                 />
+                                
                                 {showOptions && filteredResults.length > 0 && (
                                     <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-72 overflow-y-auto">
                                         {filteredResults.map((addr, idx) => (
-                                            <div key={idx} onClick={() => handleSelectAddress(addr)} className="px-5 py-3 hover:bg-emerald-50 cursor-pointer text-sm border-b border-gray-50 transition-colors">
+                                            <div key={idx} onClick={() => handleSelectAddress(addr)} className="px-5 py-3 hover:bg-emerald-50 cursor-pointer text-sm border-b border-gray-50 transition-colors last:border-none">
                                                 <span className="font-bold text-emerald-800">{addr.district}</span> » {addr.amphoe} » {addr.province} » <span className="text-gray-400">{addr.zipcode}</span>
                                             </div>
                                         ))}
@@ -165,6 +174,7 @@ export default function Checkout() {
                                 )}
                             </div>
 
+                            {/* แสดงค่าที่ถูกเลือก */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
                                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                                     <p className="font-bold text-gray-400 mb-1">ตำบล</p>
@@ -185,12 +195,12 @@ export default function Checkout() {
                             </div>
                         </div>
 
-                        {/* 💰 ส่วนชำระเงิน (ตัวการที่หายไปเมื่อกี้) */}
+                        {/* 💰 วิธีชำระเงิน */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold mb-5 text-emerald-700">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
                                 {PAYMENT_METHODS.map((m) => (
-                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
+                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-100 hover:border-emerald-200'}`}>
                                         <input 
                                             type="radio" 
                                             name="payment-method"
@@ -211,8 +221,15 @@ export default function Checkout() {
                     {/* สรุปรายการ */}
                     <div className="bg-white rounded-2xl p-8 shadow-md h-fit lg:sticky lg:top-24 border border-gray-100">
                         <h3 className="font-bold text-lg mb-4 text-emerald-900">📋 สรุปรายการ</h3>
-                        <div className="flex justify-between text-lg font-black pt-1 text-emerald-900 mb-6"><span>ยอดสุทธิ</span><span>{formatTHB(total)}</span></div>
-                        <button type="submit" disabled={submitting || allAddresses.length === 0} className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-lg shadow-emerald-200 transition-all disabled:bg-gray-300">
+                        <div className="flex justify-between text-lg font-black pt-1 text-emerald-900 mb-6 border-t border-gray-100 pt-4">
+                            <span>ยอดสุทธิ</span>
+                            <span>{formatTHB(total)}</span>
+                        </div>
+                        <button 
+                            type="submit" 
+                            disabled={submitting || allAddresses.length === 0} 
+                            className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-lg shadow-emerald-200 transition-all disabled:bg-gray-300 disabled:shadow-none"
+                        >
                             {submitting ? 'กำลังส่งข้อมูล...' : `✅ ยืนยันการสั่งซื้อ`}
                         </button>
                     </div>
