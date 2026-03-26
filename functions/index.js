@@ -25,7 +25,7 @@ exports.getscbqr = onCall({
     const BILLER_ID = '386424808603569'; 
 
     try {
-        const authResponse = await axios.post('https://api-sandbox.partners.scb/partners/sandbox/v1/oauth/token', {
+        const authResponse = await axios.post('https://api-sandbox.partners.scb/partners/sandbox/v1/oauth/819e2c00-bb0e-4a2b-8e5d-1979f5998b9e', {
             applicationKey: API_KEY,
             applicationSecret: API_SECRET
         }, {
