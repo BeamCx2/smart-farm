@@ -106,10 +106,11 @@ export default function Checkout() {
             });
 
         } catch (err) {
-            console.error('ระเบิดตรงนี้ครับบอส:', err.message);
+            console.error('Checkout Error:', err.message);
             addToast('การสั่งซื้อล้มเหลว: ' + err.message, 'error');
             setSubmitting(false);
         }
+    };
 
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
