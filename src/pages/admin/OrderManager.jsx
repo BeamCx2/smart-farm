@@ -89,16 +89,17 @@ export default function OrderManager() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-hidden flex-1 mb-8">
                             <div className="lg:col-span-5 space-y-6 overflow-y-auto pr-4 custom-scrollbar uppercase font-black">
-                                {/* 📍 จุดที่แก้ไข: แสดงที่อยู่แบบละเอียด */}
+                                {/* 📍 ส่วนที่แก้ไข: แสดงที่อยู่จัดส่งแบบละเอียดครบถ้วน */}
                                 <div className="bg-gray-50/50 p-7 rounded-[2.5rem] border border-gray-100 font-black">
-                                    <h4 className="text-[10px] text-gray-400 tracking-widest mb-4 font-black">📍 Shipping Info (ข้อมูลจัดส่ง)</h4>
+                                    <h4 className="text-[10px] text-gray-400 tracking-widest mb-4 font-black uppercase leading-none">📍 Shipping Info (ข้อมูลจัดส่ง)</h4>
                                     <p className="text-xl text-gray-900 mb-1 leading-none font-black">{selectedOrder.customer?.name}</p>
-                                    <p className="text-xs text-emerald-600 mb-4 tracking-tighter uppercase font-black leading-none">📞 {selectedOrder.customer?.phone}</p>
+                                    <p className="text-xs text-emerald-600 mb-4 tracking-tighter uppercase font-black leading-none font-black">📞 {selectedOrder.customer?.phone}</p>
                                     
-                                    {/* 🏠 ที่อยู่ละเอียดรวมร่าง */}
-                                    <div className="text-[11px] text-gray-500 leading-relaxed font-black">
-                                        <p>{selectedOrder.customer?.address}</p>
-                                        <p className="mt-1 italic">
+                                    <div className="text-[12px] text-gray-500 leading-relaxed font-black uppercase">
+                                        {/* ✅ เพิ่มบรรทัดที่อยู่ (บ้านเลขที่ หมู่ ซอย ถนน) ที่หายไป */}
+                                        <p className="text-gray-800 mb-1">{selectedOrder.customer?.address}</p>
+                                        
+                                        <p className="italic">
                                             ต.{selectedOrder.customer?.subDistrict} อ.{selectedOrder.customer?.district}
                                         </p>
                                         <p className="italic">
@@ -106,7 +107,8 @@ export default function OrderManager() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="space-y-3 font-black">
+                                <div className="space-y-3 font-black uppercase">
+                                    <p className="text-[10px] text-gray-400 tracking-widest px-2 mb-2 font-black leading-none">🛒 Items Ordered</p>
                                     {(selectedOrder.items || []).map((item, i) => (
                                         <div key={i} className="flex justify-between items-center p-4 bg-white border border-gray-50 rounded-2xl shadow-sm">
                                             <div className="text-xs text-gray-800 tracking-tight font-black">{item.name} <span className="text-emerald-500 ml-2 font-black">x{item.qty}</span></div>
@@ -116,7 +118,7 @@ export default function OrderManager() {
                                 </div>
                             </div>
 
-                            <div className="lg:col-span-7 flex flex-col space-y-6 overflow-hidden">
+                            <div className="lg:col-span-7 flex flex-col space-y-6 overflow-hidden font-black">
                                 <div className="bg-emerald-900 text-white p-8 rounded-[2.5rem] shadow-xl shrink-0 text-center font-black">
                                     <p className="text-[10px] opacity-50 uppercase tracking-widest mb-2 font-black leading-none">Total Amount</p>
                                     <p className="text-4xl tracking-tighter leading-none font-black">{formatTHB(selectedOrder.total || selectedOrder.amount)}</p>
@@ -126,13 +128,13 @@ export default function OrderManager() {
                                     {selectedOrder.slipUrl ? (
                                         <img src={selectedOrder.slipUrl} alt="Slip" className="w-full h-full object-contain p-4 bg-white cursor-zoom-in" onClick={() => window.open(selectedOrder.slipUrl, '_blank')} />
                                     ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-gray-300 font-black text-[10px] tracking-widest uppercase italic font-black">Waiting for payment slip</div>
+                                        <div className="h-full flex flex-col items-center justify-center text-gray-300 font-black text-[10px] tracking-widest uppercase italic font-black leading-none">Waiting for payment slip</div>
                                     )}
                                 </div>
 
-                                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm shrink-0">
-                                    <h4 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4 text-center font-black">Update Status</h4>
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm shrink-0 font-black">
+                                    <h4 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4 text-center font-black leading-none">Update Status</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-black">
                                         {Object.entries(ORDER_STATUSES).map(([key, val]) => (
                                             <button 
                                                 key={key} 
@@ -147,7 +149,7 @@ export default function OrderManager() {
                                         ))}
                                     </div>
                                     {selectedOrder.status === 'shipped' && (
-                                        <div className="mt-4 flex gap-2 animate-in slide-in-from-top-4">
+                                        <div className="mt-4 flex gap-2 animate-in slide-in-from-top-4 font-black">
                                             <input type="text" value={trackingNum} onChange={(e) => setTrackingNum(e.target.value)} className="flex-1 px-4 py-3 bg-gray-50 border border-blue-100 rounded-xl text-xs font-black text-blue-600 outline-none uppercase shadow-inner" placeholder="Tracking ID..." />
                                             <button onClick={() => updateStatus(selectedOrder.id, 'shipped', trackingNum)} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-[9px] uppercase shadow-lg shadow-blue-100 font-black">Save</button>
                                         </div>
