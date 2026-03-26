@@ -1,44 +1,69 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions'; 
-import { QRCodeCanvas } from 'qrcode.react'; // ✅ ต้องมี Library นี้ (npm install qrcode.react)
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // ✅ เพิ่ม Storage
+import { doc, updateDoc } from 'firebase/firestore'; // ✅ เพิ่ม Firestore
+import { db } from '../lib/firebase'; // ✅ ต้อง Import db มาด้วยนะครับ
+import { QRCodeCanvas } from 'qrcode.react';
 import { formatTHB } from '../lib/utils';
 import app from '../lib/firebase'; 
 
 export default function Payment() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { amount, orderId } = location.state || { amount: 0, orderId: 'N/A' };
+  const { amount, orderId, firebaseId } = location.state || { amount: 0, orderId: 'N/A', firebaseId: '' };
 
   const [qrRawData, setQrRawData] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [slipImage, setSlipImage] = useState(null);
 
-  // ตั้งค่าดึง Function จาก Region สิงคโปร์
   const functions = getFunctions(app, 'asia-southeast1'); 
   const getSCBQR = httpsCallable(functions, 'getscbqr');
-
-  const handleGenerateQR = async () => {
-    if (amount <= 0 || orderId === 'N/A') return;
-
-    setLoading(true);
-    try {
-      const result = await getSCBQR({ amount, orderId });
-      
-      if (result.data && result.data.qrRawData) {
-        setQrRawData(result.data.qrRawData);
-      } else {
-        console.error("Data error:", result.data);
-      }
-    } catch (error) {
-      console.error("Request failed:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const storage = getStorage(app);
 
   useEffect(() => {
+    const handleGenerateQR = async () => {
+      if (amount <= 0) return;
+      setLoading(true);
+      try {
+        const result = await getSCBQR({ amount, orderId });
+        if (result.data && result.data.qrRawData) setQrRawData(result.data.qrRawData);
+      } catch (error) { console.error(error); }
+      finally { setLoading(false); }
+    };
     handleGenerateQR();
   }, [amount, orderId]);
+
+  // 🚀 ฟังก์ชันอัปโหลดสลิปและอัปเดตสถานะ
+  const handleUploadSlip = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // 1. อัปโหลดไปที่ Firebase Storage
+      const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // 2. อัปเดตข้อมูลใน Firestore (ใช้อันที่บอสเก็บออเดอร์ไว้)
+      const orderDoc = doc(db, 'orders', firebaseId || orderId); 
+      await updateDoc(orderDoc, {
+        status: 'waiting_verify', // เปลี่ยนสถานะเป็นรอตรวจสอบ
+        slipUrl: downloadURL,
+        updatedAt: new Date()
+      });
+
+      alert("อัปโหลดสลิปสำเร็จ! รอแอดมินตรวจสอบครับ");
+      navigate('/orders'); // โอนเสร็จส่งกลับไปหน้าออเดอร์
+    } catch (error) {
+      console.error(error);
+      alert("อัปโหลดพลาดครับบอส!");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
@@ -52,33 +77,24 @@ export default function Payment() {
             <p className="text-4xl font-black text-gray-900">{formatTHB(amount)}</p>
           </div>
 
-          <div className="flex justify-center bg-white p-6 rounded-[2rem] shadow-xl shadow-emerald-500/5 border border-gray-50">
-            {loading ? (
-              <div className="w-[200px] h-[200px] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-              </div>
-            ) : qrRawData ? (
-              <div className="p-2 bg-white">
-                <QRCodeCanvas value={qrRawData} size={200} level="H" includeMargin={false} />
-              </div>
-            ) : (
-              <div className="w-[200px] h-[200px] flex items-center justify-center border border-gray-100 rounded-2xl bg-gray-50">
-                <p className="text-[10px] text-gray-400 font-bold uppercase">⚠️ QR Generation Failed</p>
-              </div>
-            )}
+          <div className="flex justify-center bg-white p-6 rounded-[2rem] shadow-xl shadow-emerald-500/5 border border-gray-50 mb-6">
+            {loading ? <div className="animate-spin h-8 w-8 border-b-2 border-emerald-600 rounded-full"></div> : 
+             qrRawData ? <QRCodeCanvas value={qrRawData} size={200} /> : <p>QR Error</p>}
+          </div>
+
+          {/* 📸 ส่วนอัปโหลดสลิป */}
+          <div className="mt-4">
+            <label className={`block w-full py-3 px-4 rounded-2xl text-[10px] font-black uppercase cursor-pointer transition-all
+              ${uploading ? 'bg-gray-100 text-gray-400' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200'}`}>
+              {uploading ? 'กำลังอัปโหลด...' : '📸 ยืนยันการโอน (แนบสลิป)'}
+              <input type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading} />
+            </label>
           </div>
         </div>
 
         <p className="text-[10px] font-bold text-gray-400 px-10 leading-relaxed uppercase tracking-widest">
-          เปิดแอปธนาคารสแกน QR Code <br/> เพื่อชำระเงินคืนให้ Smart Farm
+          สแกนแล้วอย่าลืมกดปุ่มสีเขียว <br/> เพื่อแนบหลักฐานการโอนนะครับ
         </p>
-
-        <button 
-          onClick={() => navigate('/orders')}
-          className="mt-12 text-[10px] font-black text-gray-300 hover:text-emerald-600 transition-all uppercase tracking-[0.3em]"
-        >
-          [ กลับไปหน้าออเดอร์ ]
-        </button>
       </div>
     </div>
   );
