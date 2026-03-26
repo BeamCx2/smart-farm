@@ -72,6 +72,7 @@ export default function Checkout() {
             status: 'pending',
             createdAt: serverTimestamp(),
         };
+
         try {
             // 3. สั่งเพิ่มออเดอร์ลงใน Batch
             batch.set(newOrderRef, orderData);
@@ -91,7 +92,7 @@ export default function Checkout() {
             clearCart();
 
             if (paymentMethod === 'promptpay') {
-                navigate('/payment', { 
+                navigate('/test-payment', { 
                     state: { 
                         amount: amountToPay, 
                         orderId: currentOrderId,
@@ -107,10 +108,11 @@ export default function Checkout() {
             addToast('การสั่งซื้อล้มเหลว: ' + err.message, 'error');
             setSubmitting(false);
         }
-    }; // 👈 บอสต้องมีตัวนี้เพื่อปิด handleSubmit ครับ
+    };
 
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+            {/* ... JSX ส่วนที่เหลือของบอสเหมือนเดิมทุกอย่างครับ ... */}
             <h1 className="text-2xl font-bold mb-2">💳 ชำระเงิน</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">กรอกข้อมูลเพื่อดำเนินการสั่งซื้อ</p>
 
