@@ -3,4 +3,4 @@
   publish = "dist"
 
 [functions]
-  directory = "functions" # 👈 บอสต้องระบุชื่อโฟลเดอร์ที่บอสสร้างไว้ตรงนี้
+  directory = "functions"
