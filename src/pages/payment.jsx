@@ -17,6 +17,14 @@ export default function Payment() {
     const [qrRawData, setQrRawData] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    
+    // ✨ State สำหรับ UI Modal เด้งสวยๆ
+    const [statusModal, setStatusModal] = useState({ 
+        show: false, 
+        success: false, 
+        message: '', 
+        details: null 
+    });
 
     const storage = getStorage(app);
     const functions = getFunctions(app, 'asia-southeast1'); 
@@ -35,7 +43,6 @@ export default function Payment() {
         handleGenerateQR();
     }, [amount, orderId]);
 
-    // 📸 ฟังก์ชันอ่าน QR Payload จากรูปภาพ (Client-side Scan)
     const scanQRCode = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -64,10 +71,7 @@ export default function Payment() {
 
         setUploading(true);
         try {
-            // 1. สแกนหา Payload
             const payload = await scanQRCode(file);
-
-            // 2. ตรวจสอบผ่าน API v2
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                 method: 'POST',
                 body: JSON.stringify({ payload: payload }) 
@@ -77,17 +81,14 @@ export default function Payment() {
 
             if (result.success) {
                 const slipData = result.data;
-                
-                // 🔍 เช็คยอดเงิน (Amount)
                 const slipAmount = slipData.amount || 0;
                 const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
                 
-                // 🔍 เช็คชื่อผู้รับ (Receiver) - ปรับปรุงให้ปลอดภัยด้วย ?. 
+                // 🔍 เช็คชื่อผู้รับ (อิงจาก Dashboard EasySlip ของบอส)
                 const receiverName = (slipData.receiver?.name || "").toLowerCase();
                 const isReceiverMatch = receiverName.includes("ณัฐวุฒิ") || receiverName.includes("nattawut");
 
                 if (isAmountMatch && isReceiverMatch) {
-                    // ✅ ผ่านเงื่อนไขจริง -> อัปโหลดและบันทึก
                     const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                     await uploadBytes(storageRef, file);
                     const downloadURL = await getDownloadURL(storageRef);
@@ -103,27 +104,47 @@ export default function Payment() {
                             updatedAt: serverTimestamp(),
                             transRef: slipData.transRef || 'N/A'
                         });
-                        alert("✅ ชำระเงินสำเร็จ! ระบบตรวจสอบข้อมูลถูกต้องครับ");
-                        navigate('/orders'); 
+                        
+                        setStatusModal({
+                            show: true,
+                            success: true,
+                            message: 'ชำระเงินสำเร็จ!',
+                            details: 'ระบบตรวจสอบข้อมูลถูกต้อง ขอบคุณที่อุดหนุนครับ'
+                        });
                     }
                 } else {
-                    alert(`❌ ข้อมูลไม่ตรง!\nผู้รับในสลิป: ${receiverName || "ไม่ทราบชื่อ"}\nยอดเงินในสลิป: ${slipAmount} บาท`);
+                    setStatusModal({
+                        show: true,
+                        success: false,
+                        message: 'ข้อมูลไม่ตรง!',
+                        details: `ผู้รับ: ${receiverName || "ไม่ทราบชื่อ"} | ยอดเงิน: ${slipAmount} บาท`
+                    });
                 }
             } else {
-                alert(`❌ ตรวจสอบล้มเหลว: ${result.error || "สลิปไม่ถูกต้อง"}`);
+                setStatusModal({
+                    show: true,
+                    success: false,
+                    message: 'สลิปไม่ถูกต้อง',
+                    details: result.error || 'กรุณาตรวจสอบว่าสลิปมี QR Code และยอดเงินถูกต้อง'
+                });
             }
         } catch (error) {
-            alert(`⚠️ ข้อผิดพลาด: ${error}`);
+            setStatusModal({
+                show: true,
+                success: false,
+                message: 'เกิดข้อผิดพลาด',
+                details: error.toString()
+            });
         } finally {
             setUploading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans">
-            <div className="max-w-sm w-full">
-                <h1 className="text-xl font-black mb-1 text-gray-800 uppercase tracking-tighter">Smart Farm Payment</h1>
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mb-8">Gateway v2.0</p>
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans relative">
+            <div className="max-w-sm w-full animate-in fade-in zoom-in duration-500">
+                <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter uppercase">Payment Gateway</h1>
+                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2">Smart Farm Official</p>
 
                 <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner">
                     <div className="mb-6">
@@ -131,29 +152,60 @@ export default function Payment() {
                         <p className="text-4xl font-black text-gray-900 leading-none">{formatTHB(amount)}</p>
                     </div>
 
-                    <div className="flex justify-center bg-white p-6 rounded-[2rem] shadow-xl shadow-emerald-500/5 border border-gray-50 mb-6">
+                    <div className="flex justify-center bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-emerald-500/5 border border-gray-50 mb-6 transition-transform hover:scale-[1.02]">
                         {loading ? (
-                            <div className="animate-spin h-8 w-8 border-b-2 border-emerald-600 rounded-full"></div>
+                            <div className="animate-spin h-10 w-10 border-4 border-emerald-100 border-t-emerald-600 rounded-full"></div>
                         ) : qrRawData ? (
                             <QRCodeCanvas value={qrRawData} size={200} />
                         ) : (
-                            <p className="text-xs text-gray-400 font-black uppercase">Generating QR...</p>
+                            <p className="text-xs text-gray-300 font-black uppercase">Initializing QR...</p>
                         )}
                     </div>
 
                     <div className="mt-4">
-                        <label className={`block w-full py-4 px-4 rounded-2xl text-[10px] font-black uppercase cursor-pointer transition-all shadow-lg active:scale-95
-                            ${uploading ? 'bg-gray-200 text-gray-400' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
-                            {uploading ? '⚙️ Processing...' : '📸 ยืนยันการโอน (แนบสลิป)'}
+                        <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95
+                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
+                            {uploading ? '⚙️ Verifying...' : '📸 ยืนยันการโอน (แนบสลิป)'}
                             <input type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading || loading} />
                         </label>
                     </div>
                 </div>
 
                 <p className="text-[9px] font-black text-gray-300 px-10 leading-relaxed uppercase tracking-[0.2em]">
-                    Instant confirmation via <br/> EasySlip API v2.0
+                    Powered by EasySlip API v2.0 <br/> Automatic Verification System
                 </p>
             </div>
+
+            {/* ✨ Custom Result Modal (UI เด้งสวยๆ) */}
+            {statusModal.show && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] text-center animate-in zoom-in-95 duration-200">
+                        <div className={`w-24 h-24 rounded-full mx-auto mb-8 flex items-center justify-center text-4xl shadow-xl
+                            ${statusModal.success ? 'bg-emerald-50 text-emerald-500 shadow-emerald-100' : 'bg-red-50 text-red-500 shadow-red-100'}`}>
+                            {statusModal.success ? '✓' : '✕'}
+                        </div>
+                        
+                        <h2 className={`text-2xl font-black mb-3 tracking-tighter ${statusModal.success ? 'text-emerald-900' : 'text-red-900'}`}>
+                            {statusModal.message}
+                        </h2>
+                        
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed mb-10 px-2">
+                            {statusModal.details}
+                        </p>
+
+                        <button
+                            onClick={() => {
+                                setStatusModal({ ...statusModal, show: false });
+                                if (statusModal.success) navigate('/orders');
+                            }}
+                            className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl
+                                ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-gray-900 text-white shadow-gray-300'}`}
+                        >
+                            {statusModal.success ? 'ไปที่รายการสั่งซื้อ' : 'ลองใหม่อีกครั้ง'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
