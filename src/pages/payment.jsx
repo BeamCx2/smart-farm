@@ -62,7 +62,7 @@ export default function Payment() {
           const targetAmount = Number(amount);
           
           const isAmountCorrect = Math.abs(slipAmount - targetAmount) < 0.1;
-          const isReceiverCorrect = slipData.receiver.displayName.includes("ณัฐวุฒิ"); 
+          const isReceiverCorrect = slipData.receiver.displayName.includes("ณัฐวุฒิ ภักดีอำนาจ,NATTAWUT PAKDEEAMNAJ"); 
 
           if (isAmountCorrect && isReceiverCorrect) {
             const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
