@@ -1,0 +1,7 @@
+{
+  "firebase": {
+    "projectId": "smart-farm-c69be",
+    "databaseURL": "https://smart-farm-c69be-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "storageBucket": "smart-farm-c69be.firebasestorage.app"
+  }
+}
