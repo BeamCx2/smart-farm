@@ -16,7 +16,7 @@ export default function Checkout() {
     const [submitting, setSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('promptpay');
     
-    // ✅ State สำหรับเก็บฐานข้อมูลที่อยู่ทั้งหมด
+    // ✅ State สำหรับฐานข้อมูลที่อยู่
     const [allAddresses, setAllAddresses] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOptions, setShowOptions] = useState(false);
@@ -32,28 +32,40 @@ export default function Checkout() {
         zipcode: '',    
     });
 
-    // ✅ 1. ใช้ useEffect ดึงข้อมูลที่อยู่ทันทีที่หน้าเว็บโหลด
+    // ✅ 1. ดึงข้อมูลและกางโครงสร้าง (Flatten) ให้ถูกต้องตาม Format ของ API
     useEffect(() => {
         fetch('https://raw.githubusercontent.com/earthchie/jquery.Thailand.js/master/jquery.Thailand.js/database/db.json')
             .then(res => res.json())
-            .then(data => {
-                // แปลง Format ข้อมูลเล็กน้อยเพื่อให้ค้นหาง่ายขึ้น
-                setAllAddresses(data);
+            .then(result => {
+                // API ตัวนี้เก็บข้อมูลเป็น Array ซ้อน Array [ตำบล, อำเภอ, จังหวัด, รหัส]
+                // เราต้องแปลงให้เป็น Object เพื่อให้ filter ทำงานได้ครับ
+                if (result && result.data) {
+                    const mappedData = result.data.map(item => ({
+                        district: item[0],
+                        amphoe: item[1],
+                        province: item[2],
+                        zipcode: item[3]
+                    }));
+                    setAllAddresses(mappedData);
+                }
             })
-            .catch(err => console.error("Error loading addresses:", err));
+            .catch(err => {
+                console.error("Error fetching address database:", err);
+                addToast("โหลดข้อมูลที่อยู่ไม่สำเร็จ กรุณาลองใหม่", "error");
+            });
     }, []);
 
-    // ✅ 2. Logic การค้นหาที่อยู่ (กรองจากข้อมูลที่ Fetch มา)
+    // ✅ 2. ระบบค้นหา (ใช้ useMemo เพื่อความลื่นไหล)
     const filteredResults = useMemo(() => {
         const query = searchTerm.trim();
-        if (query.length < 2 || allAddresses.length === 0) return [];
+        if (query.length < 2 || !Array.isArray(allAddresses)) return [];
 
         return allAddresses.filter(item => 
             (item.district && item.district.includes(query)) || 
             (item.amphoe && item.amphoe.includes(query)) || 
             (item.province && item.province.includes(query)) || 
             (item.zipcode && item.zipcode.toString().includes(query))
-        ).slice(0, 10); // แสดงแค่ 10 รายการ
+        ).slice(0, 10);
     }, [searchTerm, allAddresses]);
 
     const handleSelectAddress = (addr) => {
@@ -70,6 +82,7 @@ export default function Checkout() {
 
     if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
     if (!user) return <Navigate to="/login" replace />;
+    if (items.length === 0 && !submitting) return <Navigate to="/cart" replace />;
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -97,6 +110,12 @@ export default function Checkout() {
                 paymentMethod, status: 'pending',
                 createdAt: serverTimestamp(),
             });
+
+            items.forEach(item => {
+                const productRef = doc(db, 'products', item.id);
+                batch.update(productRef, { stock: increment(-item.qty) });
+            });
+
             await batch.commit();
             addToast('สั่งซื้อเรียบร้อย', 'success');
             clearCart();
@@ -108,12 +127,12 @@ export default function Checkout() {
     };
 
     return (
-        <section className="max-w-7xl mx-auto px-4 py-10 font-sans">
+        <section className="max-w-7xl mx-auto px-4 py-10 font-sans text-left">
             <h1 className="text-2xl font-bold mb-2 text-emerald-900">💳 ชำระเงิน</h1>
             <p className="text-gray-500 mb-8 font-medium">ระบุที่อยู่จัดส่งสินค้าจากฟาร์ม</p>
 
             <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                             <h3 className="font-bold mb-5 flex items-center gap-2 text-emerald-700">📍 ข้อมูลจัดส่ง</h3>
@@ -123,7 +142,7 @@ export default function Checkout() {
                             </div>
                             <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 mt-4" placeholder="บ้านเลขที่, หมู่, ซอย, ถนน *" />
 
-                            {/* 🚀 ระบบ Search ที่อยู่แบบ Fetch Data */}
+                            {/* 🚀 ระบบ Search ที่แก้ปัญหาหน้าขาวแล้ว */}
                             <div className="mt-6 relative">
                                 <label className="block text-sm font-bold mb-1.5 text-emerald-600 uppercase tracking-wider">🔎 ค้นหา ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์</label>
                                 <input 
@@ -131,12 +150,12 @@ export default function Checkout() {
                                     onChange={(e) => { setSearchTerm(e.target.value); setShowOptions(true); }}
                                     onFocus={() => setShowOptions(true)}
                                     className="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 bg-emerald-50/30 outline-none focus:border-emerald-400 font-medium"
-                                    placeholder={allAddresses.length === 0 ? "กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา... (เช่น บางนา หรือ 10260)"}
+                                    placeholder={allAddresses.length === 0 ? "กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา... (เช่น ลาดยาว หรือ 10900)"}
                                     disabled={allAddresses.length === 0}
                                 />
                                 
                                 {showOptions && filteredResults.length > 0 && (
-                                    <div className="absolute z-20 w-full mt-2 bg-white border border-emerald-50 rounded-2xl shadow-2xl max-h-72 overflow-y-auto">
+                                    <div className="absolute z-50 w-full mt-2 bg-white border border-emerald-50 rounded-2xl shadow-2xl max-h-72 overflow-y-auto border-gray-200">
                                         {filteredResults.map((addr, idx) => (
                                             <div key={idx} onClick={() => handleSelectAddress(addr)} className="px-5 py-3 hover:bg-emerald-50 cursor-pointer text-sm border-b border-gray-50 transition-colors">
                                                 <span className="font-bold text-emerald-800">{addr.district}</span> » {addr.amphoe} » {addr.province} » <span className="text-gray-400">{addr.zipcode}</span>
@@ -163,6 +182,21 @@ export default function Checkout() {
                                     <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">รหัสไปรษณีย์</p>
                                     <p className="text-sm font-semibold text-gray-700">{form.zipcode || '-'}</p>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h3 className="font-bold mb-5 text-emerald-700">💰 วิธีชำระเงิน</h3>
+                            <div className="space-y-3">
+                                {PAYMENT_METHODS.map((m) => (
+                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
+                                        <input type="radio" checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-4 h-4" />
+                                        <div>
+                                            <div className="font-semibold text-sm">{m.label}</div>
+                                            <div className="text-xs text-gray-500">{m.desc}</div>
+                                        </div>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     </div>
