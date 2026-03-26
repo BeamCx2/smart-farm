@@ -14,7 +14,7 @@ exports.handler = async (event) => {
       { image: imageBase64 }, 
       {
         headers: { 
-          'Authorization': 'Bearer YOUR_EASYSLIP_ACCESS_TOKEN_HERE', // 🔑 ใส่ Token ของบอสตรงนี้
+          'Authorization': '929951ef-e7be-4b29-b441-7927e448d8ab', // 🔑 ใส่ Token ของบอสตรงนี้
           'Content-Type': 'application/json'
         }
       }
