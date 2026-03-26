@@ -19,10 +19,7 @@ export default function Payment() {
     const [uploading, setUploading] = useState(false);
     
     const [statusModal, setStatusModal] = useState({ 
-        show: false, 
-        success: false, 
-        message: '', 
-        details: null 
+        show: false, success: false, message: '', details: null 
     });
 
     const storage = getStorage(app);
@@ -41,6 +38,13 @@ export default function Payment() {
         };
         handleGenerateQR();
     }, [amount, orderId]);
+
+    // 📍 ฟังก์ชันปิด Modal และ Reset Input เพื่อให้อัปโหลดไฟล์เดิมซ้ำได้
+    const closeModal = () => {
+        setStatusModal({ ...statusModal, show: false });
+        const fileInput = document.getElementById('slip-upload-input');
+        if (fileInput) fileInput.value = ""; // ✨ เคลียร์ค่าเพื่อให้เลือกไฟล์เดิมได้
+    };
 
     const scanQRCode = (file) => {
         return new Promise((resolve, reject) => {
@@ -78,13 +82,11 @@ export default function Payment() {
             
             const result = await verifyRes.json();
 
-            // 🔍 ตรวจสอบโครงสร้าง V1 (เช็ค event FOUND หรือ status 200)
+            // 🔍 ตรวจสอบโครงสร้าง V1 ตาม JSON "FOUND" ที่บอสส่งมา
             if (result.event === "FOUND" || result.status === 200) {
-                
-                // 📦 แกะข้อมูลจาก rawSlip (โครงสร้างที่บอสส่งมาล่าสุด)
                 const slip = result.data.rawSlip; 
 
-                // 💰 1. ดึงยอดเงิน (ซ้อน 2 ชั้น: amount.amount)
+                // 💰 1. ดึงยอดเงิน (ซ้อน 2 ชั้นตาม JSON: amount.amount)
                 const slipAmount = slip.amount?.amount || 0; 
                 
                 // 👤 2. ดึงชื่อผู้รับ (ภาษาไทย)
@@ -92,15 +94,12 @@ export default function Payment() {
                 const nameEN = slip.receiver?.account?.name?.en || "";
                 
                 // 🔎 3. ตรวจสอบชื่อ (เน้นคำว่า "ณัฐวุฒิ" ตาม Dashboard บอส)
-                const isReceiverMatch = 
-                    nameTH.includes("ณัฐวุฒิ") || 
-                    nameEN.toLowerCase().includes("nattawut");
+                const isReceiverMatch = nameTH.includes("ณัฐวุฒิ") || nameEN.toLowerCase().includes("nattawut");
 
-                // 💵 4. ตรวจสอบยอดเงิน (เทียบยอดที่ลูกค้าต้องจ่าย)
+                // 💵 4. ตรวจสอบยอดเงิน (เทียบยอด 102.00)
                 const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
 
                 if (isAmountMatch && isReceiverMatch) {
-                    // ✅ ข้อมูลถูกต้อง! อัปเดต Firebase และ Storage
                     const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                     await uploadBytes(storageRef, file);
                     const downloadURL = await getDownloadURL(storageRef);
@@ -112,7 +111,7 @@ export default function Payment() {
                         await updateDoc(snap.docs[0].ref, {
                             status: 'paid',
                             slipUrl: downloadURL,
-                            verifiedBy: 'EasySlip V1 rawSlip Auto',
+                            verifiedBy: 'EasySlip V1 rawSlip Fixed',
                             updatedAt: serverTimestamp(),
                             transRef: slip.transRef || 'N/A'
                         });
@@ -120,19 +119,17 @@ export default function Payment() {
                         setStatusModal({
                             show: true, success: true,
                             message: 'ชำระเงินสำเร็จ!',
-                            details: 'ตรวจสอบข้อมูลถูกต้อง ขอบคุณที่อุดหนุนครับ'
+                            details: 'ระบบตรวจสอบข้อมูลถูกต้อง ขอบคุณที่อุดหนุนครับ'
                         });
                     }
                 } else {
-                    // ❌ ข้อมูลในสลิปไม่ตรงกับออเดอร์
                     setStatusModal({
                         show: true, success: false,
                         message: 'ข้อมูลไม่ตรง!',
-                        details: `ผู้รับ: ${nameTH || nameEN} | ยอดเงิน: ${slipAmount} บาท (ยอดที่ต้องชำระ: ${amount} บาท)`
+                        details: `ผู้รับ: ${nameTH || "ไม่ทราบชื่อ"} | ยอดโอน: ${slipAmount} บาท (ต้องชำระ: ${amount} บาท)`
                     });
                 }
             } else {
-                // ❌ API แจ้งว่าไม่พบข้อมูลสลิป
                 setStatusModal({
                     show: true, success: false,
                     message: 'สลิปไม่ถูกต้อง',
@@ -143,7 +140,7 @@ export default function Payment() {
             setStatusModal({
                 show: true, success: false,
                 message: 'เกิดข้อผิดพลาด',
-                details: 'ไม่สามารถอ่าน QR Code ได้ กรุณาใช้รูปต้นฉบับ'
+                details: error.toString()
             });
         } finally {
             setUploading(false);
@@ -154,7 +151,7 @@ export default function Payment() {
         <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans relative">
             <div className="max-w-sm w-full animate-in fade-in zoom-in duration-500">
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter uppercase font-black">Payment Gateway</h1>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 font-black">Smart Farm Official</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 font-black leading-none">Smart Farm Official</p>
 
                 <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner">
                     <div className="mb-6">
@@ -174,9 +171,16 @@ export default function Payment() {
 
                     <div className="mt-4">
                         <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 font-black
-                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-none' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
+                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
                             {uploading ? '⚙️ Verifying...' : '📸 ยืนยันการโอน (แนบสลิป)'}
-                            <input type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading || loading} />
+                            <input 
+                                id="slip-upload-input" // 📍 ใส่ ID เพื่อไว้ Reset ค่า
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={handleUploadSlip} 
+                                disabled={uploading || loading} 
+                            />
                         </label>
                     </div>
                 </div>
@@ -204,10 +208,7 @@ export default function Payment() {
                         </p>
 
                         <button
-                            onClick={() => {
-                                setStatusModal({ ...statusModal, show: false });
-                                if (statusModal.success) navigate('/orders');
-                            }}
+                            onClick={statusModal.success ? () => navigate('/orders') : closeModal} // 📍 เรียกฟังก์ชัน closeModal เพื่อ Reset ค่า
                             className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl font-black
                                 ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-gray-900 text-white shadow-gray-300'}`}
                         >
