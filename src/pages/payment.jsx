@@ -36,34 +36,46 @@ export default function Payment() {
   }, [amount, orderId]);
 
   // 🚀 ฟังก์ชันอัปโหลดสลิปและอัปเดตสถานะ
-  const handleUploadSlip = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // 🚀 แก้ฟังก์ชันอัปโหลดสลิปใน Payment.jsx (จุดที่ Error)
+const handleUploadSlip = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    setUploading(true);
-    try {
-      // 1. อัปโหลดไปที่ Firebase Storage
-      const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
+  setUploading(true);
+  try {
+    // 1. อัปโหลดไป Storage (อันนี้ผ่านแล้ว)
+    const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
 
-      // 2. อัปเดตข้อมูลใน Firestore (ใช้อันที่บอสเก็บออเดอร์ไว้)
-      const orderDoc = doc(db, 'orders', firebaseId || orderId); 
+    // 2. ค้นหาเอกสารในคอลเลกชัน 'orders' ที่มีฟิลด์ orderId ตรงกับที่เรามี
+    const { collection, query, where, getDocs, updateDoc, doc } = await import('firebase/firestore');
+    const ordersRef = collection(db, 'orders');
+    const q = query(ordersRef, where('orderId', '==', orderId)); // หาออเดอร์ที่ orderId ตรงกัน
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // ถ้าเจอ ให้หยิบเอกสารตัวแรกมาอัปเดต
+      const orderDoc = querySnapshot.docs[0].ref;
       await updateDoc(orderDoc, {
-        status: 'waiting_verify', // เปลี่ยนสถานะเป็นรอตรวจสอบ
+        status: 'waiting_verify',
         slipUrl: downloadURL,
         updatedAt: new Date()
       });
-
       alert("อัปโหลดสลิปสำเร็จ! รอแอดมินตรวจสอบครับ");
-      navigate('/orders'); // โอนเสร็จส่งกลับไปหน้าออเดอร์
-    } catch (error) {
-      console.error(error);
-      alert("อัปโหลดพลาดครับบอส!");
-    } finally {
-      setUploading(false);
+      navigate('/orders');
+    } else {
+      alert("หาออเดอร์ไม่เจอในระบบครับบอส!");
+      console.error("Order ID not found in Firestore:", orderId);
     }
-  };
+
+  } catch (error) {
+    console.error("Upload Error:", error);
+    alert("อัปโหลดพลาดครับบอส!");
+  } finally {
+    setUploading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
