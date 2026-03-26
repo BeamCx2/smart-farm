@@ -1,38 +1,49 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions'; // ✅ ลบ getFunctions ออก เพราะเราจะดึงจากไฟล์กลาง
+import { functions } from '../lib/firebase'; // ✅ ดึงตัวแปรที่ตั้งค่าไว้แล้วมาใช้
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatTHB } from '../lib/utils';
 
 export default function Payment() {
   const location = useLocation();
   const navigate = useNavigate();
+  // ดึงข้อมูลจาก state ที่ส่งมาจากหน้า Checkout
   const { amount, orderId } = location.state || { amount: 0, orderId: 'N/A' };
 
   const [qrRawData, setQrRawData] = useState('');
   const [loading, setLoading] = useState(false);
 
-// ในไฟล์ payment.jsx
-const functions = getFunctions(app, 'https://asia-southeast1-smart-farm-c69be.cloudfunctions.net/getSCBQR');
-const getSCBQR = httpsCallable(functions, 'getSCBQR');
+  // 🚨 แก้ไขตรงนี้ครับบอส! เรียกใช้ callable function โดยตรงจาก functions ที่ตั้งค่าไว้
+  const getSCBQR = httpsCallable(functions, 'getSCBQR');
 
   const handleGenerateQR = async () => {
+    if (amount <= 0 || orderId === 'N/A') return;
+    
     setLoading(true);
     try {
+      console.log("กำลังขอ QR สำหรับออเดอร์:", orderId);
       const result = await getSCBQR({ amount, orderId });
-      setQrRawData(result.data.qrRawData);
+      
+      if (result.data && result.data.qrRawData) {
+        setQrRawData(result.data.qrRawData);
+      } else {
+        console.error("ไม่มีข้อมูล qrRawData ส่งกลับมา");
+      }
     } catch (error) {
-      console.error("QR Error:", error);
+      console.error("QR Error Details:", error);
+      // ถ้า Error ฟ้องว่า 'not-found' ให้เช็คชื่อฟังก์ชันใน Cloud Functions อีกทีครับ
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (amount > 0) handleGenerateQR();
-  }, [amount]);
+    handleGenerateQR();
+  }, [amount, orderId]);
 
   return (
+    // ... JSX ส่วนที่เหลือของบอสเหมือนเดิมเลยครับ ...
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
       <div className="max-w-sm w-full text-center">
         <h1 className="text-xl font-black mb-1 text-gray-800">ชำระเงินค่าสินค้า</h1>
