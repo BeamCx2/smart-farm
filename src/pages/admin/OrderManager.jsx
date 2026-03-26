@@ -146,35 +146,43 @@ export default function OrderManager() {
                                     </div>
                                 </div>
 
-                                {/* 📸 ส่วนแสดงสลิปการโอน */}
-                                <div>
-                                    <h4 className="font-bold text-gray-400 uppercase text-[10px] mb-3 tracking-widest text-center">📸 หลักฐานการชำระเงิน</h4>
-                                    {selectedOrder.slipUrl ? (
-                                        <div className="group relative rounded-3xl overflow-hidden border-2 border-emerald-100 bg-emerald-50 shadow-sm transition-all hover:shadow-lg">
-                                            <img 
-                                                src={selectedOrder.slipUrl} 
-                                                alt="Payment Slip" 
-                                                className="w-full h-64 object-cover cursor-pointer"
-                                                onClick={() => window.open(selectedOrder.slipUrl, '_blank')}
-                                            />
-                                            <div className="absolute inset-0 bg-emerald-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                <span className="bg-white text-emerald-900 px-4 py-2 rounded-full font-bold text-xs shadow-xl">คลิกเพื่อดูรูปใหญ่</span>
-                                            </div>
-                                            {selectedOrder.transRef && (
-                                                <div className="p-3 bg-white text-center text-[10px] font-bold text-emerald-600">
-                                                    REF: {selectedOrder.transRef} (VERIFIED)
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="h-40 rounded-3xl bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
-                                            <span className="text-2xl mb-2">⏳</span>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest">ยังไม่มีการแนบสลิป</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+{/* 📸 ส่วนแสดงสลิปการโอน (ฉบับแก้สัดส่วนรูป) */}
+<div>
+    <h4 className="font-bold text-gray-400 uppercase text-[10px] mb-3 tracking-widest text-center">
+        📸 หลักฐานการชำระเงิน
+    </h4>
+    {selectedOrder.slipUrl ? (
+        <div className="rounded-3xl border-2 border-emerald-100 bg-gray-50 overflow-hidden shadow-sm transition-all hover:shadow-md">
+            <div 
+                className="relative group cursor-zoom-in bg-white flex items-center justify-center p-2"
+                style={{ minHeight: '300px', maxHeight: '500px' }} // 📏 คุมความสูงกรอบให้พอดี
+                onClick={() => window.open(selectedOrder.slipUrl, '_blank')}
+            >
+                <img 
+                    src={selectedOrder.slipUrl} 
+                    alt="Payment Slip" 
+                    className="max-w-full max-h-full object-contain rounded-xl" // ✨ contain เพื่อให้สัดส่วนสลิปไม่เพี้ยน
+                />
+                <div className="absolute inset-0 bg-emerald-900/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <span className="bg-white/90 text-emerald-900 px-4 py-2 rounded-full font-bold text-xs shadow-lg backdrop-blur-sm">
+                        🔍 คลิกเพื่อดูรูปใหญ่
+                    </span>
+                </div>
+            </div>
+            
+            {selectedOrder.transRef && (
+                <div className="p-3 bg-emerald-50 text-center text-[10px] font-bold text-emerald-700 border-t border-emerald-100">
+                    REF ID: {selectedOrder.transRef}
+                </div>
+            )}
+        </div>
+    ) : (
+        <div className="h-40 rounded-3xl bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
+            <span className="text-2xl mb-2">⏳</span>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-center px-4">ยังไม่มีการแนบสลิป</p>
+        </div>
+    )}
+</div>
 
                         <button 
                             onClick={() => setSelectedOrder(null)} 
