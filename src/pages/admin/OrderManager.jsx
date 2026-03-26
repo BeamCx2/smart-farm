@@ -93,102 +93,95 @@ export default function OrderManager() {
                 </div>
             )}
 
-            {/* 🚨 Modal รายละเอียด (Fix ปีกกาและสัดส่วนสลิป) */}
-            {selectedOrder && (
-                <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[999]">
-                    <div className="bg-white rounded-[2.5rem] p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-                        <div className="flex justify-between items-center mb-8 border-b border-gray-50 pb-6">
-                            <h2 className="text-2xl font-black text-gray-800">รายละเอียดคำสั่งซื้อ</h2>
-                            <button onClick={() => setSelectedOrder(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-xl">✕</button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                            {/* ฝั่งซ้าย: ข้อมูลลูกค้า */}
-                            <div className="space-y-8">
-                                <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                                    <h4 className="font-black text-gray-400 uppercase text-[10px] mb-4 tracking-widest">📍 ที่อยู่จัดส่ง</h4>
-                                    <p className="font-black text-xl text-emerald-900 mb-1">{selectedOrder.customer?.name}</p>
-                                    <p className="text-sm font-bold text-gray-600 mb-3">📞 {selectedOrder.customer?.phone}</p>
-                                    <p className="text-sm text-gray-500 font-medium leading-relaxed">
-                                        {selectedOrder.customer?.address} <br/>
-                                        ต. {selectedOrder.customer?.district} อ. {selectedOrder.customer?.amphoe} <br/>
-                                        จ. {selectedOrder.customer?.province} {selectedOrder.customer?.zipcode}
-                                    </p>
-                                </div>
+            {/* 🚨 Modal ฉบับ Single Page (ไม่ต้องเลื่อน) */}
+{selectedOrder && (
+    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[999]">
+        <div className="bg-white rounded-[2.5rem] p-6 md:p-10 max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h2 className="text-2xl font-black text-gray-800">รายละเอียดคำสั่งซื้อ</h2>
+                    <p className="text-xs font-bold text-emerald-600">ID: #{selectedOrder.orderId || selectedOrder.id.slice(0,8)}</p>
+                </div>
+                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-gray-100 rounded-full transition-all text-xl">✕</button>
+            </div>
+            
+            {/* Content Container (บีบให้อยู่ในหน้าเดียว) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 overflow-hidden flex-1">
+                
+                {/* ฝั่งซ้าย: ข้อมูลลูกค้า + รายการสินค้า */}
+                <div className="space-y-4 overflow-y-auto pr-2">
+                    <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100">
+                        <h4 className="font-black text-gray-400 uppercase text-[9px] mb-3 tracking-widest">📍 ที่อยู่จัดส่ง</h4>
+                        <p className="font-black text-lg text-emerald-900 leading-tight">{selectedOrder.customer?.name}</p>
+                        <p className="text-xs font-bold text-gray-500 mb-2">📞 {selectedOrder.customer?.phone}</p>
+                        <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                            {selectedOrder.customer?.address} ต. {selectedOrder.customer?.district} <br/>
+                            อ. {selectedOrder.customer?.amphoe} จ. {selectedOrder.customer?.province} {selectedOrder.customer?.zipcode}
+                        </p>
+                    </div>
 
-                                <div>
-                                    <h4 className="font-black text-gray-400 uppercase text-[10px] mb-4 tracking-widest">🛒 รายการสินค้า</h4>
-                                    <div className="space-y-3">
-                                        {(selectedOrder.items || []).map((item, i) => (
-                                            <div key={i} className="flex justify-between items-center p-4 bg-white border border-gray-100 rounded-2xl">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-lg shadow-sm">🥬</div>
-                                                    <div>
-                                                        <div className="font-bold text-sm text-gray-800">{item.name}</div>
-                                                        <div className="text-[10px] text-gray-400 font-bold uppercase">{formatTHB(item.price)} × {item.qty}</div>
-                                                    </div>
-                                                </div>
-                                                <span className="font-black text-sm text-emerald-600">{formatTHB(item.price * item.qty)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ฝั่งขวา: สรุปยอด + ดูสลิป (ฉบับแก้กรอบสลิปพอดี) */}
-                            <div className="space-y-6">
-                                <div className="bg-emerald-900 text-white p-7 rounded-[2rem] shadow-xl shadow-emerald-100">
-                                    <h4 className="font-black text-emerald-400 uppercase text-[10px] mb-4 tracking-widest text-center">💰 สรุปยอดชำระ</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between text-sm font-medium opacity-80"><span>ราคารวม</span> <span>{formatTHB(selectedOrder.subtotal)}</span></div>
-                                        <div className="flex justify-between text-sm font-medium opacity-80"><span>ค่าจัดส่ง</span> <span>{formatTHB(selectedOrder.shipping)}</span></div>
-                                        <div className="flex justify-between text-2xl font-black pt-4 border-t border-emerald-800 mt-2"><span>ยอดสุทธิ</span> <span>{formatTHB(selectedOrder.total)}</span></div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-black text-gray-400 uppercase text-[10px] mb-4 tracking-widest text-center">📸 หลักฐานการชำระเงิน</h4>
-                                    {selectedOrder.slipUrl ? (
-                                        <div className="rounded-[2rem] border-2 border-emerald-100 bg-gray-50 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                                            <div 
-                                                className="relative group cursor-zoom-in bg-white flex items-center justify-center p-2"
-                                                style={{ minHeight: '320px', maxHeight: '500px' }}
-                                                onClick={() => window.open(selectedOrder.slipUrl, '_blank')}
-                                            >
-                                                <img 
-                                                    src={selectedOrder.slipUrl} 
-                                                    alt="Payment Slip" 
-                                                    className="max-w-full max-h-[480px] object-contain rounded-xl"
-                                                />
-                                                <div className="absolute inset-0 bg-emerald-900/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                    <span className="bg-white/95 text-emerald-900 px-5 py-2.5 rounded-full font-black text-xs shadow-2xl backdrop-blur-sm">🔍 ดูรูปใหญ่</span>
-                                                </div>
-                                            </div>
-                                            {selectedOrder.transRef && (
-                                                <div className="p-4 bg-emerald-50 text-center text-[10px] font-black text-emerald-700 border-t border-emerald-100 tracking-tighter uppercase">
-                                                    Reference ID: {selectedOrder.transRef}
-                                                </div>
-                                            )}
+                    <div className="bg-white border border-gray-100 rounded-3xl p-4">
+                        <h4 className="font-black text-gray-400 uppercase text-[9px] mb-3 tracking-widest">🛒 รายการสินค้า</h4>
+                        <div className="space-y-2">
+                            {(selectedOrder.items || []).map((item, i) => (
+                                <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-sm shadow-sm">🥬</div>
+                                        <div>
+                                            <div className="font-bold text-[11px] text-gray-800 leading-tight">{item.name}</div>
+                                            <div className="text-[9px] text-gray-400 font-bold uppercase">{formatTHB(item.price)} × {item.qty}</div>
                                         </div>
-                                    ) : (
-                                        <div className="h-48 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
-                                            <span className="text-3xl mb-3">⏳</span>
-                                            <p className="text-[10px] font-black uppercase tracking-widest">รอดำเนินการแนบสลิป</p>
-                                        </div>
-                                    )}
+                                    </div>
+                                    <span className="font-black text-xs text-emerald-600">{formatTHB(item.price * item.qty)}</span>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-
-                        <button 
-                            onClick={() => setSelectedOrder(null)} 
-                            className="w-full mt-10 py-5 bg-gray-900 hover:bg-black text-white font-black text-lg rounded-2xl transition-all shadow-xl active:scale-[0.98]"
-                        >
-                            ปิดหน้าต่าง
-                        </button>
                     </div>
                 </div>
-            )}
+
+                {/* ฝั่งขวา: สรุปยอด + รูปสลิป (คุมความสูงรูป) */}
+                <div className="flex flex-col h-full space-y-4">
+                    <div className="bg-emerald-900 text-white p-5 rounded-[2rem] shadow-lg">
+                        <div className="flex justify-between text-[11px] font-medium opacity-70 mb-1"><span>รวมราคาสินค้า</span> <span>{formatTHB(selectedOrder.subtotal)}</span></div>
+                        <div className="flex justify-between text-[11px] font-medium opacity-70 mb-2"><span>ค่าจัดส่ง</span> <span>{formatTHB(selectedOrder.shipping)}</span></div>
+                        <div className="flex justify-between text-xl font-black pt-2 border-t border-emerald-800"><span>ยอดสุทธิ</span> <span>{formatTHB(selectedOrder.total)}</span></div>
+                    </div>
+
+                    <div className="flex-1 min-h-0 flex flex-col">
+                        <h4 className="font-black text-gray-400 uppercase text-[9px] mb-2 tracking-widest text-center">📸 หลักฐานการชำระเงิน</h4>
+                        {selectedOrder.slipUrl ? (
+                            <div className="flex-1 bg-gray-50 rounded-[2rem] border-2 border-emerald-50 overflow-hidden relative group">
+                                <img 
+                                    src={selectedOrder.slipUrl} 
+                                    alt="Slip" 
+                                    className="w-full h-full object-contain bg-white cursor-pointer"
+                                    onClick={() => window.open(selectedOrder.slipUrl, '_blank')}
+                                />
+                                <div className="absolute inset-0 bg-emerald-900/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center justify-center">
+                                    <span className="bg-white/90 text-emerald-900 px-4 py-2 rounded-full font-black text-[10px] shadow-xl">คลิกดูรูปใหญ่</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300">
+                                <span className="text-xl">⏳</span>
+                                <p className="text-[9px] font-black uppercase tracking-widest mt-1">รอการชำระเงิน</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Button */}
+            <button 
+                onClick={() => setSelectedOrder(null)} 
+                className="w-full mt-6 py-4 bg-gray-900 hover:bg-black text-white font-black text-sm rounded-2xl transition-all shadow-xl active:scale-[0.98]"
+            >
+                ปิดหน้าต่าง
+            </button>
         </div>
+    </div>
+)}
     );
 }
