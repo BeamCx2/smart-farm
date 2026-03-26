@@ -2,8 +2,8 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
-import { getStorage } from "firebase/storage"; // ✅ เพิ่ม: สำหรับเก็บรูปภาพสินค้า/โปรไฟล์
-import { getAnalytics } from "firebase/analytics"; // ✅ เพิ่ม: สำหรับดูสถิติคนเข้าชม
+import { getStorage } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBaYn459JOBoCX3PGfEUUW9pzuCxXiFCuA",
@@ -16,16 +16,16 @@ const firebaseConfig = {
   measurementId: "G-80E67N6X08"
 };
 
-// 🛡️ ป้องกันการ Initialize ซ้ำ (Singleton Pattern)
+// 1. สร้าง App ก่อน (Singleton Pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// 🚨 ส่งออกบริการหลัก (Core Services)
+// 2. ส่งออกบริการต่างๆ โดยใช้ app ที่สร้างเสร็จแล้ว
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const storage = getStorage(app); // เรียกใช้ด้วย: import { storage } from './lib/firebase'
-export const functions = getFunctions(app, 'asia-southeast1'); 
+export const storage = getStorage(app);
+export const functions = getFunctions(app, 'asia-southeast1'); // ✅ ระบุโซนให้ตรงกับที่ Deploy
 
-// 📈 เปิดใช้งาน Analytics (เฉพาะตอนรันบน Browser)
+// 3. Analytics (เฉพาะบน Browser)
 export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
 export const isFirebaseConfigured = true;
