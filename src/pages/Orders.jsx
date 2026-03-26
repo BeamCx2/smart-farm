@@ -61,7 +61,7 @@ export default function Orders() {
     return (
         <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen font-sans font-black">
             <h1 className="text-xl font-black mb-10 text-gray-800 uppercase tracking-tight flex items-center gap-3">
-                <span className="bg-emerald-600 text-white w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black">#</span>
+                <span className="bg-emerald-600 text-white w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black font-black">#</span>
                 คำสั่งซื้อของฉัน
             </h1>
 
@@ -76,7 +76,7 @@ export default function Orders() {
                                 ${isPending ? 'border-amber-200 ring-2 ring-amber-50' : 'border-gray-100'}`}>
                             
                             <div className="flex items-center gap-5 flex-1 cursor-pointer font-black" onClick={() => setViewOrder(order)}>
-                                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform font-black">
+                                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
                                     {order.status === 'shipped' ? '🚚' : order.status === 'paid' ? '💰' : order.status === 'finished' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
                                 </div>
                                 <div className="font-black">
@@ -86,8 +86,8 @@ export default function Orders() {
                                     </p>
                                     
                                     {isPending && (
-                                        <div className="mt-2 flex items-center gap-2 bg-red-50 px-3 py-1 rounded-lg w-fit">
-                                            <span className="text-[9px] text-red-400 uppercase tracking-widest leading-none font-black">⏳ หมดเวลาใน:</span>
+                                        <div className="mt-2 flex items-center gap-2 bg-red-50 px-3 py-1 rounded-lg w-fit font-black">
+                                            <span className="text-[9px] text-red-400 uppercase tracking-widest leading-none">⏳ หมดเวลาใน:</span>
                                             <OrderTimer createdAt={order.createdAt} />
                                         </div>
                                     )}
@@ -95,7 +95,7 @@ export default function Orders() {
                             </div>
 
                             <div className="flex items-center gap-6 font-black">
-                                <div className="text-right hidden sm:block font-black mr-2">
+                                <div className="text-right hidden sm:block font-black mr-2 font-black">
                                     <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1 leading-none font-black">ยอดสุทธิ</p>
                                     <p className="text-gray-900 text-xl leading-none font-black">{formatTHB(order.total)}</p>
                                 </div>
@@ -129,42 +129,47 @@ export default function Orders() {
                 })}
             </div>
 
-            {/* 🚀 Modal รายละเอียด (ฉบับแก้บั๊กที่อยู่มาไม่ครบ) */}
+            {/* 🚀 Modal รายละเอียด (ฉบับแก้เว้นวรรคที่อยู่) */}
             {viewOrder && (
                 <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
                     <div className="bg-white rounded-[3.5rem] p-10 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl scale-in-center font-black">
                         <div className="flex justify-between items-center mb-8 shrink-0 font-black">
-                            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter font-black">รายละเอียดออเดอร์</h2>
+                            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">รายละเอียดออเดอร์</h2>
                             <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 shadow-inner transition-colors">✕</button>
                         </div>
 
                         {/* เลขพัสดุ */}
                         {viewOrder.status === 'shipped' && viewOrder.trackingNumber && (
                             <div className="mb-8 p-6 bg-blue-600 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 font-black">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 font-black">เลขพัสดุของคุณคือ</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">เลขพัสดุของคุณคือ</p>
                                 <p className="text-2xl font-black tracking-[0.1em] select-all uppercase leading-none font-black">{viewOrder.trackingNumber}</p>
                             </div>
                         )}
 
                         <div className="space-y-6 font-black">
-                            {/* 📍 ส่วนที่อยู่จัดส่งแบบละเอียด (Fallback Logic) */}
+                            {/* 📍 ส่วนที่อยู่จัดส่งแบบละเอียด (เพิ่มเว้นวรรค &nbsp;) */}
                             <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 font-black">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-3 leading-none font-black">📍 Shipping Address</p>
-                                <p className="text-gray-900 text-sm mb-1 leading-none font-black">{viewOrder.customer?.name}</p>
-                                <p className="text-[11px] text-emerald-600 font-black mb-2 leading-none font-black">📞 {viewOrder.customer?.phone}</p>
+                                <p className="text-gray-900 text-sm mb-1 leading-none font-black font-black">{viewOrder.customer?.name}</p>
+                                <p className="text-[11px] text-emerald-600 font-black mb-3 leading-none font-black font-black">📞 {viewOrder.customer?.phone}</p>
                                 
-                                <div className="text-[11px] text-gray-400 font-black leading-relaxed lowercase tracking-tight italic font-black">
+                                <div className="text-[11px] text-gray-500 leading-relaxed font-black font-black">
                                     {/* 🏠 1. บ้านเลขที่/ซอย/ถนน */}
-                                    <p className="text-gray-700 not-italic font-black mb-1">{viewOrder.customer?.address}</p>
+                                    <p className="text-gray-800 not-italic font-black mb-1">{viewOrder.customer?.address}</p>
                                     
-                                    {/* 🏠 2. ตำบล/อำเภอ (ดักทั้งชื่อฟิลด์เก่าและใหม่) */}
-                                    <p>
-                                        ต.{viewOrder.customer?.subDistrict || viewOrder.customer?.district} 
+                                    {/* 🏠 2. ตำบล และ อำเภอ (เว้นวรรค &nbsp;) */}
+                                    <p className="italic font-black">
+                                        ต.{viewOrder.customer?.subDistrict || viewOrder.customer?.district}
+                                        &nbsp;&nbsp;
                                         อ.{viewOrder.customer?.district || viewOrder.customer?.amphoe}
                                     </p>
                                     
-                                    {/* 🏠 3. จังหวัด/รหัสไปรษณีย์ */}
-                                    <p>จ.{viewOrder.customer?.province} {viewOrder.customer?.zipcode}</p>
+                                    {/* 🏠 3. จังหวัด และ รหัสไปรษณีย์ */}
+                                    <p className="italic font-black">
+                                        จ.{viewOrder.customer?.province}
+                                        &nbsp;&nbsp;
+                                        {viewOrder.customer?.zipcode}
+                                    </p>
                                 </div>
                             </div>
 
@@ -172,7 +177,7 @@ export default function Orders() {
                                 <p className="text-[10px] text-gray-300 uppercase tracking-widest px-2 leading-none font-black">🛒 Order Items</p>
                                 {(viewOrder.items || []).map((item, i) => (
                                     <div key={i} className="flex items-center gap-4 bg-white p-4 rounded-3xl border border-gray-50 shadow-sm font-black">
-                                        <img src={item.image} className="w-12 h-12 rounded-2xl object-cover shadow-sm font-black" alt="" />
+                                        <img src={item.image} className="w-12 h-12 rounded-2xl object-cover shadow-sm" alt="" />
                                         <div className="flex-1 font-black">
                                             <p className="text-xs text-gray-800 uppercase tracking-tight leading-none font-black">{item.name}</p>
                                             <p className="text-[10px] text-gray-400 font-black uppercase mt-1 leading-none font-black">{formatTHB(item.price)} x {item.qty}</p>
@@ -183,7 +188,7 @@ export default function Orders() {
                             </div>
 
                             <div className="pt-6 font-black">
-                                <div className="flex justify-between items-center bg-gray-900 p-7 rounded-[2.5rem] text-white shadow-2xl shadow-gray-200 font-black">
+                                <div className="flex justify-between items-center bg-gray-900 p-7 rounded-[2.5rem] text-white shadow-2xl shadow-gray-200 font-black font-black">
                                     <span className="text-[10px] uppercase tracking-widest opacity-50 font-black">Total Amount</span>
                                     <span className="text-3xl tracking-tighter leading-none font-black">{formatTHB(viewOrder.total)}</span>
                                 </div>
