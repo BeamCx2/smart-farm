@@ -91,14 +91,13 @@ export default function Checkout() {
             addToast('สั่งซื้อและตัดสต๊อกเรียบร้อย', 'success');
             clearCart();
 
-            if (paymentMethod === 'promptpay') {
-                navigate('/test-payment', { 
-                    state: { 
-                        amount: amountToPay, 
-                        orderId: currentOrderId,
-                        firebaseDocId: newOrderRef.id 
-                    } 
-                });
+navigate('/payment', { 
+    state: { 
+        amount: amountToPay, 
+        orderId: currentOrderId,
+        firebaseDocId: newOrderRef.id 
+    } 
+});
             } else {
                 navigate('/orders');
             }
