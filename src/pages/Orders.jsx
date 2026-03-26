@@ -105,7 +105,7 @@ export default function Orders() {
                      order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
                   </span>
 
-                  {/* ปุ่มชำระเงิน (ถ้ายังไม่จ่าย) */}
+                  /* {/* ปุ่มชำระเงิน (ถ้ายังไม่จ่าย) */}
                   {order.status === 'pending' && (
                     <button
                       onClick={(e) => {
@@ -120,7 +120,7 @@ export default function Orders() {
                 </div>
                 <span className={`text-gray-300 text-xs transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}>▼</span>
               </div>
-            </div>
+            </div> */
 
             {/* ส่วนกางรายละเอียดสินค้า */}
             {expandedId === order.id && (
