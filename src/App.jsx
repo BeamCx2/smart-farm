@@ -1,25 +1,54 @@
-// ... (Import อื่นๆ ของบอสคงเดิม) ...
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
+
+// --- 📦 Import Contexts ---
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
+
+// --- 🏗️ Import Layouts ---
+import Layout from './components/layout/Layout';
+import AdminLayout from './components/layout/AdminLayout';
+
+// --- 📄 Import Pages (Customer) ---
+import Home from './pages/Home';
+import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// ✅ 1. Import ไฟล์ payment ใหม่ที่บอสสร้างไว้
+// ✅ Import หน้า Payment ตัวใหม่ (SCB API)
 import Payment from './pages/payment'; 
 
+// --- 👑 Import Pages (Admin) ---
 import Dashboard from './pages/admin/Dashboard';
 import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
 
-// --- 🛡️ Component เฝ้าประตู ---
+// --- 🛡️ Component เฝ้าประตู (ProtectedRoute) ---
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-emerald-600">กำลังตรวจสอบสิทธิ์...</div>;
-  if (!user) return <Navigate to="/register" replace />;
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/register" replace />;
+  }
+  
   return children;
 }
 
-// ❌ บอสลบฟังก์ชัน PaymentComponent { ... } ตัวเดิมออกได้เลยครับ เพราะเราแยกไปไว้ในไฟล์ pages/payment.jsx แล้ว
-
+// --- 🚀 Main App Component ---
 export default function App() {
   return (
     <BrowserRouter>
@@ -28,9 +57,10 @@ export default function App() {
           <CartProvider>
             <ToastProvider>
               <Routes>
+                {/* 🏠 Main Layout Wrapper */}
                 <Route element={<Layout />}>
                   
-                  {/* Public Routes */}
+                  {/* 🔓 หน้าที่ใครก็เข้าดูได้ (Public) */}
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:id" element={<ProductDetail />} />
@@ -38,22 +68,23 @@ export default function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/login" element={<Login />} />
 
-                  {/* Private Routes */}
+                  {/* 🔒 หน้าที่ต้องล็อกอินเท่านั้น (Private) */}
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-                  
-                  {/* ✅ 2. เปลี่ยนจาก test-payment เป็น payment */}
-                  <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-                  
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                  
+                  {/* ✅ เปลี่ยนจาก test-payment เป็น payment (SCB Gateway) */}
+                  <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
 
-                  {/* Admin Zone */}
+                  {/* 👑 Admin Zone (Private) */}
                   <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<Dashboard />} />
                     <Route path="products" element={<ProductManager />} />
                     <Route path="orders" element={<OrderManager />} />
                   </Route>
 
+                  {/* 🚫 404 - Redirect to Home */}
                   <Route path="*" element={<Navigate to="/" replace />} />
+                  
                 </Route>
               </Routes>
             </ToastProvider>
