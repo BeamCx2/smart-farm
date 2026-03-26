@@ -1,46 +1,53 @@
+// 📍 ไฟล์: netlify/functions/verify-slip.js
 const axios = require('axios');
 
 exports.handler = async (event) => {
+    // 🛡️ เช็คเบื้องต้น
     if (event.httpMethod !== "POST") {
-        return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
+        return { statusCode: 405, body: "Method Not Allowed" };
     }
 
     try {
-        const { payload } = JSON.parse(event.body);
+        const body = JSON.parse(event.body);
+        const payload = body.payload;
 
         if (!payload) {
-            return { statusCode: 400, body: JSON.stringify({ success: false, error: "ไม่พบ QR Payload" }) };
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ success: false, message: "Payload missing" })
+            };
         }
 
-        // 🚀 เรียกใช้ EasySlip API V1 (แม่นยำที่สุดสำหรับพร้อมเพย์)
+        // 🚀 เรียก API ด้วยความระมัดระวัง
         const response = await axios.post('https://developer.easyslip.com/api/v1/verify', 
-            { 
-                payload: payload 
-            }, 
+            { payload: payload },
             {
                 headers: { 
-                    'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab', // Key บอส
+                    'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab',
                     'Content-Type': 'application/json'
                 },
-                timeout: 10000 
+                timeout: 8000 // ถ้าธนาคารช้าเกิน 8 วิ ให้ตัดก่อน
             }
         );
 
-        // ✅ ส่ง JSON ทั้งหมดกลับไป (ที่มีโครงสร้าง event: "FOUND" และ data: { rawSlip: { ... } })
+        // ✅ ส่งผลลัพธ์กลับแบบปลอดภัย
         return {
             statusCode: 200,
-            headers: { 
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*" 
-            },
-            body: JSON.stringify(response.data) 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(response.data)
         };
 
     } catch (error) {
-        console.error("V1 Verify Error:", error.message);
+        // 🚩 จุดแก้ 500: ดักจับ Error ไม่ให้ Function บึ้ม
+        console.error("Function Error:", error.message);
+        
         return {
-            statusCode: 500,
-            body: JSON.stringify({ success: false, error: "ระบบตรวจสอบสลิปขัดข้อง", details: error.message })
+            statusCode: 200, // ส่ง 200 กลับไปแต่บอกว่า success: false เพื่อไม่ให้หน้าบ้านขึ้น 500
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                success: false,
+                message: "ระบบหลังบ้านขัดข้อง: " + (error.response?.data?.message || error.message)
+            })
         };
     }
 };
