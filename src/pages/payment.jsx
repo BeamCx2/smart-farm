@@ -56,7 +56,7 @@ export default function Payment() {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
                     if (code) resolve(code.data);
-                    else reject("ไม่พบ QR Code ในรูปสลิป กรุณาใช้รูปต้นฉบับ");
+                    else reject("ไม่พบ QR Code ในรูปสลิป กรุณาใช้รูปต้นฉบับครับ");
                 };
                 img.src = e.target.result;
             };
@@ -78,24 +78,29 @@ export default function Payment() {
             
             const result = await verifyRes.json();
 
-            // 📍 เปลี่ยนการเช็คเป็น .success ตามโครงสร้าง API V2
-            if (result.success) {
-                const slipData = result.data;
+            // 🔍 ตรวจสอบโครงสร้าง V1 (เช็ค event FOUND หรือ status 200)
+            if (result.event === "FOUND" || result.status === 200) {
                 
-                // 📍 ดึงยอดเงิน (V2 มักจะอยู่ที่ .amount หรือ .amount.amount)
-                const slipAmount = slipData.amount?.amount || slipData.amount || 0; 
-                
-                // 📍 เช็คชื่อผู้รับ (อิงจาก Dashboard: ณัฐวุฒิ ภักดีอำนาจ)
-                const receiverName = (slipData.receiver?.name || "").toLowerCase();
-                const isReceiverMatch = 
-                    receiverName.includes("ณัฐวุฒิ") || 
-                    receiverName.includes("nattawut") ||
-                    receiverName.includes("pakdeeamnaj");
+                // 📦 แกะข้อมูลจาก rawSlip (โครงสร้างที่บอสส่งมาล่าสุด)
+                const slip = result.data.rawSlip; 
 
-                // 📍 เช็คยอดเงินที่ต้องชำระ
+                // 💰 1. ดึงยอดเงิน (ซ้อน 2 ชั้น: amount.amount)
+                const slipAmount = slip.amount?.amount || 0; 
+                
+                // 👤 2. ดึงชื่อผู้รับ (ภาษาไทย)
+                const nameTH = slip.receiver?.account?.name?.th || "";
+                const nameEN = slip.receiver?.account?.name?.en || "";
+                
+                // 🔎 3. ตรวจสอบชื่อ (เน้นคำว่า "ณัฐวุฒิ" ตาม Dashboard บอส)
+                const isReceiverMatch = 
+                    nameTH.includes("ณัฐวุฒิ") || 
+                    nameEN.toLowerCase().includes("nattawut");
+
+                // 💵 4. ตรวจสอบยอดเงิน (เทียบยอดที่ลูกค้าต้องจ่าย)
                 const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
 
                 if (isAmountMatch && isReceiverMatch) {
+                    // ✅ ข้อมูลถูกต้อง! อัปเดต Firebase และ Storage
                     const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                     await uploadBytes(storageRef, file);
                     const downloadURL = await getDownloadURL(storageRef);
@@ -107,41 +112,38 @@ export default function Payment() {
                         await updateDoc(snap.docs[0].ref, {
                             status: 'paid',
                             slipUrl: downloadURL,
-                            verifiedBy: 'EasySlip v2.0 Auto',
+                            verifiedBy: 'EasySlip V1 rawSlip Auto',
                             updatedAt: serverTimestamp(),
-                            transRef: slipData.transRef || 'N/A'
+                            transRef: slip.transRef || 'N/A'
                         });
                         
                         setStatusModal({
-                            show: true,
-                            success: true,
+                            show: true, success: true,
                             message: 'ชำระเงินสำเร็จ!',
-                            details: 'ระบบตรวจสอบข้อมูลถูกต้อง ขอบคุณที่อุดหนุนครับ'
+                            details: 'ตรวจสอบข้อมูลถูกต้อง ขอบคุณที่อุดหนุนครับ'
                         });
                     }
                 } else {
-                    // ❌ แสดง Error เมื่อข้อมูลไม่ตรง
+                    // ❌ ข้อมูลในสลิปไม่ตรงกับออเดอร์
                     setStatusModal({
-                        show: true,
-                        success: false,
+                        show: true, success: false,
                         message: 'ข้อมูลไม่ตรง!',
-                        details: `ผู้รับ: ${slipData.receiver?.name || "ไม่ทราบชื่อ"} | ยอดโอน: ${slipAmount} บาท (ยอดที่ต้องชำระ: ${amount} บาท)`
+                        details: `ผู้รับ: ${nameTH || nameEN} | ยอดเงิน: ${slipAmount} บาท (ยอดที่ต้องชำระ: ${amount} บาท)`
                     });
                 }
             } else {
+                // ❌ API แจ้งว่าไม่พบข้อมูลสลิป
                 setStatusModal({
-                    show: true,
-                    success: false,
+                    show: true, success: false,
                     message: 'สลิปไม่ถูกต้อง',
-                    details: result.error || 'กรุณาตรวจสอบว่าสลิปมี QR Code และยอดเงินถูกต้อง'
+                    details: result.message || 'ไม่พบข้อมูลการโอนเงินในระบบ'
                 });
             }
         } catch (error) {
             setStatusModal({
-                show: true,
-                success: false,
+                show: true, success: false,
                 message: 'เกิดข้อผิดพลาด',
-                details: error.toString()
+                details: 'ไม่สามารถอ่าน QR Code ได้ กรุณาใช้รูปต้นฉบับ'
             });
         } finally {
             setUploading(false);
@@ -152,7 +154,7 @@ export default function Payment() {
         <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans relative">
             <div className="max-w-sm w-full animate-in fade-in zoom-in duration-500">
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter uppercase font-black">Payment Gateway</h1>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2">Smart Farm Official</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 font-black">Smart Farm Official</p>
 
                 <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner">
                     <div className="mb-6">
@@ -180,7 +182,7 @@ export default function Payment() {
                 </div>
 
                 <p className="text-[9px] font-black text-gray-300 px-10 leading-relaxed uppercase tracking-[0.2em] font-black">
-                    Powered by EasySlip API v2.0 <br/> Automatic Verification System
+                    Powered by EasySlip API v1.0 <br/> Automatic Verification System
                 </p>
             </div>
 
