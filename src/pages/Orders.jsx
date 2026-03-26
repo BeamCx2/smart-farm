@@ -105,23 +105,6 @@ export default function Orders() {
                      order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
                   </span>
 
-                  /* {/* ปุ่มชำระเงิน (ถ้ายังไม่จ่าย) */}
-                  {order.status === 'pending' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/test-payment', { state: { amount: order.total, orderId: order.orderId || order.id.slice(0, 8), firebaseDocId: order.id } });
-                      }}
-                      className="text-[9px] bg-emerald-600 text-white px-3 py-1 rounded-lg font-black"
-                    >
-                      💳 ชำระเงิน
-                    </button>
-                  )}
-                </div>
-                <span className={`text-gray-300 text-xs transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}>▼</span>
-              </div>
-            </div> */
-
             {/* ส่วนกางรายละเอียดสินค้า */}
             {expandedId === order.id && (
               <div className="px-6 pb-6 pt-2 border-t border-gray-50 bg-gray-50/20">
