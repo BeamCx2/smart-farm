@@ -72,16 +72,26 @@ export default function Checkout() {
             status: 'pending',
             createdAt: serverTimestamp(),
         };
+        try {
+            // 3. สั่งเพิ่มออเดอร์ลงใน Batch
+            batch.set(newOrderRef, orderData);
 
-       try {
-            // ... โค้ดส่วน batch.commit() ...
+            // 4. สั่งตัดสต๊อกสินค้าแต่ละชิ้นใน Batch
+            items.forEach((item) => {
+                const productRef = doc(db, 'products', item.id);
+                batch.update(productRef, {
+                    stock: increment(-item.qty) // ✅ ลดจำนวนสต๊อกตามที่ซื้อจริง
+                });
+            });
+
+            // 5. บันทึกข้อมูลทั้งหมดลงฐานข้อมูล (ถ้าอันไหนพังจะยกเลิกทั้งหมด)
             await batch.commit();
 
             addToast('สั่งซื้อและตัดสต๊อกเรียบร้อย', 'success');
             clearCart();
 
             if (paymentMethod === 'promptpay') {
-                navigate('/payment', { // ✅ เปลี่ยนจาก /test-payment เป็น /payment
+                navigate('/payment', { 
                     state: { 
                         amount: amountToPay, 
                         orderId: currentOrderId,
@@ -92,14 +102,15 @@ export default function Checkout() {
                 navigate('/orders');
             }
 
-        } catch (err) { // 👈 เช็คดูว่ามีปีกกาปิดก่อนเริ่ม catch ไหม
+        } catch (err) {
             console.error('Checkout Error:', err.message);
             addToast('การสั่งซื้อล้มเหลว: ' + err.message, 'error');
             setSubmitting(false);
         }
+    }; // 👈 บอสต้องมีตัวนี้เพื่อปิด handleSubmit ครับ
+
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-            {/* ... JSX ส่วนที่เหลือของบอสเหมือนเดิมทุกอย่างครับ ... */}
             <h1 className="text-2xl font-bold mb-2">💳 ชำระเงิน</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">กรอกข้อมูลเพื่อดำเนินการสั่งซื้อ</p>
 
