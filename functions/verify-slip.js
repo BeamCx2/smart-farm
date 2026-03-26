@@ -1,51 +1,39 @@
 const axios = require('axios');
 
 exports.handler = async (event) => {
-    if (event.httpMethod !== "POST") {
-        return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
-    }
+    if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
     try {
         const { payload } = JSON.parse(event.body);
+        console.log("DEBUG: Received Payload from Frontend:", payload); // 📍 ดูว่าหน้าบ้านส่งอะไรมา
 
-        if (!payload) {
-            return { statusCode: 400, body: JSON.stringify({ success: false, error: "ไม่พบข้อมูล QR Payload" }) };
-        }
-
-        // 🚀 เรียกใช้ EasySlip API (Endpoint ที่เสถียรที่สุด)
         const response = await axios.post('https://developer.easyslip.com/api/v1/verify', 
             { payload: payload }, 
             {
                 headers: { 
-                    'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab', // Key บอส
+                    'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab',
                     'Content-Type': 'application/json'
-                },
-                timeout: 10000 
+                }
             }
         );
 
-        // ✅ ตรวจสอบผลลัพธ์จาก EasySlip
-        const isSuccess = response.data.status === 200;
+        console.log("DEBUG: EasySlip Response:", response.data); // 📍 ดูว่า EasySlip ตอบอะไรมา
 
         return {
             statusCode: 200,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                success: isSuccess,
-                // 📍 นี่คือข้อมูลที่หน้าบ้านรออยู่ครับ: { status: 200, data: { amount: { amount: 254 } } }
-                data: response.data.data, 
-                error: isSuccess ? null : (response.data.message || "สลิปไม่ถูกต้อง")
+                success: response.data.status === 200,
+                data: response.data.data,
+                error: response.data.message
             })
         };
-
     } catch (error) {
-        console.error("Verify Error:", error.message);
-        const status = error.response ? error.response.status : 500;
-        const errorData = error.response ? error.response.data : { message: error.message };
+        // 📍 ถ้าพังตรงนี้ บอสจะเห็นใน Logs เลยว่าพังเพราะอะไร
+        console.error("CRITICAL ERROR:", error.response?.data || error.message);
         return {
-            statusCode: status,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ success: false, error: "ระบบตรวจสอบสลิปขัดข้อง", details: errorData })
+            statusCode: 500,
+            body: JSON.stringify({ success: false, error: "ระบบตรวจสอบสลิปขัดข้อง", details: error.message })
         };
     }
 };
