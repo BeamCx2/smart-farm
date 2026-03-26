@@ -26,7 +26,6 @@ export default function Orders() {
         ...doc.data()
       }));
 
-      // เรียงลำดับ ใหม่ไปเก่า
       const sortedOrders = orderData.sort((a, b) => {
         const dateA = a.createdAt?.seconds || 0;
         const dateB = b.createdAt?.seconds || 0;
@@ -87,14 +86,12 @@ export default function Orders() {
                 </div>
                 
                 <div className="flex flex-col items-end gap-1.5">
-                  {/* ✅ โชว์วิธีชำระเงิน */}
                   <div className="px-2 py-0.5 bg-gray-50 rounded-lg border border-gray-100">
                     <span className="text-[8px] font-black text-emerald-600 uppercase">
                       {order.paymentMethod || 'PROMPTPAY'}
                     </span>
                   </div>
 
-                  {/* ✅ Badge สถานะ */}
                   <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-tight ${
                     order.status === 'completed' || order.status === 'shipped' || order.status === 'finished' ? 'bg-emerald-100 text-emerald-600' : 
                     order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
@@ -104,6 +101,9 @@ export default function Orders() {
                      order.status === 'paid' ? 'ชำระเงินแล้ว' :
                      order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
                   </span>
+                </div>
+              </div>
+            </div>
 
             {/* ส่วนกางรายละเอียดสินค้า */}
             {expandedId === order.id && (
@@ -112,7 +112,7 @@ export default function Orders() {
                   <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest">รายการสินค้า</h4>
                   {order.items?.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-3">
-                      <img src={item.image || 'https://placehold.co/50'} className="w-8 h-8 rounded-lg object-cover" />
+                      <img src={item.image || 'https://placehold.co/50'} className="w-8 h-8 rounded-lg object-cover" alt="" />
                       <div className="flex-1">
                         <p className="font-bold text-xs text-gray-800">{item.name}</p>
                         <p className="text-[10px] text-gray-500">{formatTHB(item.price)} x {item.qty}</p>
