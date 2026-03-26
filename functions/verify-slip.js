@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 exports.handler = async (event) => {
-  // 🔒 เช็คว่าเป็น POST หรือเปล่า
+  // 🔒 1. ตรวจสอบ Method (ต้องเป็น POST เท่านั้น)
   if (event.httpMethod !== "POST") {
     return { 
       statusCode: 405, 
@@ -11,28 +11,34 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { imageBase64 } = JSON.parse(event.body);
+    // 📦 2. รับข้อมูลรูปภาพ Base64 จากหน้าบ้าน
+    const body = JSON.parse(event.body);
+    const { imageBase64 } = body;
 
     if (!imageBase64) {
       return { 
         statusCode: 400, 
-        body: JSON.stringify({ error: "No image data provided" }) 
+        body: JSON.stringify({ error: "ไม่พบข้อมูลรูปภาพ (imageBase64 is missing)" }) 
       };
     }
-    
-    // 🚀 ส่งไปเช็คที่ EasySlip
+
+    // 🚀 3. ส่งไปเช็คที่ EasySlip (ใช้ Endpoint verify-direct)
+    // หมายเหตุ: EasySlip ต้องการฟิลด์ชื่อ "image" ใน Body
     const response = await axios.post('https://developer.easyslip.com/api/v1/verify-direct', 
-      { image: imageBase64 }, 
+      { 
+        image: imageBase64  // 👈 ตรวจสอบว่าชื่อฟิลด์ถูกต้อง
+      }, 
       {
         headers: { 
-          // 🔑 สำคัญมาก: ต้องมีคำว่า Bearer นำหน้า Token เสมอครับบอส
+          // 🔑 ใส่ Token ของบอส (ต้องมี Bearer นำหน้า)
           'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab', 
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 10000 // เพิ่ม Timeout เป็น 10 วินาทีกันค้าง
       }
     );
 
-    // ส่งผลลัพธ์กลับไปให้หน้าบ้าน (React)
+    // ✅ 4. ส่งผลลัพธ์กลับไปที่ React
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
@@ -40,13 +46,19 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error("EasySlip Error:", error.response ? error.response.data : error.message);
+    // 🚨 5. ส่วนดักจับ Error (จุดที่บอสเจอ 404 จะมาโผล่ตรงนี้)
+    const errorStatus = error.response ? error.response.status : 500;
+    const errorData = error.response ? error.response.data : { message: error.message };
+    
+    console.error("❌ EasySlip Error Detail:", errorData);
+
     return {
-      statusCode: error.response ? error.response.status : 500,
+      statusCode: errorStatus,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         error: "Verification failed", 
-        details: error.response ? error.response.data : error.message 
+        status: errorStatus,
+        message: errorData.message || "เกิดข้อผิดพลาดในการตรวจสอบสลิป"
       })
     };
   }
