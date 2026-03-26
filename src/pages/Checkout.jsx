@@ -147,7 +147,6 @@ export default function Checkout() {
                             <h3 className="font-bold mb-5">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
                                 {PAYMENT_METHODS.map((m) => (
-{PAYMENT_METHODS.map((m) => (
                                     <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'}`}>
                                         <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-4 h-4" />
                                         <div>
