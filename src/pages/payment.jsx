@@ -15,7 +15,7 @@ export default function Payment() {
 
   // 🚨 จุดสำคัญ: ต้องระบุ 'asia-southeast1' ให้ตรงกับที่ Deploy หลังบ้านครับ
   const functions = getFunctions(app, 'asia-southeast1'); 
-  const getSCBQR = httpsCallable(functions, 'getSCBQR');
+  const getSCBQR = httpsCallable(functions, 'getscbqr');
 
   const handleGenerateQR = async () => {
     // ป้องกันการยิง API ถ้าข้อมูลไม่ครบ
