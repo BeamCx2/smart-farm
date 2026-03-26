@@ -53,7 +53,7 @@ const handleUploadSlip = async (e) => {
       const base64Image = reader.result.split(',')[1];
 
       try {
-        const verifyRes = await fetch('functions/verify-slip', {
+        const verifyRes = await fetch('/.netlify/functions/verify-slip', {
           method: 'POST',
           body: JSON.stringify({ imageBase64: base64Image })
         });
