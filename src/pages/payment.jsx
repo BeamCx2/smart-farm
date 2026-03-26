@@ -11,6 +11,7 @@ import app from '../lib/firebase';
 export default function Payment() {
     const location = useLocation();
     const navigate = useNavigate();
+    // 🚩 รับค่า amount และ orderId มาจากหน้า Orders
     const { amount, orderId } = location.state || { amount: 0, orderId: 'N/A' };
 
     const [qrRawData, setQrRawData] = useState('');
@@ -55,6 +56,7 @@ export default function Payment() {
             reader.onload = async () => {
                 const base64Image = reader.result.split(',')[1]; 
 
+                // 🚀 1. ส่งรูปไปตรวจสอบที่หลังบ้าน
                 const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                     method: 'POST',
                     body: JSON.stringify({ image: base64Image }) 
@@ -64,48 +66,46 @@ export default function Payment() {
 
                 if (result && (result.event === "FOUND" || result.status === 200)) {
                     const slipData = result.data?.rawSlip || result.data || result; 
+                    const transRef = slipData.transRef; // 🔑 เลขอ้างอิงธนาคาร (ห้ามซ้ำ)
 
-                    // 💰 1. ตรวจสอบยอดเงิน (Amount Match)
-                    const slipAmount = slipData.amount?.amount || slipData.amount || 0; 
-                    const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
-
-                    // 👤 2. ตรวจสอบชื่อผู้รับ (Receiver Match)
-                    const nameTH = slipData.receiver?.account?.name?.th || slipData.receiver?.name || "";
-                    const isReceiverMatch = nameTH.includes("ณัฐวุฒิ");
-
-                    // 🛡️ 3. ตรวจสอบสลิปซ้ำ (Duplicate transRef)
-                    const transRef = slipData.transRef;
+                    // 🛡️ [ด่านที่ 1]: เช็คว่าสลิปนี้เคยถูกใช้ในระบบเราหรือยัง (กันคนเอาสลิปคนอื่นมาวนใช้)
                     const duplicateQuery = query(collection(db, 'orders'), where('transRef', '==', transRef));
                     const duplicateSnap = await getDocs(duplicateQuery);
-
-                    if (!isAmountMatch) {
-                        setUploading(false);
-                        return setStatusModal({
-                            show: true, success: false,
-                            message: 'ยอดเงินไม่ถูกต้อง!',
-                            details: `ยอดโอน: ${slipAmount} บาท (ยอดที่ต้องชำระ: ${amount} บาท)`
-                        });
-                    }
-
-                    if (!isReceiverMatch) {
-                        setUploading(false);
-                        return setStatusModal({
-                            show: true, success: false,
-                            message: 'ชื่อผู้รับไม่ถูกต้อง!',
-                            details: `ผู้รับในสลิป: ${nameTH || "ไม่ทราบชื่อ"}`
-                        });
-                    }
 
                     if (!duplicateSnap.empty) {
                         setUploading(false);
                         return setStatusModal({
                             show: true, success: false,
-                            message: 'สลิปนี้ถูกใช้ไปแล้ว!',
-                            details: `เลขอ้างอิง: ${transRef} ถูกบันทึกในระบบแล้ว`
+                            message: 'สลิปนี้ถูกใช้งานไปแล้ว!',
+                            details: `รหัสอ้างอิง ${transRef} มีอยู่ในระบบแล้ว ไม่สามารถใช้ซ้ำได้`
                         });
                     }
 
-                    // ✅ ด่านสุดท้าย: บันทึกข้อมูล
+                    // 💰 [ด่านที่ 2]: เช็คยอดเงินต้องตรงกับออเดอร์ปัจจุบันเป๊ะๆ (102.00 บาท)
+                    const slipAmount = slipData.amount?.amount || slipData.amount || 0; 
+                    const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
+
+                    if (!isAmountMatch) {
+                        setUploading(false);
+                        return setStatusModal({
+                            show: true, success: false,
+                            message: 'ยอดเงินโอนไม่ถูกต้อง!',
+                            details: `ยอดในสลิป: ${slipAmount} บาท (ยอดที่ต้องชำระ: ${amount} บาท)`
+                        });
+                    }
+
+                    // 👤 [ด่านที่ 3]: เช็คชื่อผู้รับเงิน (ต้องเป็นบัญชีของบอส)
+                    const nameTH = slipData.receiver?.account?.name?.th || slipData.receiver?.name || "";
+                    if (!nameTH.includes("ณัฐวุฒิ")) {
+                        setUploading(false);
+                        return setStatusModal({
+                            show: true, success: false,
+                            message: 'บัญชีผู้รับไม่ถูกต้อง!',
+                            details: `ในสลิปโอนไปที่: ${nameTH || "บุคคลอื่น"}`
+                        });
+                    }
+
+                    // ✅ [ผ่านทุกด่าน]: บันทึกลงออเดอร์ที่ระบุ (orderId)
                     const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                     await uploadBytes(storageRef, file);
                     const downloadURL = await getDownloadURL(storageRef);
@@ -117,8 +117,8 @@ export default function Payment() {
                         await updateDoc(snap.docs[0].ref, {
                             status: 'paid',
                             slipUrl: downloadURL,
-                            transRef: transRef, // บันทึกไว้กันคนใช้ซ้ำ
-                            verifiedBy: 'EasySlip Secure V1',
+                            transRef: transRef, // 🔒 ล็อคเลขนี้ไว้กับออเดอร์นี้ถาวร
+                            verifiedBy: 'Secure V1 Logic',
                             updatedAt: serverTimestamp()
                         });
                         
@@ -126,15 +126,15 @@ export default function Payment() {
                         setStatusModal({
                             show: true, success: true,
                             message: 'ชำระเงินสำเร็จ!',
-                            details: `เลขรายการ: ${transRef} ตรวจสอบเรียบร้อย ขอบคุณครับ`
+                            details: `เลขอ้างอิง: ${transRef} ตรวจสอบความปลอดภัยเรียบร้อย`
                         });
                     }
                 } else {
                     setUploading(false);
                     setStatusModal({
                         show: true, success: false,
-                        message: 'สลิปไม่ถูกต้อง',
-                        details: result?.message || 'INVALID_IMAGE_DATA'
+                        message: 'ตรวจสอบสลิปไม่สำเร็จ',
+                        details: result?.message || 'รูปภาพไม่ชัดเจน หรือเซิร์ฟเวอร์ธนาคารขัดข้อง'
                     });
                 }
             };
@@ -142,7 +142,7 @@ export default function Payment() {
             setUploading(false);
             setStatusModal({
                 show: true, success: false,
-                message: 'เกิดข้อผิดพลาด',
+                message: 'เกิดข้อผิดพลาดระบบ',
                 details: error.toString()
             });
         }
@@ -152,11 +152,11 @@ export default function Payment() {
         <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans relative">
             <div className="max-w-sm w-full animate-in fade-in zoom-in duration-500">
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter uppercase leading-none font-black">Payment Gateway</h1>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black font-black">Secure Verification System</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black">Secure Order Matching</p>
 
                 <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner">
                     <div className="mb-6 leading-none">
-                        <p className="text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest leading-none font-black">ยอดชำระทั้งสิ้น</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest leading-none font-black">ยอดชำระออเดอร์ #{orderId}</p>
                         <p className="text-4xl font-black text-gray-900 leading-none font-black">{formatTHB(amount)}</p>
                     </div>
 
@@ -170,20 +170,21 @@ export default function Payment() {
                         )}
                     </div>
 
-                    <div className="mt-4 leading-none">
+                    <div className="mt-4 leading-none font-black">
                         <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 leading-none font-black
                             ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-none' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
-                            {uploading ? '⚙️ Verifying...' : '📸 ยืนยันการโอน (แนบสลิป)'}
+                            {uploading ? '⚙️ Security Check...' : '📸 ยืนยันการโอน (แนบสลิป)'}
                             <input id="slip-upload-input" type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading || loading} />
                         </label>
                     </div>
                 </div>
 
                 <p className="text-[9px] font-black text-gray-300 px-10 leading-relaxed uppercase tracking-[0.2em] leading-none font-black">
-                    Powered by EasySlip Secure API <br/> Protected against duplicate slips
+                    Anti-Fraud System Enabled <br/> Each slip is locked to a single Order ID
                 </p>
             </div>
 
+            {/* Result Modal */}
             {statusModal.show && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center animate-in zoom-in-95 duration-200">
