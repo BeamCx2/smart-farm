@@ -6,8 +6,8 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
-import { ThailandAddressTypeahead } from 'react-thailand-address-autocomplete';
-
+import { ThailandAddressTypeahead, setup } from 'react-thailand-address-autocomplete';
+setup();
 const PAYMENT_METHODS = [
     { id: 'promptpay', label: '📱 PromptPay QR', desc: 'สแกนจ่ายผ่าน QR Code' },
     { id: 'bank', label: '🏦 โอนเงินผ่านธนาคาร', desc: 'โอนตรงเข้าบัญชี' },
