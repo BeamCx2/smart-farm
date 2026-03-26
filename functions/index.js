@@ -13,7 +13,7 @@ exports.getSCBQR = functions.region('asia-southeast1')
   .https.onCall(async (data, context) => {
     // 🛡️ ตรวจสอบการล็อกอิน
     if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'บอสครับ ต้องล็อกอินก่อนนะ!');
+        throw new functions.https.HttpsError('unauthenticated', 'ลูกค้า ต้องล็อกอินก่อนนะ!');
     }
 
     const { amount, orderId } = data;
