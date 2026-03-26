@@ -82,13 +82,15 @@ export default function Payment() {
             
             const result = await verifyRes.json();
 
-            // 🔍 ตรวจสอบโครงสร้าง V1 (เช็ค event FOUND หรือ status 200)
+            // 🔍 ตรวจสอบโครงสร้าง FOUND (V1 rawSlip)
             if (result.event === "FOUND" || result.status === 200) {
                 const slip = result.data.rawSlip; 
 
+                // 💰 ดึงยอดเงิน (102.00 หรือ 254.00)
                 const slipAmount = slip.amount?.amount || 0; 
                 const nameTH = slip.receiver?.account?.name?.th || "";
                 
+                // 🔎 เช็คยอดเงิน และ ชื่อผู้รับ (ณัฐวุฒิ)
                 const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
                 const isReceiverMatch = nameTH.includes("ณัฐวุฒิ");
 
@@ -104,7 +106,7 @@ export default function Payment() {
                         await updateDoc(snap.docs[0].ref, {
                             status: 'paid',
                             slipUrl: downloadURL,
-                            verifiedBy: 'EasySlip Debug Mode',
+                            verifiedBy: 'EasySlip V1 Final Fixed',
                             updatedAt: serverTimestamp(),
                             transRef: slip.transRef || 'N/A'
                         });
@@ -123,12 +125,10 @@ export default function Payment() {
                     });
                 }
             } else {
-                // ❌ 📍 จุดที่บอสต้องการ: ดึง Error จริงจาก API มาโชว์
                 setStatusModal({
-                    show: true,
-                    success: false,
+                    show: true, success: false,
                     message: 'สลิปไม่ถูกต้อง',
-                    details: result.message || result.error || 'เซิร์ฟเวอร์ธนาคารอาจล่าช้า (ช่วงตี 4) กรุณาลองใหม่อีกครั้ง'
+                    details: result.message || result.error || 'เซิร์ฟเวอร์ธนาคารล่าช้า กรุณาลองใหม่อีกครั้ง'
                 });
             }
         } catch (error) {
@@ -174,11 +174,11 @@ export default function Payment() {
                 </div>
 
                 <p className="text-[9px] font-black text-gray-300 px-10 leading-relaxed uppercase tracking-[0.2em] font-black">
-                    Powered by EasySlip Debug API <br/> Automatic Verification System
+                    Powered by EasySlip Stable API <br/> Automatic Verification System
                 </p>
             </div>
 
-            {/* ✨ Custom Result Modal */}
+            {/* ✨ Result Modal */}
             {statusModal.show && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center animate-in zoom-in-95 duration-200">
@@ -186,15 +186,12 @@ export default function Payment() {
                             ${statusModal.success ? 'bg-emerald-50 text-emerald-500 shadow-emerald-100' : 'bg-red-50 text-red-500 shadow-red-100'}`}>
                             {statusModal.success ? '✓' : '✕'}
                         </div>
-                        
                         <h2 className={`text-2xl font-black mb-3 tracking-tighter font-black ${statusModal.success ? 'text-emerald-900' : 'text-red-900'}`}>
                             {statusModal.message}
                         </h2>
-                        
                         <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-relaxed mb-10 px-2 font-black">
                             {statusModal.details}
                         </p>
-
                         <button
                             onClick={statusModal.success ? () => navigate('/orders') : closeModal}
                             className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl font-black
