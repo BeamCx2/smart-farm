@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { collection, doc, writeBatch, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -20,73 +20,28 @@ export default function Checkout() {
     
     const [submitting, setSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('promptpay');
-    const [allAddresses, setAllAddresses] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showOptions, setShowOptions] = useState(false);
     
     const [form, setForm] = useState({
-        name: user?.displayName || '', phone: '', email: user?.email || '',
-        address: '', district: '', amphoe: '', province: '', zipcode: '',
+        name: user?.displayName || '', 
+        phone: '', 
+        email: user?.email || '',
+        address: '',    // บ้านเลขที่, ซอย, ถนน
+        district: '',   // ตำบล
+        amphoe: '',     // อำเภอ
+        province: '',   // จังหวัด
+        zipcode: '',    // รหัสไปรษณีย์
     });
-
-    // ✅ แก้ไขส่วนนี้: แตกข้อมูลจาก Nested Array ให้ถูกต้อง
-    useEffect(() => {
-        fetch('https://raw.githubusercontent.com/earthchie/jquery.Thailand.js/master/jquery.Thailand.js/database/db.json')
-            .then(res => res.json())
-            .then(result => {
-                if (result && result.data) {
-                    const mappedData = [];
-                    // ข้อมูลต้นทางเป็น [province, [amphoe, [[district, [zipcode, ...]]]]]
-                    // เราต้องวน Loop กางมันออกมาให้เป็นแถวเดียวครับ
-                    result.data.forEach(p => {
-                        const province = p[0];
-                        p[1].forEach(a => {
-                            const amphoe = a[0];
-                            a[1].forEach(d => {
-                                const district = d[0];
-                                d[1].forEach(z => {
-                                    mappedData.push({
-                                        district: district,
-                                        amphoe: amphoe,
-                                        province: province,
-                                        zipcode: z
-                                    });
-                                });
-                            });
-                        });
-                    });
-                    setAllAddresses(mappedData);
-                }
-            })
-            .catch(err => console.error("Fetch error:", err));
-    }, []);
-
-    const filteredResults = useMemo(() => {
-        const query = searchTerm.trim().toLowerCase();
-        if (query.length < 2 || !Array.isArray(allAddresses)) return [];
-
-        return allAddresses.filter(item => 
-            String(item.district).includes(query) || 
-            String(item.amphoe).includes(query) || 
-            String(item.province).includes(query) || 
-            String(item.zipcode).includes(query)
-        ).slice(0, 10);
-    }, [searchTerm, allAddresses]);
-
-    const handleSelectAddress = (addr) => {
-        setForm({ ...form, ...addr });
-        setSearchTerm(`${addr.district} » ${addr.amphoe} » ${addr.province} (${addr.zipcode})`);
-        setShowOptions(false);
-    };
 
     if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
     if (!user) return <Navigate to="/login" replace />;
+    if (items.length === 0 && !submitting) return <Navigate to="/cart" replace />;
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (submitting || !form.district) return;
+        if (submitting) return;
+
         setSubmitting(true);
         const currentOrderId = generateOrderId();
         const batch = writeBatch(db);
@@ -97,16 +52,25 @@ export default function Checkout() {
                 orderId: currentOrderId,
                 userId: user.uid,
                 customer: { ...form },
-                items: items.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, image: i.image || '' })),
+                items: items.map(i => ({ 
+                    id: i.id, 
+                    name: i.name, 
+                    price: i.price, 
+                    qty: i.qty, 
+                    image: i.image || '' 
+                })),
                 subtotal, shipping, total,
                 totalSatang: toSatang(total),
-                paymentMethod, status: 'pending',
+                paymentMethod, 
+                status: 'pending',
                 createdAt: serverTimestamp(),
             });
+
             items.forEach(item => {
                 const productRef = doc(db, 'products', item.id);
                 batch.update(productRef, { stock: increment(-item.qty) });
             });
+
             await batch.commit();
             addToast('สั่งซื้อเรียบร้อย', 'success');
             clearCart();
@@ -125,62 +89,86 @@ export default function Checkout() {
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <h3 className="font-bold mb-5 text-emerald-700">📍 ข้อมูลจัดส่ง</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <input name="name" value={form.name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400" placeholder="ชื่อ-นามสกุล *" />
-                                <input name="phone" value={form.phone} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400" placeholder="เบอร์โทรศัพท์ *" />
-                            </div>
-                            <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 outline-none focus:border-emerald-400 mt-4" placeholder="บ้านเลขที่, หมู่, ซอย, ถนน *" />
-
-                            <div className="mt-6 relative">
-                                <label className="block text-sm font-bold mb-1.5 text-emerald-600 uppercase tracking-wider font-sans">🔎 ค้นหา ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์</label>
-                                <input 
-                                    value={searchTerm} 
-                                    onChange={(e) => { setSearchTerm(e.target.value); setShowOptions(true); }}
-                                    onFocus={() => setShowOptions(true)}
-                                    className="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 bg-emerald-50/30 outline-none focus:border-emerald-400 font-medium"
-                                    placeholder={allAddresses.length === 0 ? "⏳ กำลังโหลดฐานข้อมูล..." : "พิมพ์เพื่อค้นหา..."}
-                                    autoComplete="off"
-                                />
-                                {showOptions && filteredResults.length > 0 && (
-                                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
-                                        {filteredResults.map((addr, idx) => (
-                                            <div key={idx} onClick={() => handleSelectAddress(addr)} className="px-5 py-3 hover:bg-emerald-50 cursor-pointer text-sm border-b border-gray-50 transition-colors last:border-none">
-                                                <span className="font-bold text-emerald-800">{addr.district}</span> » {addr.amphoe} » {addr.province} » <span className="text-gray-400">{addr.zipcode}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                        {/* 🏠 ข้อมูลจัดส่ง */}
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100">
+                            <h3 className="font-bold mb-6 flex items-center gap-2 text-emerald-700 text-lg">📍 ข้อมูลจัดส่ง</h3>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-700">ชื่อ-นามสกุล *</label>
+                                    <input name="name" value={form.name} onChange={handleChange} required className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="สมชาย ใจดี" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-700">เบอร์โทรศัพท์ *</label>
+                                    <input name="phone" value={form.phone} onChange={handleChange} required type="tel" className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="081-234-5678" />
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-[11px]">
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="font-bold text-gray-400 mb-1">ตำบล</p><p className="font-semibold text-gray-700 truncate">{form.district || '-'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="font-bold text-gray-400 mb-1">อำเภอ</p><p className="font-semibold text-gray-700 truncate">{form.amphoe || '-'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="font-bold text-gray-400 mb-1">จังหวัด</p><p className="font-semibold text-gray-700 truncate">{form.province || '-'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="font-bold text-gray-400 mb-1">รหัสไปรษณีย์</p><p className="font-semibold text-gray-700 truncate">{form.zipcode || '-'}</p></div>
+                            <div className="mt-5">
+                                <label className="block text-sm font-semibold mb-2 text-gray-700">ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน) *</label>
+                                <textarea name="address" value={form.address} onChange={handleChange} required rows="2" className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="123/4 หมู่ 5 ซอยรื่นรมย์..." />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-5 mt-5">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-700">ตำบล / แขวง *</label>
+                                    <input name="district" value={form.district} onChange={handleChange} required className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="ลาดยาว" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-700">อำเภอ / เขต *</label>
+                                    <input name="amphoe" value={form.amphoe} onChange={handleChange} required className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="จตุจักร" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-5 mt-5">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-700">จังหวัด *</label>
+                                    <input name="province" value={form.province} onChange={handleChange} required className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="กรุงเทพมหานคร" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-700">รหัสไปรษณีย์ *</label>
+                                    <input name="zipcode" value={form.zipcode} onChange={handleChange} required className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none focus:border-emerald-400 focus:bg-white transition-all bg-gray-50/30" placeholder="10900" />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <h3 className="font-bold mb-5 text-emerald-700">💰 วิธีชำระเงิน</h3>
-                            <div className="space-y-3">
+                        {/* 💰 วิธีชำระเงิน */}
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100">
+                            <h3 className="font-bold mb-6 text-emerald-700 text-lg">💰 วิธีชำระเงิน</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {PAYMENT_METHODS.map((m) => (
-                                    <label key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-100'}`}>
-                                        <input type="radio" checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-4 h-4" />
-                                        <div><div className="font-semibold text-sm">{m.label}</div><div className="text-xs text-gray-500">{m.desc}</div></div>
+                                    <label key={m.id} className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-100 hover:border-emerald-200'}`}>
+                                        <input type="radio" checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-5 h-5" />
+                                        <div>
+                                            <div className="font-bold text-sm text-gray-800">{m.label}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{m.desc}</div>
+                                        </div>
                                     </label>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-8 shadow-md h-fit lg:sticky lg:top-24 border border-gray-100">
-                        <h3 className="font-bold text-lg mb-4 text-emerald-900 font-sans">📋 สรุปรายการ</h3>
-                        <div className="flex justify-between text-lg font-black pt-1 text-emerald-900 mb-6 border-t border-gray-100 pt-4"><span>ยอดสุทธิ</span><span>{formatTHB(total)}</span></div>
-                        <button type="submit" disabled={submitting || allAddresses.length === 0} className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-lg shadow-emerald-200 transition-all disabled:bg-gray-300">
+                    {/* สรุปรายการ */}
+                    <div className="bg-white rounded-3xl p-8 shadow-lg shadow-emerald-100/50 h-fit lg:sticky lg:top-24 border border-emerald-50">
+                        <h3 className="font-bold text-xl mb-6 text-emerald-900 border-b border-gray-100 pb-4">📋 สรุปรายการ</h3>
+                        
+                        <div className="flex justify-between items-center text-lg font-black text-emerald-900 mb-8">
+                            <span>ยอดสุทธิ</span>
+                            <span className="text-2xl">{formatTHB(total)}</span>
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            disabled={submitting} 
+                            className="w-full py-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg shadow-xl shadow-emerald-200 transition-all active:scale-95 disabled:bg-gray-300 disabled:shadow-none"
+                        >
                             {submitting ? 'กำลังส่งข้อมูล...' : `✅ ยืนยันการสั่งซื้อ`}
                         </button>
+
+                        <p className="text-center text-xs text-gray-400 mt-4 font-medium italic">
+                            * ตรวจสอบที่อยู่จัดส่งให้ถูกต้องก่อนยืนยัน
+                        </p>
                     </div>
                 </div>
             </form>
