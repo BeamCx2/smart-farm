@@ -14,21 +14,30 @@ export default function Dashboard() {
     });
     const [loading, setLoading] = useState(true);
 
+  // ... (ส่วนบนเหมือนเดิม) ...
+
     useEffect(() => {
         async function fetchStats() {
             try {
-                // 1. ดึงข้อมูลออเดอร์มาคำนวณยอดขาย
                 const orderSnap = await getDocs(collection(db, 'orders'));
                 const orders = orderSnap.docs.map(d => d.data());
                 
-                // 2. ดึงข้อมูลสินค้า
                 const productSnap = await getDocs(collection(db, 'products'));
                 
+                // 1. คำนวณยอดขาย: เอาทุกสถานะ ยกเว้น 'pending', 'cancelled' และ 'waiting_verify'
                 const totalSales = orders
-                    .filter(o => o.status === 'paid')
-                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                    .filter(o => 
+                        o.status !== 'pending' && 
+                        o.status !== 'cancelled' && 
+                        o.status !== 'waiting_verify'
+                    )
+                    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-                const pending = orders.filter(o => o.status === 'pending').length;
+                // 2. คำนวณรายการรอดำเนินการ: นับเฉพาะ 'pending' และ 'waiting_verify' (รอตรวจสลิป)
+                const pending = orders.filter(o => 
+                    o.status === 'pending' || 
+                    o.status === 'waiting_verify'
+                ).length;
 
                 setStats({
                     totalSales,
@@ -44,6 +53,8 @@ export default function Dashboard() {
         }
         fetchStats();
     }, []);
+
+// ... (ส่วนล่างเหมือนเดิม) ...
 
     if (loading) return <div className="p-10 text-center animate-pulse text-emerald-600">กำลังประมวลผลข้อมูล...</div>;
 
@@ -78,7 +89,7 @@ export default function Dashboard() {
             </div>
 
             <div className="bg-emerald-50 dark:bg-emerald-900/20 p-8 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-800 text-center">
-                <p className="text-emerald-800 dark:text-emerald-400 font-bold">ยินดีต้อนรับกลับมาครับบอส! ระบบสต๊อกและออเดอร์เชื่อมต่อ Firebase เรียบร้อยแล้ว</p>
+                <p className="text-emerald-800 dark:text-emerald-400 font-bold">ยินดีต้อนรับ!</p>
             </div>
         </div>
     );
