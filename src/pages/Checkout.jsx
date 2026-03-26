@@ -92,13 +92,13 @@ export default function Checkout() {
             clearCart();
 
             if (paymentMethod === 'promptpay') {
-                navigate('/test-payment', { 
-                    state: { 
-                        amount: amountToPay, 
-                        orderId: currentOrderId,
-                        firebaseDocId: newOrderRef.id 
-                    } 
-                });
+navigate('/payment', { 
+    state: { 
+        amount: amountToPay, 
+        orderId: currentOrderId,
+        firebaseDocId: newOrderRef.id 
+    } 
+});
             } else {
                 navigate('/orders');
             }
