@@ -6,21 +6,29 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { imageBase64 } = JSON.parse(event.body);
+    const { payload } = JSON.parse(event.body);
 
-    // 🚀 ยิงตรงเข้า EasySlip API v1
-    const response = await axios.post('https://developer.easyslip.com/api/v1/verify-direct', 
-      { image: imageBase64 }, 
+    if (!payload) {
+      return { 
+        statusCode: 400, 
+        body: JSON.stringify({ error: "ไม่พบข้อมูล QR Payload" }) 
+      };
+    }
+
+    // 🚀 เรียกใช้ EasySlip API v2 ตามที่บอสส่งมา
+    const response = await axios.post('https://api.easyslip.com/v2/verify/bank', 
+      { 
+        payload: payload // 👈 ส่งค่า QR Payload ที่สแกนได้จากสลิป
+      }, 
       {
         headers: { 
-          'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab', 
+          'Authorization': 'Bearer 929951ef-e7be-4b29-b441-7927e448d8ab', // 🔑 ใส่ Key บอสตรงนี้
           'Content-Type': 'application/json'
         },
         timeout: 10000 
       }
     );
 
-    // ✅ ส่ง Data กลับไปให้ React เช็คยอดเงินต่อ
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
