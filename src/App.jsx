@@ -1,93 +1,24 @@
-import { doc, updateDoc } from 'firebase/firestore'; 
-import { db } from './lib/firebase'; 
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ToastProvider } from './contexts/ToastContext';
-import Layout from './components/layout/Layout';
-import AdminLayout from './components/layout/AdminLayout';
-import { useState, useEffect } from 'react';
-import Home from './pages/Home';
-import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
+// ... (Import อื่นๆ ของบอสคงเดิม) ...
 import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
+
+// ✅ 1. Import ไฟล์ payment ใหม่ที่บอสสร้างไว้
+import Payment from './pages/payment'; 
+
 import Dashboard from './pages/admin/Dashboard';
 import ProductManager from './pages/admin/ProductManager';
 import OrderManager from './pages/admin/OrderManager';
 
-// --- 🛡️ Component เฝ้าประตู (ใช้เฉพาะหน้าที่ "ต้อง" ล็อกอินเท่านั้น) ---
+// --- 🛡️ Component เฝ้าประตู ---
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-emerald-600">กำลังตรวจสอบสิทธิ์...</div>;
-  
-  if (!user) {
-    return <Navigate to="/register" replace />;
-  }
+  if (!user) return <Navigate to="/register" replace />;
   return children;
 }
 
-// --- ฟังก์ชันสำหรับหน้าชำระเงิน (PaymentComponent) ---
-function PaymentComponent() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [qrData, setQrData] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const amountToPay = location.state?.amount || 0;
-  const orderId = location.state?.orderId || 'N/A';
-  const firebaseDocId = location.state?.firebaseDocId;
-
-  const handleGenerateQR = () => {
-    setLoading(true);
-    const myPromptPayNumber = "0812345678"; 
-    const qrUrl = `https://promptpay.io/${myPromptPayNumber}/${amountToPay}.png`;
-
-    setTimeout(() => {
-      setQrData({ qrImageUrl: qrUrl, partnerTxnUid: "SF-" + Date.now() });
-      setLoading(false);
-    }, 800);
-  };
-
-  useEffect(() => {
-    if (amountToPay > 0) handleGenerateQR();
-    else navigate('/cart');
-  }, [amountToPay]);
-
-  const handleConfirmPayment = async () => {
-    if (!firebaseDocId) return;
-    setLoading(true);
-    try {
-      const orderRef = doc(db, 'orders', firebaseDocId);
-      await updateDoc(orderRef, { status: 'paid', paymentTime: new Date().toISOString() });
-      alert("🎉 บันทึกการชำระเงินเรียบร้อย!");
-      navigate('/orders');
-    } catch (error) {
-      alert("Error: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 min-h-[85vh]">
-      <div className="bg-white dark:bg-gray-800 p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center border border-gray-100 dark:border-gray-700">
-        <h2 className="text-2xl font-black mb-2 text-emerald-700">ชำระเงิน</h2>
-        <p className="text-4xl font-black text-emerald-600 mb-6">฿{amountToPay.toLocaleString()}</p>
-        <div className="bg-white p-5 rounded-[2rem] border-4 border-emerald-500 inline-block mb-6">
-          {loading ? <div className="animate-spin text-4xl">🌀</div> : <img src={qrData?.qrImageUrl} className="w-64 h-64" />}
-        </div>
-        <button onClick={handleConfirmPayment} disabled={loading} className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-bold uppercase shadow-lg">ยืนยันการโอนเงิน</button>
-      </div>
-    </div>
-  );
-}
-
-// ... โค้ดส่วน Import และฟังก์ชันอื่นๆ เหมือนเดิม ...
+// ❌ บอสลบฟังก์ชัน PaymentComponent { ... } ตัวเดิมออกได้เลยครับ เพราะเราแยกไปไว้ในไฟล์ pages/payment.jsx แล้ว
 
 export default function App() {
   return (
@@ -99,18 +30,20 @@ export default function App() {
               <Routes>
                 <Route element={<Layout />}>
                   
-                  {/* ✅ หน้าที่ "ใครก็เข้าดูได้" (Public) */}
+                  {/* Public Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:id" element={<ProductDetail />} />
-                  <Route path="/cart" element={<Cart />} /> {/* 🔓 ปลดล็อคหน้าตะกร้าแล้วครับบอส */}
+                  <Route path="/cart" element={<Cart />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/login" element={<Login />} />
 
-                  {/* 🔒 หน้าที่ "ต้องล็อกอินเท่านั้น" (Private) */}
-                  {/* ลูกค้าจะเจอหน้า Register เมื่อจะกดจ่ายเงิน หรือดูประวัติการสั่งซื้อ */}
+                  {/* Private Routes */}
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-                  <Route path="/test-payment" element={<ProtectedRoute><PaymentComponent /></ProtectedRoute>} />
+                  
+                  {/* ✅ 2. เปลี่ยนจาก test-payment เป็น payment */}
+                  <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+                  
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
 
                   {/* Admin Zone */}
@@ -120,7 +53,6 @@ export default function App() {
                     <Route path="orders" element={<OrderManager />} />
                   </Route>
 
-                  {/* 404 - กลับหน้าแรก */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
               </Routes>
