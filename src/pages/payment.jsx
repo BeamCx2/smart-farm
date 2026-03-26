@@ -39,11 +39,11 @@ export default function Payment() {
         handleGenerateQR();
     }, [amount, orderId]);
 
-    // 📍 ฟังก์ชันปิด Modal และ Reset Input เพื่อให้อัปโหลดไฟล์เดิมซ้ำได้
+    // 📍 ฟังก์ชันปิด Modal และล้างค่า Input เพื่อให้เลือกไฟล์เดิมซ้ำได้
     const closeModal = () => {
         setStatusModal({ ...statusModal, show: false });
         const fileInput = document.getElementById('slip-upload-input');
-        if (fileInput) fileInput.value = ""; // ✨ เคลียร์ค่าเพื่อให้เลือกไฟล์เดิมได้
+        if (fileInput) fileInput.value = ""; 
     };
 
     const scanQRCode = (file) => {
@@ -82,22 +82,15 @@ export default function Payment() {
             
             const result = await verifyRes.json();
 
-            // 🔍 ตรวจสอบโครงสร้าง V1 ตาม JSON "FOUND" ที่บอสส่งมา
+            // 🔍 ตรวจสอบโครงสร้าง V1 (เช็ค event FOUND หรือ status 200)
             if (result.event === "FOUND" || result.status === 200) {
                 const slip = result.data.rawSlip; 
 
-                // 💰 1. ดึงยอดเงิน (ซ้อน 2 ชั้นตาม JSON: amount.amount)
                 const slipAmount = slip.amount?.amount || 0; 
-                
-                // 👤 2. ดึงชื่อผู้รับ (ภาษาไทย)
                 const nameTH = slip.receiver?.account?.name?.th || "";
-                const nameEN = slip.receiver?.account?.name?.en || "";
                 
-                // 🔎 3. ตรวจสอบชื่อ (เน้นคำว่า "ณัฐวุฒิ" ตาม Dashboard บอส)
-                const isReceiverMatch = nameTH.includes("ณัฐวุฒิ") || nameEN.toLowerCase().includes("nattawut");
-
-                // 💵 4. ตรวจสอบยอดเงิน (เทียบยอด 102.00)
                 const isAmountMatch = Math.abs(Number(slipAmount) - Number(amount)) < 0.1;
+                const isReceiverMatch = nameTH.includes("ณัฐวุฒิ");
 
                 if (isAmountMatch && isReceiverMatch) {
                     const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
@@ -111,7 +104,7 @@ export default function Payment() {
                         await updateDoc(snap.docs[0].ref, {
                             status: 'paid',
                             slipUrl: downloadURL,
-                            verifiedBy: 'EasySlip V1 rawSlip Fixed',
+                            verifiedBy: 'EasySlip Debug Mode',
                             updatedAt: serverTimestamp(),
                             transRef: slip.transRef || 'N/A'
                         });
@@ -130,10 +123,12 @@ export default function Payment() {
                     });
                 }
             } else {
+                // ❌ 📍 จุดที่บอสต้องการ: ดึง Error จริงจาก API มาโชว์
                 setStatusModal({
-                    show: true, success: false,
+                    show: true,
+                    success: false,
                     message: 'สลิปไม่ถูกต้อง',
-                    details: result.message || 'ไม่พบข้อมูลการโอนเงินในระบบ'
+                    details: result.message || result.error || 'เซิร์ฟเวอร์ธนาคารอาจล่าช้า (ช่วงตี 4) กรุณาลองใหม่อีกครั้ง'
                 });
             }
         } catch (error) {
@@ -171,22 +166,15 @@ export default function Payment() {
 
                     <div className="mt-4">
                         <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 font-black
-                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
+                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-none' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
                             {uploading ? '⚙️ Verifying...' : '📸 ยืนยันการโอน (แนบสลิป)'}
-                            <input 
-                                id="slip-upload-input" // 📍 ใส่ ID เพื่อไว้ Reset ค่า
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={handleUploadSlip} 
-                                disabled={uploading || loading} 
-                            />
+                            <input id="slip-upload-input" type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading || loading} />
                         </label>
                     </div>
                 </div>
 
                 <p className="text-[9px] font-black text-gray-300 px-10 leading-relaxed uppercase tracking-[0.2em] font-black">
-                    Powered by EasySlip API v1.0 <br/> Automatic Verification System
+                    Powered by EasySlip Debug API <br/> Automatic Verification System
                 </p>
             </div>
 
@@ -208,7 +196,7 @@ export default function Payment() {
                         </p>
 
                         <button
-                            onClick={statusModal.success ? () => navigate('/orders') : closeModal} // 📍 เรียกฟังก์ชัน closeModal เพื่อ Reset ค่า
+                            onClick={statusModal.success ? () => navigate('/orders') : closeModal}
                             className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl font-black
                                 ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-gray-900 text-white shadow-gray-300'}`}
                         >
