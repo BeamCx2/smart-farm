@@ -45,11 +45,7 @@ export default function ProductManager() {
     };
 
     const openAdd = () => { setEditId(null); setForm(emptyProduct); setModalOpen(true); };
-    const openEdit = (p) => { 
-        setEditId(p.id); 
-        setForm({ ...p }); 
-        setModalOpen(true); 
-    };
+    const openEdit = (p) => { setEditId(p.id); setForm({ ...p }); setModalOpen(true); };
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -94,40 +90,43 @@ export default function ProductManager() {
     if (loading) return <div className="flex justify-center py-16"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
 
     return (
-        <div className="p-4 sm:p-8">
+        <div className="p-4 sm:p-8 font-sans">
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-2xl font-black text-emerald-800 tracking-tight">📦 จัดการสินค้า</h1>
-                <button onClick={openAdd} className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg hover:bg-emerald-700 transition-all">➕ เพิ่มสินค้าใหม่</button>
+                <h1 className="text-2xl font-black text-emerald-800 tracking-tight uppercase">📦 Product Management</h1>
+                <button onClick={openAdd} className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-95 transition-all uppercase text-xs tracking-widest">
+                    + Add New Product
+                </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+            {/* Table Container */}
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
+                    <thead className="bg-gray-50/50">
                         <tr>
-                            <th className="px-6 py-4 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px]">สินค้า</th>
-                            <th className="px-6 py-4 text-center font-bold text-gray-400 uppercase tracking-widest text-[10px]">สต๊อก</th>
-                            <th className="px-6 py-4 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px]">ราคา</th>
-                            <th className="px-6 py-4 text-right font-bold text-gray-400 uppercase tracking-widest text-[10px]">จัดการ</th>
+                            <th className="px-6 py-5 text-left font-black text-gray-400 uppercase tracking-widest text-[10px]">Product</th>
+                            <th className="px-6 py-4 text-center font-black text-gray-400 uppercase tracking-widest text-[10px]">Stock Status</th>
+                            <th className="px-6 py-4 text-left font-black text-gray-400 uppercase tracking-widest text-[10px]">Price</th>
+                            <th className="px-6 py-4 text-right font-black text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                    <tbody className="divide-y divide-gray-50">
                         {products.map((p) => (
-                            <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-6 py-4 flex items-center gap-4">
+                            <tr key={p.id} className="hover:bg-emerald-50/20 transition-colors">
+                                <td className="px-6 py-5 flex items-center gap-4">
                                     <img src={p.image || 'https://placehold.co/100'} className="w-12 h-12 rounded-2xl object-cover shadow-sm border border-gray-100" />
-                                    <span className="font-black text-gray-700 dark:text-gray-200">{p.name}</span>
+                                    <span className="font-black text-gray-700 text-base tracking-tight">{p.name}</span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center justify-center gap-3">
-                                        <button onClick={() => handleUpdateStock(p.id, p.stock, -1)} className="w-8 h-8 bg-red-50 text-red-500 rounded-xl font-black hover:bg-red-100 transition-colors">-</button>
-                                        <span className={`w-8 text-center font-black text-lg ${p.stock <= 5 ? 'text-red-500 animate-pulse' : 'text-emerald-600'}`}>{p.stock || 0}</span>
-                                        <button onClick={() => handleUpdateStock(p.id, p.stock, 1)} className="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-xl font-black hover:bg-emerald-100 transition-colors">+</button>
+                                <td className="px-6 py-5 text-center">
+                                    <div className="flex items-center justify-center gap-4 bg-gray-50/50 py-2 px-4 rounded-2xl inline-flex border border-gray-100">
+                                        <button onClick={() => handleUpdateStock(p.id, p.stock, -1)} className="w-8 h-8 bg-white text-red-500 rounded-xl font-black shadow-sm hover:bg-red-50 active:scale-90 transition-all border border-red-50">-</button>
+                                        <span className={`min-w-[40px] text-center font-black text-lg ${p.stock <= 5 ? 'text-red-500 animate-pulse' : 'text-emerald-600'}`}>{p.stock || 0}</span>
+                                        <button onClick={() => handleUpdateStock(p.id, p.stock, 1)} className="w-8 h-8 bg-white text-emerald-500 rounded-xl font-black shadow-sm hover:bg-emerald-50 active:scale-90 transition-all border border-emerald-50">+</button>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 font-black text-gray-800 dark:text-white">{formatTHB(p.price)}</td>
-                                <td className="px-6 py-4 text-right space-x-4">
-                                    <button onClick={() => openEdit(p)} className="text-emerald-600 font-black hover:underline">แก้ไข</button>
-                                    <button onClick={() => handleDelete(p.id)} className="text-red-300 font-black hover:text-red-500">ลบ</button>
+                                <td className="px-6 py-5 font-black text-gray-800 text-base">{formatTHB(p.price)}</td>
+                                <td className="px-6 py-5 text-right space-x-6">
+                                    <button onClick={() => openEdit(p)} className="text-emerald-600 font-black hover:underline uppercase text-[11px] tracking-widest">Edit</button>
+                                    <button onClick={() => handleDelete(p.id)} className="text-gray-300 font-black hover:text-red-500 uppercase text-[11px] tracking-widest">Delete</button>
                                 </td>
                             </tr>
                         ))}
@@ -135,78 +134,87 @@ export default function ProductManager() {
                 </table>
             </div>
 
-            {/* Modal */}
+            {/* 🚀 New Single Page Modal (Grid 2 Column) */}
             {modalOpen && (
-                <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
+                <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[3.5rem] p-10 max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-white/20 scale-in-center overflow-hidden">
+                        
+                        {/* Header */}
                         <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100">{editId ? '✏️ แก้ไขข้อมูล' : '➕ เพิ่มสินค้าใหม่'}</h2>
-                            <button onClick={() => setModalOpen(false)} className="text-3xl text-gray-300 hover:text-gray-600 transition-colors">&times;</button>
+                            <div>
+                                <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">{editId ? 'Edit Product' : 'Add Product'}</h2>
+                                <p className="text-[10px] font-black text-emerald-600 tracking-[0.3em] uppercase mt-1">Inventory Management System</p>
+                            </div>
+                            <button onClick={() => setModalOpen(false)} className="w-12 h-12 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all shadow-inner text-xl">✕</button>
                         </div>
 
-                        <form onSubmit={handleSave} className="space-y-6">
-                            {/* ชื่อสินค้า */}
-                            <div>
-                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">ชื่อสินค้า *</label>
-                                <input name="name" value={form.name} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-bold" placeholder="ชื่อผักสด/สินค้า" />
-                            </div>
-
-                            {/* รายละเอียด */}
-                            <div>
-                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">รายละเอียดสินค้า</label>
-                                <textarea name="description" value={form.description} onChange={handleChange} rows={2} className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-medium" placeholder="อธิบายสินค้าเล็กน้อย..." />
-                            </div>
-
-                            {/* ราคาและสต็อก */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">ราคา (บาท) *</label><input name="price" type="number" value={form.price} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-black" /></div>
-                                <div><label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">สต็อกเริ่มต้น *</label><input name="stock" type="number" value={form.stock} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-black" /></div>
-                            </div>
-
-                            {/* ✅ ส่วนจัดการรูปภาพ (เพิ่ม URL + Upload) */}
-                            <div>
-                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">รูปภาพสินค้า (URL หรือ อัปโหลด)</label>
+                        <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+                            {/* Grid Content */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 overflow-hidden flex-1 px-1">
                                 
-                                {/* พิมพ์ URL โดยตรง */}
-                                <input 
-                                    name="image" 
-                                    value={form.image} 
-                                    onChange={handleChange} 
-                                    className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all text-xs font-medium mb-4" 
-                                    placeholder="วาง URL รูปภาพที่นี่..." 
-                                />
+                                {/* ฝั่งซ้าย: ข้อมูลตัวหนังสือ */}
+                                <div className="space-y-6 overflow-y-auto pr-4 custom-scrollbar">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">ชื่อสินค้า *</label>
+                                        <input name="name" value={form.name} onChange={handleChange} required className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-inner" placeholder="ระบุชื่อสินค้า..." />
+                                    </div>
 
-                                {/* หรืออัปโหลดไฟล์ */}
-                                <div className="border-4 border-dashed border-gray-50 dark:border-gray-800 rounded-[2rem] p-6 text-center relative group overflow-hidden transition-all hover:border-emerald-200">
-                                    {form.image ? (
-                                        <div className="relative">
-                                            <img src={form.image} alt="preview" className="h-32 mx-auto rounded-2xl mb-2 shadow-md group-hover:scale-105 transition-transform" />
-                                            <p className="text-[10px] font-black text-gray-300 uppercase">เปลี่ยนรูปภาพได้ที่นี่</p>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">รายละเอียดสินค้า</label>
+                                        <textarea name="description" value={form.description} onChange={handleChange} rows={4} className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none resize-none shadow-inner" placeholder="อธิบายสรรพคุณสินค้า..." />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">ราคา (บาท) *</label>
+                                            <input name="price" type="number" value={form.price} onChange={handleChange} required className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-black outline-none shadow-inner" placeholder="0.00" />
                                         </div>
-                                    ) : (
-                                        <div className="py-4">
-                                            <p className="text-4xl mb-2">📸</p>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">คลิกเพื่ออัปโหลดจากเครื่อง</p>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">สต็อกเริ่มต้น *</label>
+                                            <input name="stock" type="number" value={form.stock} onChange={handleChange} required className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-black outline-none shadow-inner" placeholder="0" />
                                         </div>
-                                    )}
-                                    <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">หมวดหมู่สินค้า *</label>
+                                        <select name="category" value={form.category} onChange={handleChange} required className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-black outline-none appearance-none cursor-pointer shadow-inner">
+                                            <option value="">เลือกหมวดหมู่</option>
+                                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* ฝั่งขวา: จัดการรูปภาพ */}
+                                <div className="flex flex-col space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">รูปภาพสินค้า (URL หรือ อัปโหลด)</label>
+                                        <input name="image" value={form.image} onChange={handleChange} className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-[12px] font-bold outline-none mb-4 shadow-inner" placeholder="วาง URL รูปภาพที่นี่..." />
+                                        
+                                        <div className="flex-1 min-h-[250px] border-2 border-dashed border-gray-100 rounded-[3rem] bg-gray-50 flex flex-col items-center justify-center group hover:border-emerald-200 hover:bg-emerald-50/30 transition-all cursor-pointer relative overflow-hidden shadow-inner">
+                                            {form.image ? (
+                                                <div className="relative w-full h-full p-6">
+                                                    <img src={form.image} alt="preview" className="w-full h-full object-contain rounded-3xl" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all text-white font-black text-xs uppercase tracking-widest">เปลี่ยนรูปภาพ</div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center p-8 transition-transform group-hover:scale-110">
+                                                    <span className="text-5xl mb-4 block">📸</span>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">คลิกเพื่ออัปโหลดรูปภาพ</p>
+                                                </div>
+                                            )}
+                                            <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* หมวดหมู่ */}
-                            <div>
-                                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">หมวดหมู่สินค้า *</label>
-                                <select name="category" value={form.category} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 dark:border-gray-800 dark:bg-gray-800 outline-none focus:border-emerald-400 transition-all font-bold">
-                                    <option value="">เลือกหมวดหมู่</option>
-                                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-
-                            {/* ปุ่มกดยืนยัน */}
-                            <div className="flex gap-4 pt-4">
-                                <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-4 font-black border-2 border-gray-50 dark:border-gray-800 rounded-2xl hover:bg-gray-50 transition-all text-gray-400">ยกเลิก</button>
-                                <button type="submit" disabled={saving} className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 transition-all disabled:opacity-50">
-                                    {saving ? 'กำลังบันทึก...' : editId ? '💾 บันทึกการแก้ไข' : '🚀 เพิ่มสินค้าเข้าฟาร์ม'}
+                            {/* Footer Action Bar */}
+                            <div className="mt-10 flex gap-4 pt-8 border-t border-gray-50 items-center">
+                                <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 hover:text-red-500 transition-all">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={saving} className="flex-[2.5] py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-emerald-200 transition-all active:scale-95 disabled:opacity-50">
+                                    {saving ? 'Processing...' : editId ? '💾 Save Changes' : '🚀 Add to Farm'}
                                 </button>
                             </div>
                         </form>
