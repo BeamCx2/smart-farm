@@ -6,7 +6,9 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB, generateOrderId, toSatang } from '../lib/utils';
-import ThailandAddressTypeahead from 'react-thailand-address-autocomplete';
+import { ThailandAddressTypeahead, setup } from 'react-thailand-address-autocomplete';
+
+setup();
 
 const PAYMENT_METHODS = [
     { id: 'promptpay', label: '📱 PromptPay QR', desc: 'สแกนจ่ายผ่าน QR Code' },
@@ -22,16 +24,15 @@ export default function Checkout() {
     const [paymentMethod, setPaymentMethod] = useState('promptpay');
     const [submitting, setSubmitting] = useState(false);
     
-    // ✅ ปรับโครงสร้าง State ให้รองรับการ Auto-fill
     const [form, setForm] = useState({
         name: user?.displayName || '', 
         phone: '', 
         email: user?.email || '',
-        address: '',    // บ้านเลขที่/ซอย/ถนน
-        district: '',   // ตำบล
-        amphoe: '',     // อำเภอ
-        province: '',   // จังหวัด
-        zipcode: '',    // รหัสไปรษณีย์
+        address: '',    
+        district: '',   
+        amphoe: '',     
+        province: '',   
+        zipcode: '',    
     });
 
     if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
@@ -40,14 +41,14 @@ export default function Checkout() {
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    // ✅ ฟังก์ชันเมื่อเลือกที่อยู่ที่ค้นหาเจอ
+    // ✅ ฟังก์ชันเมื่อเลือกที่อยู่
     const onAddressSelect = (address) => {
         setForm({
             ...form,
-            district: address.subdistrict, // ตำบล
-            amphoe: address.district,      // อำเภอ
-            province: address.province,    // จังหวัด
-            zipcode: address.zipcode       // รหัสไปรษณีย์
+            district: address.subdistrict, 
+            amphoe: address.district,      
+            province: address.province,    
+            zipcode: address.zipcode       
         });
     };
 
@@ -126,14 +127,14 @@ export default function Checkout() {
                                 <input name="address" value={form.address} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-400 outline-none transition-all text-sm" placeholder="123/4 ม.5 ซ.รื่นรมย์" />
                             </div>
 
-                            {/* 🚀 ส่วนที่อยู่แบบ Auto-complete */}
                             <div className="mt-4">
                                 <label className="block text-sm font-bold mb-1.5 text-emerald-600 uppercase tracking-wider">ค้นหา ตำบล / อำเภอ / รหัสไปรษณีย์ *</label>
+                                {/* ✅ ตรวจสอบชื่อ Component และ Props ให้ตรงกับ Library */}
                                 <ThailandAddressTypeahead 
-    onSelect={onAddressSelect}
-    inputClassName="..."
-    placeholder="..."
-/>
+                                    onSelect={onAddressSelect}
+                                    inputClassName="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 focus:border-emerald-400 bg-emerald-50/30 outline-none transition-all text-sm font-medium"
+                                    placeholder="พิมพ์ค้นหา... (เช่น จตุจักร หรือ 10900)"
+                                />
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
@@ -152,7 +153,6 @@ export default function Checkout() {
                             </div>
                         </div>
 
-                        {/* Payment Methods (เหมือนเดิม) */}
                         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                             <h3 className="font-bold mb-5 flex items-center gap-2 text-emerald-700">💰 วิธีชำระเงิน</h3>
                             <div className="space-y-3">
@@ -169,7 +169,6 @@ export default function Checkout() {
                         </div>
                     </div>
 
-                    {/* Order Summary (เหมือนเดิม) */}
                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md border border-gray-100 h-fit lg:sticky lg:top-24">
                         <h3 className="font-bold text-lg mb-4 text-emerald-900">📋 สรุปรายการ</h3>
                         <div className="max-h-60 overflow-y-auto space-y-3 mb-4 pr-2 custom-scrollbar">
