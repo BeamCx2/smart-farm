@@ -88,27 +88,28 @@ export default function Checkout() {
             // 5. บันทึกข้อมูลทั้งหมดลงฐานข้อมูล (ถ้าอันไหนพังจะยกเลิกทั้งหมด)
             await batch.commit();
 
+            // ... (หลังบรรทัด await batch.commit();) ...
+            
             addToast('สั่งซื้อและตัดสต๊อกเรียบร้อย', 'success');
             clearCart();
 
-            if (paymentMethod === 'promptpay') {
-                navigate('/payment', { 
-                    state: { 
-                        amount: amountToPay, 
-                        orderId: currentOrderId,
-                        firebaseDocId: newOrderRef.id 
-                    } 
-                });
-            } else {
-                navigate('/orders');
-            }
+            // 🚨 ลองใส่ Console.log เพื่อเช็คว่าโค้ดมันรันมาถึงตรงนี้ไหม
+            console.log("กำลังจะไปหน้าจ่ายเงินด้วย ID:", currentOrderId);
+
+            // บอสลองเปลี่ยนจาก '/test-payment' เป็น '/payment' ดูครับ (ตาม URL ของบอส)
+            navigate('/payment', { 
+                state: { 
+                    amount: amountToPay, 
+                    orderId: currentOrderId,
+                    firebaseId: newOrderRef.id 
+                } 
+            });
 
         } catch (err) {
-            console.error('Checkout Error:', err.message);
+            console.error('ระเบิดตรงนี้ครับบอส:', err.message);
             addToast('การสั่งซื้อล้มเหลว: ' + err.message, 'error');
             setSubmitting(false);
         }
-    };
 
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
