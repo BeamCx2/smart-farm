@@ -34,90 +34,85 @@ export default function Receipt() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans uppercase">
             <div className="max-w-md w-full bg-white shadow-2xl rounded-[3rem] overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-500">
                 
-                {/* Header: Success Icon */}
+                {/* Header Section */}
                 <div className="bg-emerald-600 p-8 text-center relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                        <div className="absolute rotate-45 bg-white w-20 h-20 -top-10 -left-10"></div>
-                    </div>
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md shadow-inner">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
                         <span className="text-white text-3xl font-black">✓</span>
                     </div>
-                    <h1 className="text-white font-black tracking-tighter text-2xl">Payment Successful</h1>
-                    <p className="text-emerald-100 text-[10px] tracking-[0.2em] font-black mt-1">Smart Farm Official Receipt</p>
+                    <h1 className="text-white font-black tracking-tighter text-2xl leading-none">Payment Success</h1>
+                    <p className="text-emerald-100 text-[10px] tracking-[0.2em] font-black mt-2">Smart Farm Official Receipt</p>
                 </div>
 
                 <div className="p-10">
-                    {/* Order Details */}
+                    {/* Order Header Info */}
                     <div className="flex justify-between items-end mb-8 pb-4 border-b border-dashed border-gray-100">
                         <div className="text-left">
-                            <p className="text-[9px] text-gray-400 font-black tracking-widest mb-1 leading-none uppercase">Receipt Number</p>
+                            <p className="text-[9px] text-gray-400 font-black tracking-widest mb-1">Order ID</p>
                             <p className="text-xs font-black text-gray-900 tracking-tighter">#{order.orderId}</p>
                         </div>
                         <div className="text-right text-[10px] font-black text-gray-900">
-                            {order.updatedAt?.toDate() 
-                                ? order.updatedAt.toDate().toLocaleDateString('th-TH') 
-                                : new Date().toLocaleDateString('th-TH')}
+                            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('th-TH') : '30/3/2569'}
                         </div>
                     </div>
 
                     {/* Items List */}
-                    <div className="space-y-4 mb-8">
+                    <div className="space-y-4 mb-6">
                         {(order.items || []).map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center group">
+                            <div key={idx} className="flex justify-between items-start">
                                 <div className="text-left">
-                                    <p className="text-xs font-black text-gray-800 tracking-tight group-hover:text-emerald-600 transition-colors">{item.name}</p>
-                                    <p className="text-[9px] text-gray-400 font-black tracking-widest uppercase">QTY: {item.qty}</p>
+                                    <p className="text-xs font-black text-gray-800 tracking-tight leading-tight">{item.name}</p>
+                                    <p className="text-[9px] text-gray-400 font-black tracking-widest mt-0.5">QTY: {item.qty} x {formatTHB(item.price)}</p>
                                 </div>
-                                {/* ✨ บังคับเป็นตัวเลขป้องกัน NaN */}
-                                <p className="text-xs font-black text-gray-900">
-                                    {formatTHB(Number(item.price || 0) * Number(item.qty || 0))}
-                                </p>
+                                <p className="text-xs font-black text-gray-900">{formatTHB(item.price * item.qty)}</p>
                             </div>
                         ))}
                     </div>
 
-                    {/* Transaction Data Box */}
-                    <div className="bg-gray-50 rounded-[1.5rem] p-6 mb-8 text-left space-y-4 border border-gray-100 shadow-inner">
-                        <div>
-                            <p className="text-[8px] text-gray-400 font-black tracking-[0.1em] mb-1 uppercase">Transaction Reference</p>
-                            <p className="text-[10px] font-black text-gray-600 break-all leading-snug">{order.transRef || "N/A"}</p>
+                    {/* Calculation Details */}
+                    <div className="space-y-2 pt-4 border-t border-gray-50 mb-6">
+                        <div className="flex justify-between text-[10px] font-black text-gray-400 tracking-widest">
+                            <span>Subtotal</span>
+                            <span>{formatTHB(order.subtotal || 0)}</span>
                         </div>
-                        <div>
-                            <p className="text-[8px] text-gray-400 font-black tracking-[0.1em] mb-1 uppercase">Payment Method</p>
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                                <p className="text-[10px] font-black text-gray-600 leading-none uppercase">PromptPay (AI Verified)</p>
-                            </div>
+                        <div className="flex justify-between text-[10px] font-black text-gray-400 tracking-widest">
+                            <span>Shipping</span>
+                            <span>{formatTHB(order.shipping || 0)}</span>
                         </div>
                     </div>
 
-                    {/* Total Amount ✨ บังคับเป็นตัวเลขป้องกัน NaN */}
-                    <div className="flex justify-between items-center mb-10">
+                    {/* Total Amount ✨ ดึงจากฟิลด์ order.total */}
+                    <div className="flex justify-between items-center mb-8">
                         <p className="text-lg font-black text-gray-900 tracking-tighter uppercase">Total Paid</p>
                         <p className="text-3xl font-black text-emerald-600 tracking-tighter leading-none">
-                            {formatTHB(Number(order.amount) || 0)}
+                            {formatTHB(order.total || 0)}
                         </p>
                     </div>
 
-                    {/* Actions */}
+                    {/* Transaction Data Box */}
+                    <div className="bg-gray-50 rounded-[1.5rem] p-5 mb-8 text-left space-y-3 border border-gray-100 shadow-inner">
+                        <div>
+                            <p className="text-[8px] text-gray-400 font-black tracking-[0.1em] mb-1">Transaction Ref</p>
+                            <p className="text-[10px] font-black text-gray-600 break-all leading-snug">{order.transRef || "N/A"}</p>
+                        </div>
+                        <div>
+                            <p className="text-[8px] text-gray-400 font-black tracking-[0.1em] mb-1">Customer Name</p>
+                            <p className="text-[10px] font-black text-gray-600 leading-none">{order.customer?.name || "Customer"}</p>
+                        </div>
+                    </div>
+
+                    {/* Buttons */}
                     <div className="grid grid-cols-2 gap-4 font-black">
-                        <button 
-                            onClick={() => window.print()}
-                            className="py-4 rounded-[1.2rem] bg-gray-50 text-gray-900 text-[10px] tracking-widest hover:bg-gray-100 transition-all active:scale-95 uppercase border border-gray-100 shadow-sm"
-                        >
+                        <button onClick={() => window.print()} className="py-4 rounded-[1.2rem] bg-gray-50 text-gray-900 text-[10px] tracking-widest border border-gray-100 hover:bg-gray-100 transition-all active:scale-95">
                             Print PDF
                         </button>
-                        <button 
-                            onClick={() => navigate('/')}
-                            className="py-4 rounded-[1.2rem] bg-gray-900 text-white text-[10px] tracking-widest hover:bg-black transition-all shadow-xl active:scale-95 uppercase"
-                        >
+                        <button onClick={() => navigate('/')} className="py-4 rounded-[1.2rem] bg-gray-900 text-white text-[10px] tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">
                             Continue
                         </button>
                     </div>
                 </div>
 
                 <div className="bg-gray-50/50 p-6 text-center border-t border-gray-50">
-                    <p className="text-[8px] text-gray-300 font-black tracking-[0.4em] uppercase">Thank you for supporting Smart Farm</p>
+                    <p className="text-[8px] text-gray-300 font-black tracking-[0.4em] uppercase">Smart Farm Gateway System</p>
                 </div>
             </div>
         </div>
