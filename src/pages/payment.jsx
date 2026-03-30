@@ -22,7 +22,7 @@ export default function Payment() {
 
     const storage = getStorage(app);
 
-    // 🚀 📍 ส่วนดึง QR Code (รองรับทั้ง V1 และ V2 Response)
+    // 🚀 📍 ส่วนดึง QR Code (เรียกผ่าน Netlify Function V1)
     useEffect(() => {
         const handleGenerateQR = async () => {
             if (amount <= 0) return;
@@ -34,13 +34,13 @@ export default function Payment() {
                 });
                 const result = await res.json();
                 
-                // ✨ 🛡️ ดักทุกจุดที่ข้อมูล QR จะอยู่ (V1 มักอยู่ที่ Root, V2 มักอยู่ใน data)
-                const qrCode = result.raw || result.rawPayload || result.data?.raw || result.data?.payload || result.payload;
+                // ✨ 🛡️ ดักทุกจุดที่ข้อมูล QR จะอยู่ (V1 มักอยู่ที่ Root)
+                const qrCode = result.raw || result.rawPayload || result.data?.raw || result.data?.payload;
                 
                 if (qrCode) {
                     setQrRawData(qrCode);
                 } else {
-                    console.error("QR Code not found in API response:", result);
+                    console.error("QR Code not found in response:", result);
                 }
             } catch (error) {
                 console.error("Fetch QR Error:", error);
@@ -68,7 +68,7 @@ export default function Payment() {
             reader.onload = async () => {
                 const base64Image = reader.result.split(',')[1]; 
 
-                // 🚀 1. ตรวจสอบสลิปผ่าน EasySlip V2 (Base URL: api.easyslip.com/v2)
+                // 🚀 1. ตรวจสอบสลิปผ่าน EasySlip V2
                 const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                     method: 'POST',
                     body: JSON.stringify({ image: base64Image }) 
@@ -76,7 +76,7 @@ export default function Payment() {
                 
                 const result = await verifyRes.json();
 
-                // 🛡️ ด่านที่ 1: ตรวจสอบสถานะ Data จาก V2
+                // 🛡️ ด่านที่ 1: เช็คสถานะ V2
                 if (result && result.data) {
                     const slipData = result.data; 
                     const transRef = slipData.transRef; 
@@ -120,7 +120,7 @@ export default function Payment() {
                         });
                     }
 
-                    // 📦 ด่านที่ 5: ผ่าน -> อัปโหลด -> ตัดสต๊อก -> อัปเดตสถานะ
+                    // 📦 ด่านที่ 5: อัปโหลดสลิปจริง -> ตัดสต๊อก -> อัปเดต DB
                     const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                     await uploadBytes(storageRef, file);
                     const downloadURL = await getDownloadURL(storageRef);
@@ -132,7 +132,7 @@ export default function Payment() {
                         const orderDoc = snap.docs[0];
                         const orderData = orderDoc.data();
 
-                        // 🔥 ตัดสต๊อกจริง (Transaction Secure)
+                        // 🔥 ตัดสต๊อกจริงจังหวะจ่ายเงินสำเร็จ
                         const updateStockPromises = (orderData.items || []).map(async (item) => {
                             const productRef = doc(db, 'products', item.id);
                             return updateDoc(productRef, { stock: increment(-item.qty) });
@@ -144,7 +144,7 @@ export default function Payment() {
                             slipUrl: downloadURL,
                             transRef: transRef,
                             updatedAt: serverTimestamp(),
-                            verifiedBy: 'Secure Hybrid Engine V2'
+                            verifiedBy: 'Secure Hybrid V2'
                         });
                         
                         setUploading(false);
@@ -159,7 +159,7 @@ export default function Payment() {
                     setStatusModal({
                         show: true, success: false,
                         message: 'สลิปไม่ถูกต้อง',
-                        details: result?.message || 'NOT_FOUND: ระบบไม่พบ QR Code ในรูปภาพ'
+                        details: result?.message || 'NOT_FOUND: ระบบไม่พบข้อมูล QR Code ในรูปภาพ'
                     });
                 }
             };
@@ -175,10 +175,10 @@ export default function Payment() {
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter leading-none font-black">Smart Farm Gateway</h1>
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black">Hybrid V1+V2 System</p>
 
-                <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner font-black font-black">
-                    <div className="mb-6 leading-none font-black font-black">
-                        <p className="text-[10px] text-gray-400 uppercase mb-1 tracking-widest leading-none font-black">Order ID: #{orderId}</p>
-                        <p className="text-4xl font-black text-gray-900 leading-none font-black font-black">{formatTHB(amount)}</p>
+                <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner font-black">
+                    <div className="mb-6 leading-none">
+                        <p className="text-[10px] text-gray-400 uppercase mb-1 tracking-widest font-black leading-none">Order ID: #{orderId}</p>
+                        <p className="text-4xl font-black text-gray-900 leading-none">{formatTHB(amount)}</p>
                     </div>
 
                     <div className="flex justify-center bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-emerald-500/5 border border-gray-50 mb-6 transition-transform hover:scale-[1.02]">
@@ -187,10 +187,49 @@ export default function Payment() {
                         ) : qrRawData ? (
                             <QRCodeCanvas value={qrRawData} size={200} />
                         ) : (
-                            <p className="text-xs text-gray-300 font-black italic uppercase leading-none font-black font-black">Initializing QR...</p>
+                            <p className="text-xs text-gray-300 font-black italic uppercase leading-none font-black">Initializing QR...</p>
                         )}
                     </div>
 
-                    <div className="mt-4 leading-none font-black">
-                        <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 leading-none font-black
-                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-none font-black' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200
+                    {/* ✅ 📍 แก้ไขจุด Unterminated String ตรงนี้แล้วครับ */}
+                    <div className="mt-4 leading-none">
+                        <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 leading-none
+                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-none' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
+                            {uploading ? '⚙️ Verifying...' : '📸 ยืนยันการโอน (แนบสลิป)'}
+                            <input id="slip-upload-input" type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading || loading} />
+                        </label>
+                    </div>
+                </div>
+
+                <p className="text-[9px] font-black text-gray-300 px-10 leading-relaxed uppercase tracking-[0.2em] leading-none font-black">
+                    V1 Generation + V2 Verification <br/> Auto-Stock Deduction Enabled
+                </p>
+            </div>
+
+            {/* Modal ผลลัพธ์ */}
+            {statusModal.show && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center animate-in zoom-in-95 duration-200 font-black">
+                        <div className={`w-24 h-24 rounded-full mx-auto mb-8 flex items-center justify-center text-4xl shadow-xl leading-none
+                            ${statusModal.success ? 'bg-emerald-50 text-emerald-500 shadow-emerald-100 font-black' : 'bg-red-50 text-red-500 shadow-red-100 font-black'}`}>
+                            {statusModal.success ? '✓' : '✕'}
+                        </div>
+                        <h2 className={`text-2xl font-black mb-3 tracking-tighter leading-none ${statusModal.success ? 'text-emerald-900' : 'text-red-900'}`}>
+                            {statusModal.message}
+                        </h2>
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-relaxed mb-10 px-2 leading-none">
+                            {statusModal.details}
+                        </p>
+                        <button
+                            onClick={statusModal.success ? () => navigate('/orders') : closeModal}
+                            className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl leading-none
+                                ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-200 font-black' : 'bg-gray-900 text-white shadow-gray-300 font-black'}`}
+                        >
+                            {statusModal.success ? 'ไปที่รายการสั่งซื้อ' : 'ลองใหม่อีกครั้ง'}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
