@@ -21,8 +21,9 @@ import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// ✅ Import หน้า Payment ตัวใหม่ (SCB API)
-import Payment from './pages/payment'; 
+// ✅ Import หน้า Payment และ Receipt
+import Payment from './pages/Payment'; 
+import Receipt from './pages/Receipt'; // 👈 บอสอย่าลืมสร้างไฟล์ Receipt.jsx นะครับ
 
 // --- 👑 Import Pages (Admin) ---
 import Dashboard from './pages/admin/Dashboard';
@@ -72,8 +73,11 @@ export default function App() {
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                   
-                  {/* ✅ เปลี่ยนจาก test-payment เป็น payment (SCB Gateway) */}
+                  {/* ✅ เส้นทางจ่ายเงิน */}
                   <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+
+                  {/* ✅ 📍 เส้นทางใบเสร็จ (รับ orderId มาโชว์ข้อมูล) */}
+                  <Route path="/receipt/:orderId" element={<ProtectedRoute><Receipt /></ProtectedRoute>} />
 
                   {/* 👑 Admin Zone (Private) */}
                   <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
