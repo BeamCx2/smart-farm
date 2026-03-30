@@ -22,7 +22,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 // ✅ Import หน้า Payment และ Receipt
-import Payment from './pages/Payment'; 
+import Payment from './pages/payment'; // ใช้ p เล็กให้เหมือนชื่อไฟล์
 import Receipt from './pages/Receipt'; // 👈 บอสอย่าลืมสร้างไฟล์ Receipt.jsx นะครับ
 
 // --- 👑 Import Pages (Admin) ---
