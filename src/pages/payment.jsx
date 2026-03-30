@@ -26,7 +26,6 @@ export default function Payment() {
     const functions = getFunctions(app, 'asia-southeast1'); 
     const getSCBQR = httpsCallable(functions, 'getscbqr');
 
-    // 🚀 [1. สร้าง QR]: ดึงข้อมูลจาก SCB เดิมที่บอสล็อคเบอร์พร้อมเพย์ไว้
     useEffect(() => {
         const handleGenerateQR = async () => {
             if (amount <= 0) return;
@@ -43,7 +42,6 @@ export default function Payment() {
         handleGenerateQR();
     }, [amount, orderId]);
 
-    // 🔍 [2. สแกน]: ฟังก์ชันอ่าน Mini QR จากรูปสลิป
     const scanSlipForPayload = (file) => {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -70,49 +68,66 @@ export default function Payment() {
 
         setUploading(true);
         try {
-            // 🔎 สแกนหา Payload ก่อนส่งไป Verify
             const payload = await scanSlipForPayload(file);
             if (!payload) {
                 setUploading(false);
-                return setStatusModal({ show: true, success: false, message: 'ไม่พบ QR Code ในสลิป', details: 'กรุณาใช้รูปสลิปดั้งเดิมที่มี Mini QR ชัดเจน' });
+                return setStatusModal({ show: true, success: false, message: 'ไม่พบ QR Code', details: 'กรุณาใช้รูปสลิปที่มี Mini QR ชัดเจน' });
             }
 
-            // 🚀 [3. ตรวจสอบ]: ยิงไปที่ Netlify Function (V2 Payload)
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                 method: 'POST',
                 body: JSON.stringify({ payload: payload }) 
             });
             const result = await verifyRes.json();
 
-            console.log("EasySlip Verified:", result);
-
-            // ✨ [4. Logic Success]: เช็ค event === "FOUND" ตาม JSON จริง
-            if (result && (result.event === "FOUND" || result.status === 200 || result.data)) {
+            // ✨ [Logic Check]: ตรวจสอบก้อน JSON จาก EasySlip V2
+            if (result && (result.event === "FOUND" || result.status === 200)) {
                 
-                // 🛡️ 📍 [จุดสำคัญ]: ดึง transRef ตามโครงสร้าง data.rawSlip.transRef
-                const transRef = result.data?.rawSlip?.transRef || result.data?.transRef || result.transRef;
+                const slipData = result.data?.rawSlip || result.data || result;
+                const transRef = slipData.transRef;
+
+                // 🛡️ 📍 [Triple Lock System]: ป้องกันการโกงและโอนผิดบัญชี
+                const receiverName = slipData.receiver?.account?.name?.th || "";
+                
+                // ดึงเลขบัญชี/เบอร์พร้อมเพย์จาก Proxy หรือ Bank Account
+                const receiverAccount = slipData.receiver?.account?.proxy?.account || 
+                                        slipData.receiver?.account?.bank?.account || "";
+
+                // 🚀 ตรวจสอบชื่อ "ณัฐวุฒิ" และ เบอร์พร้อมเพย์ "0822024218"
+                const isCorrectName = receiverName.includes("ณัฐวุฒิ");
+                const isCorrectPhone = receiverAccount.includes("0822024218") || receiverAccount.includes("4218");
+
+                if (!isCorrectName || !isCorrectPhone) {
+                    setUploading(false);
+                    return setStatusModal({ 
+                        show: true, 
+                        success: false, 
+                        message: 'บัญชีผู้รับไม่ถูกต้อง', 
+                        details: `สลิปนี้โอนไปที่: ${receiverName} (${receiverAccount}) โปรดโอนเข้าเบอร์ 082-202-4218 เท่านั้น` 
+                    });
+                }
 
                 if (!transRef) {
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'ข้อมูลสลิปไม่สมบูรณ์', details: 'ตรวจผ่านแต่หาเลขที่ธุรกรรมในระบบไม่เจอ' });
+                    return setStatusModal({ show: true, success: false, message: 'ข้อมูลสลิปไม่สมบูรณ์', details: 'หาเลขที่ธุรกรรมในระบบไม่เจอ' });
                 }
 
-                // 🛡️ [ด่านกั้นสลิปซ้ำ]
+                // 🛡️ [ด่านที่ 2]: เช็คสลิปซ้ำ
                 const duplicateQuery = query(collection(db, 'orders'), where('transRef', '==', transRef));
                 const duplicateSnap = await getDocs(duplicateQuery);
                 if (!duplicateSnap.empty) {
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัส ${transRef} มีอยู่ในระบบแล้ว` });
+                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัสธุรกรรม ${transRef} มีการบันทึกแล้ว` });
                 }
 
-                // 💰 [ด่านตรวจยอดเงิน]: ดึงจาก data.amountInSlip
+                // 💰 [ด่านที่ 3]: ตรวจสอบยอดเงิน
                 const slipAmount = result.data?.amountInSlip || 0;
                 if (Math.abs(Number(slipAmount) - Number(amount)) > 0.1) {
                     setUploading(false);
                     return setStatusModal({ show: true, success: false, message: 'ยอดเงินโอนไม่ตรง!', details: `โอนจริง ${slipAmount} บ. (ยอดออเดอร์ ${amount} บ.)` });
                 }
 
-                // ✅ [5. ผ่านด่าน]: บันทึกลง Storage -> ตัดสต๊อก -> อัปเดตสถานะ
+                // ✅ [ผ่านด่าน]: อัปเดต Firebase และตัดสต๊อก
                 const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
@@ -124,27 +139,25 @@ export default function Payment() {
                     const orderDoc = snap.docs[0];
                     const orderData = orderDoc.data();
                     
-                    // 🔥 ตัดสต๊อกสินค้า
                     const updateStockPromises = (orderData.items || []).map(item => 
                         updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
                     );
                     await Promise.all(updateStockPromises);
                     
-                    // 📝 อัปเดตสถานะ Paid
                     await updateDoc(orderDoc.ref, { 
                         status: 'paid', 
                         slipUrl: downloadURL, 
                         transRef: transRef, 
                         updatedAt: serverTimestamp(),
-                        verifiedBy: 'Secure V2 Payload'
+                        verifiedBy: 'V2 Triple Lock (Name/Phone/Amount)'
                     });
                     
                     setUploading(false);
-                    setStatusModal({ show: true, success: true, message: 'ชำระเงินสำเร็จ!', details: 'ตัดสต๊อกและยืนยันออเดอร์เรียบร้อยแล้ว' });
+                    setStatusModal({ show: true, success: true, message: 'ชำระเงินสำเร็จ!', details: 'ตรวจสอบบัญชีรับเงินและยอดโอนถูกต้อง' });
                 }
             } else {
                 setUploading(false);
-                setStatusModal({ show: true, success: false, message: 'ตรวจสอบสลิปไม่สำเร็จ', details: result?.message || 'ข้อมูลสลิปไม่ถูกต้อง' });
+                setStatusModal({ show: true, success: false, message: 'สลิปไม่ถูกต้อง', details: result?.message || 'ข้อมูลตรวจสอบไม่ผ่าน' });
             }
         } catch (error) {
             setUploading(false);
@@ -154,30 +167,30 @@ export default function Payment() {
 
     return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans font-black uppercase">
-            <div className="max-w-sm w-full font-black animate-in fade-in zoom-in duration-500">
+            <div className="max-w-sm w-full font-black animate-in fade-in zoom-in duration-500 font-black">
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter leading-none font-black font-black">Smart Farm Gateway</h1>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black">Verify Slip & Orders</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black">Verified Payment</p>
 
                 <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner font-black">
                     <div className="mb-6 leading-none font-black">
-                        <p className="text-[10px] text-gray-400 uppercase mb-1 tracking-widest font-black leading-none">Order ID: #{orderId}</p>
-                        <p className="text-4xl font-black text-gray-900 leading-none">{formatTHB(amount)}</p>
+                        <p className="text-[10px] text-gray-400 uppercase mb-1 tracking-widest font-black leading-none font-black font-black">Order ID: #{orderId}</p>
+                        <p className="text-4xl font-black text-gray-900 leading-none font-black font-black">{formatTHB(amount)}</p>
                     </div>
 
-                    <div className="flex justify-center bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-emerald-500/5 border border-gray-50 mb-6 transition-transform hover:scale-[1.02]">
+                    <div className="flex justify-center bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-emerald-500/5 border border-gray-50 mb-6 transition-transform hover:scale-[1.02] font-black font-black">
                         {loading ? (
                             <div className="animate-spin h-10 w-10 border-4 border-emerald-100 border-t-emerald-600 rounded-full"></div>
                         ) : qrRawData ? (
                             <QRCodeCanvas value={qrRawData} size={200} />
                         ) : (
-                            <p className="text-xs text-gray-300 font-black italic uppercase leading-none font-black">Initializing...</p>
+                            <p className="text-xs text-gray-300 font-black italic uppercase leading-none font-black font-black">Initializing...</p>
                         )}
                     </div>
 
                     <div className="mt-4 leading-none font-black">
-                        <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 leading-none
-                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'}`}>
-                            {uploading ? '⚙️ AI Processing...' : '📸 ยืนยันการโอน (แนบสลิป)'}
+                        <label className={`block w-full py-5 px-4 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95 leading-none font-black
+                            ${uploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed font-black' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200 font-black'}`}>
+                            {uploading ? '⚙️ AI Verifying...' : '📸 ยืนยันการโอน (แนบสลิป)'}
                             <input id="slip-upload-input" type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading || loading} />
                         </label>
                     </div>
@@ -191,11 +204,11 @@ export default function Payment() {
                         <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl font-black ${statusModal.success ? 'bg-emerald-50 text-emerald-500 font-black' : 'bg-red-50 text-red-500 font-black'}`}>
                             {statusModal.success ? '✓' : '✕'}
                         </div>
-                        <h2 className={`text-xl font-black mb-2 ${statusModal.success ? 'text-emerald-900 font-black font-black' : 'text-red-900 font-black font-black'}`}>{statusModal.message}</h2>
+                        <h2 className={`text-xl font-black mb-2 ${statusModal.success ? 'text-emerald-900 font-black' : 'text-red-900 font-black'}`}>{statusModal.message}</h2>
                         <p className="text-[11px] text-gray-400 uppercase tracking-widest mb-8 leading-relaxed font-black">{statusModal.details}</p>
                         <button 
                             onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({...statusModal, show: false})} 
-                            className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-gray-900 text-white shadow-gray-300'}`}
+                            className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-200 font-black' : 'bg-gray-900 text-white shadow-gray-300 font-black'}`}
                         >
                             {statusModal.success ? 'ดูใบเสร็จรับเงิน' : 'ลองใหม่'}
                         </button>
