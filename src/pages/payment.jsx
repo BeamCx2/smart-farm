@@ -156,7 +156,7 @@ export default function Payment() {
         <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans font-black uppercase">
             <div className="max-w-sm w-full font-black animate-in fade-in zoom-in duration-500">
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter leading-none font-black font-black">Smart Farm Gateway</h1>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black">AI Verify System V2</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 border-b pb-2 leading-none font-black">Verify Slip & Orders</p>
 
                 <div className="border-2 border-dashed border-gray-100 rounded-[2.5rem] p-8 mb-6 bg-gray-50/30 shadow-inner font-black">
                     <div className="mb-6 leading-none font-black">
