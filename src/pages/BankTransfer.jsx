@@ -20,7 +20,7 @@ export default function BankTransfer() {
 
     const storage = getStorage(app);
 
-    // 🔍 1. ฟังก์ชันอ่าน Mini QR จากสลิป
+    // 🔍 1. ฟังก์ชันสแกน QR Payload (เหมือนหน้า Payment)
     const scanSlipForPayload = (file) => {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -41,7 +41,7 @@ export default function BankTransfer() {
         });
     };
 
-    // 🚀 2. ฟังก์ชันหลักในการอัปโหลดและตรวจสอบ
+    // 🚀 2. ฟังก์ชันหลักในการอัปโหลดและตรวจสอบ (โครงสร้างเดียวกับ Payment)
     const handleUploadSlip = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -51,37 +51,45 @@ export default function BankTransfer() {
             const payload = await scanSlipForPayload(file);
             if (!payload) {
                 setUploading(false);
-                return setStatusModal({ show: true, success: false, message: 'ไม่พบ QR Code', details: 'กรุณาใช้สลิปที่มี Mini QR (มุมขวา) ชัดเจน' });
+                return setStatusModal({ show: true, success: false, message: 'ไม่พบ QR Code', details: 'กรุณาใช้สลิปดั้งเดิมที่มี Mini QR ชัดเจน' });
             }
 
-            // ส่งไป Verify ที่ Netlify Function
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                 method: 'POST',
-                body: JSON.stringify({ payload }) 
+                body: JSON.stringify({ payload: payload }) 
             });
             const result = await verifyRes.json();
 
-            // ✨ [Logic Check]: เลียนแบบโครงสร้างจาก Payment
+            // ✨ [Logic Check]: ตรวจสอบข้อมูลจาก EasySlip V2 (เลียนแบบหน้า Payment)
             if (result && (result.event === "FOUND" || result.status === 200)) {
+                
                 const slipData = result.data?.rawSlip || result.data || result;
                 const transRef = slipData.transRef;
 
-                // 🛡️ [Triple Lock]: ล็อคชื่อ "ณัฐวุฒิ" และบัญชี "8656" (กสิกร)
+                // 🛡️ 📍 [Triple Lock System]: ดึงค่ามาตรวจสอบ
                 const receiverName = slipData.receiver?.account?.name?.th || "";
+                
+                // ดึงเลขบัญชีธนาคาร (ต่างจาก Payment ที่ดึง Proxy)
                 const receiverAccount = slipData.receiver?.account?.bank?.account || "";
-                const slipAmount = result.data?.amountInSlip || slipData.amount?.amount || 0;
 
-                // ลบช่องว่างออกเพื่อกัน Error จากธนาคาร
-                const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
-                const isAccountValid = receiverAccount.includes("8656");
+                // 🚀 ตรวจสอบชื่อ "ณัฐวุฒิ" และ เลขบัญชีกสิกร "8656"
+                // ใช้ replace(/\s/g, "") เพื่อลบช่องว่างตามที่ตรวจเจอในสลิปกสิกรของบอส
+                const isCorrectName = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
+                const isCorrectAccount = receiverAccount.includes("8656");
 
-                if (!isNameValid || !isAccountValid) {
+                if (!isCorrectName || !isCorrectAccount) {
                     setUploading(false);
                     return setStatusModal({ 
-                        show: true, success: false, 
+                        show: true, 
+                        success: false, 
                         message: 'บัญชีผู้รับไม่ถูกต้อง', 
-                        details: `ตรวจพบ: ${receiverName} (${receiverAccount})` 
+                        details: `สลิปโอนไปที่: ${receiverName} (${receiverAccount}) โปรดโอนเข้ากสิกรไทย 063-8-98656-6` 
                     });
+                }
+
+                if (!transRef) {
+                    setUploading(false);
+                    return setStatusModal({ show: true, success: false, message: 'ข้อมูลสลิปไม่สมบูรณ์', details: 'หาเลขที่ธุรกรรมไม่เจอ' });
                 }
 
                 // 🛡️ [ด่านเช็คสลิปซ้ำ]
@@ -89,16 +97,17 @@ export default function BankTransfer() {
                 const duplicateSnap = await getDocs(duplicateQuery);
                 if (!duplicateSnap.empty) {
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัสธุรกรรมนี้มีการบันทึกในระบบแล้ว` });
+                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัสธุรกรรม ${transRef} มีการบันทึกแล้ว` });
                 }
 
-                // 💰 [ด่านเช็คยอดเงิน]
-                if (Math.abs(Number(slipAmount) - Number(amount)) > 0.1) {
+                // 💰 [ด่านตรวจสอบยอดเงิน]
+                const slipAmount = result.data?.amountInSlip || slipData.amount?.amount || 0;
+                if (Math.abs(Number(slipAmount) - Number(amount)) > 1) { // เผื่อส่วนต่าง 1 บาทกันพลาด
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'ยอดโอนไม่ตรง!', details: `โอนจริง ${slipAmount} บ. (ยอดออเดอร์ ${amount} บ.)` });
+                    return setStatusModal({ show: true, success: false, message: 'ยอดเงินโอนไม่ตรง!', details: `โอนจริง ${slipAmount} บ. (ยอดออเดอร์ ${amount} บ.)` });
                 }
 
-                // ✅ [ผ่านด่านทั้งหมด]: อัปเดต DB และตัดสต๊อก
+                // ✅ [ผ่านด่าน]: บันทึกสลิปลง Storage และอัปเดต Firebase
                 const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
@@ -110,21 +119,23 @@ export default function BankTransfer() {
                     const orderDoc = snap.docs[0];
                     const orderData = orderDoc.data();
                     
+                    // ตัดสต๊อกสินค้า
                     const updateStockPromises = (orderData.items || []).map(item => 
                         updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
                     );
                     await Promise.all(updateStockPromises);
                     
+                    // อัปเดตสถานะออเดอร์
                     await updateDoc(orderDoc.ref, { 
                         status: 'paid', 
                         slipUrl: downloadURL, 
                         transRef: transRef, 
                         updatedAt: serverTimestamp(),
-                        verifiedBy: 'Bank Transfer (AI Verify)'
+                        verifiedBy: 'Bank Transfer Triple Lock (Name/Acc/Amount)'
                     });
                     
                     setUploading(false);
-                    setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ขอบคุณที่อุดหนุน Smart Farm ครับ' });
+                    setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ตรวจสอบยอดเงินและบัญชีรับเงินถูกต้อง' });
                 }
             } else {
                 setUploading(false);
@@ -138,33 +149,36 @@ export default function BankTransfer() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center font-sans font-black uppercase">
-            {/* UI บัตรกสิกรเขียว (เหมือนที่บอสชอบ) */}
-            <div className="max-w-sm w-full bg-white rounded-[3rem] p-10 shadow-2xl border border-gray-100">
+            <div className="max-w-sm w-full bg-white rounded-[3rem] p-10 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-500">
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter leading-none">Bank Transfer</h1>
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-10 border-b pb-2 leading-none">K-BANK PAYMENT</p>
 
-                <div className="bg-emerald-700 rounded-[2rem] p-8 text-white mb-8 text-left relative overflow-hidden shadow-xl">
+                {/* 💳 บัตรกสิกรไทย */}
+                <div className="bg-emerald-700 rounded-[2.5rem] p-8 text-white mb-8 text-left relative overflow-hidden shadow-xl">
                     <p className="text-[9px] text-emerald-200 tracking-[0.3em] font-black mb-4">KASIKORNBANK</p>
                     <p className="text-xl font-black tracking-widest mb-1">063 - 8 - 98656 - 6</p>
-                    <p className="text-[10px] font-black text-white/80 mb-6 uppercase">NATTAWUT P. | SAVINGS</p>
+                    <p className="text-[10px] font-black text-white/80 mb-6 uppercase tracking-widest">NATTAWUT P.</p>
                     
                     <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl">
                          <div>
                             <p className="text-[8px] text-emerald-200 font-black uppercase">Amount</p>
                             <p className="text-lg font-black">{formatTHB(amount)}</p>
                          </div>
-                         <button onClick={() => navigator.clipboard.writeText("0638986566")} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black">COPY</button>
+                         <button onClick={() => {
+                            navigator.clipboard.writeText("0638986566");
+                            alert("คัดลอกเลขบัญชีแล้ว!");
+                         }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black">COPY</button>
                     </div>
                 </div>
 
                 <label className={`block w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95
-                    ${uploading ? 'bg-gray-100 text-gray-400' : 'bg-gray-900 text-white hover:bg-black shadow-gray-200'}`}>
+                    ${uploading ? 'bg-gray-100 text-gray-400' : 'bg-gray-900 text-white hover:bg-black'}`}>
                     {uploading ? '⚙️ AI Verifying...' : '📸 ยืนยันการโอน'}
                     <input type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading} />
                 </label>
             </div>
 
-            {/* Modal แจ้งผลเหมือนหน้า Payment */}
+            {/* Modal แจ้งผล (โครงสร้างเดียวกับ Payment) */}
             {statusModal.show && (
                 <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center">
@@ -172,9 +186,9 @@ export default function BankTransfer() {
                             {statusModal.success ? '✓' : '✕'}
                         </div>
                         <h2 className="text-xl font-black mb-2">{statusModal.message}</h2>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-8">{statusModal.details}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-8 font-black">{statusModal.details}</p>
                         <button onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({...statusModal, show: false})} className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase ${statusModal.success ? 'bg-emerald-600 text-white' : 'bg-gray-900 text-white'}`}>
-                            {statusModal.success ? 'รับใบเสร็จ' : 'ลองใหม่'}
+                            {statusModal.success ? 'ดูใบเสร็จ' : 'ลองใหม่'}
                         </button>
                     </div>
                 </div>
