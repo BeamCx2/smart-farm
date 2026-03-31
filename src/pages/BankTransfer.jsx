@@ -68,7 +68,7 @@ export default function BankTransfer() {
                                         slipData.receiver?.account?.proxy?.account || "";
 
                 // ล็อคเป้าหมายเลข 0638986566 (เราเช็คเลขท้าย 4-6 ตัวเพื่อความแม่นยำ)
-                const isCorrectAccount = receiverAccount.includes("8656") || receiverAccount.includes("0638986566");
+                const isCorrectAccount = receiverAccount.includes("6566") || receiverAccount.includes("0638986566");
                 const isCorrectName = receiverName.includes("ณัฐวุฒิ");
 
                 if (!isCorrectName || !isCorrectAccount) {
