@@ -50,11 +50,9 @@ export default function BankTransfer() {
         setUploading(true);
         try {
             const payload = await scanSlipForPayload(file);
-            console.log("--- [2] QR PAYLOAD ---", payload);
-
             if (!payload) {
                 setUploading(false);
-                return setStatusModal({ show: true, success: false, message: 'ไม่พบ QR Code', details: 'กรุณาใช้สลิปที่มี Mini QR (มุมขวา) ชัดเจน' });
+                return setStatusModal({ show: true, success: false, message: 'ไม่พบ QR Code', details: 'กรุณาใช้สลิปดั้งเดิมที่มี Mini QR ชัดเจน' });
             }
 
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
@@ -63,31 +61,27 @@ export default function BankTransfer() {
             });
             const result = await verifyRes.json();
             
-            console.log("--- [3] API RESULT FROM EASYSLIP ---", result);
+            console.log("--- [2] API RESULT ---", result);
 
-            if (result && (result.event === "FOUND" || result.status === 200)) {
-                const slipData = result.data?.rawSlip || result.data || result;
+            // ✨ [FIXED LOGIC]: เช็คผ่าน result.success ตามที่โชว์ใน Console
+            if (result && result.success === true) {
                 
-                // ดึงค่าแบบหลายชั้นกันเหนียว
-                const slipAmount = result.data?.amountInSlip || slipData.amount?.amount || 0;
+                // แกะข้อมูลจากชั้น data
+                const slipResponse = result.data; 
+                const slipData = slipResponse.rawSlip || slipResponse;
+                
+                // 🛡️ [Triple Lock]: ดึงค่ามาตรวจสอบ
+                const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
                 const receiverName = slipData.receiver?.account?.name?.th || "";
                 const receiverAccount = slipData.receiver?.account?.bank?.account || "";
                 const transRef = slipData.transRef;
 
-                console.log("--- [4] DATA TO VERIFY ---", {
-                    nameInSlip: receiverName,
-                    accInSlip: receiverAccount,
-                    amountInSlip: slipAmount,
-                    targetAmount: amount
-                });
+                console.log("--- [3] VERIFYING VALUES ---", { receiverName, receiverAccount, slipAmount, target: amount });
 
-                // 🛡️ [Triple Lock Logic]
+                // ตรวจสอบความถูกต้อง (Flexible Check)
                 const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
                 const isAccountValid = receiverAccount.includes("8656");
-                // ยืดหยุ่นยอดเงินให้ต่างกันได้ไม่เกิน 1 บาท เผื่อเรื่องทศนิยม
                 const isAmountValid = Math.abs(Number(slipAmount) - Number(amount)) < 1;
-
-                console.log("--- [5] CHECK STATUS ---", { isNameValid, isAccountValid, isAmountValid });
 
                 if (!isNameValid || !isAccountValid || !isAmountValid) {
                     setUploading(false);
@@ -108,7 +102,7 @@ export default function BankTransfer() {
                 const duplicateSnap = await getDocs(duplicateQuery);
                 if (!duplicateSnap.empty) {
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `ธุรกรรม ${transRef} ถูกใช้งานแล้ว` });
+                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัสธุรกรรม ${transRef} ถูกใช้งานแล้ว` });
                 }
 
                 // ✅ [ผ่านด่านทั้งหมด]: อัปเดต Firebase และ Storage
@@ -123,25 +117,32 @@ export default function BankTransfer() {
                     const orderDoc = snap.docs[0];
                     const orderData = orderDoc.data();
                     
+                    // ตัดสต๊อก
                     const updateStockPromises = (orderData.items || []).map(item => 
                         updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
                     );
                     await Promise.all(updateStockPromises);
                     
+                    // อัปเดต Order
                     await updateDoc(orderDoc.ref, { 
                         status: 'paid', 
                         slipUrl: downloadURL, 
                         transRef: transRef, 
                         updatedAt: serverTimestamp(),
-                        verifiedBy: 'Bank Transfer AI (Debug Mode)'
+                        verifiedBy: 'Bank Transfer Triple Lock (Fixed Path)'
                     });
                     
                     setUploading(false);
-                    setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ขอบคุณที่อุดหนุน Smart Farm ครับ' });
+                    setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ตรวจสอบยอดเงินและบัญชีถูกต้อง ขอบคุณครับ' });
                 }
             } else {
                 setUploading(false);
-                setStatusModal({ show: true, success: false, message: 'ตรวจสอบไม่สำเร็จ', details: result?.message || 'ข้อมูลสลิปนี้ไม่ผ่านการตรวจสอบ' });
+                setStatusModal({ 
+                    show: true, 
+                    success: false, 
+                    message: 'ตรวจสอบไม่สำเร็จ', 
+                    details: result?.message || 'ข้อมูลสลิปนี้ไม่ผ่านการตรวจสอบจากระบบ' 
+                });
             }
         } catch (error) {
             console.error("--- ERROR ---", error);
@@ -151,45 +152,48 @@ export default function BankTransfer() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center font-sans font-black uppercase">
-            <div className="max-w-sm w-full bg-white rounded-[3rem] p-10 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-500">
-                <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter leading-none">Bank Transfer</h1>
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center font-sans font-black uppercase tracking-tighter">
+            <div className="max-w-sm w-full bg-white rounded-[3.5rem] p-10 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-500">
+                <h1 className="text-xl font-black mb-1 text-gray-800 leading-none">Bank Transfer</h1>
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-10 border-b pb-2 leading-none">K-BANK PAYMENT</p>
 
-                <div className="bg-emerald-700 rounded-[2.5rem] p-8 text-white mb-8 text-left relative overflow-hidden shadow-xl">
-                    <p className="text-[9px] text-emerald-200 tracking-[0.3em] font-black mb-4 uppercase tracking-widest">Kasikornbank</p>
+                {/* 💳 บัตรกสิกรไทย (Green Style) */}
+                <div className="bg-emerald-700 rounded-[2.5rem] p-8 text-white mb-8 text-left relative overflow-hidden shadow-xl shadow-emerald-100">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 -mr-10 -mt-10 rounded-full blur-2xl"></div>
+                    <p className="text-[9px] text-emerald-200 tracking-[0.3em] font-black mb-4 uppercase">Kasikornbank</p>
                     <p className="text-xl font-black tracking-widest mb-1">063 - 8 - 98656 - 6</p>
                     <p className="text-[10px] font-black text-white/80 mb-6 uppercase tracking-widest">Nattawut P.</p>
                     
-                    <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl">
+                    <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl backdrop-blur-sm">
                          <div>
-                            <p className="text-[8px] text-emerald-200 font-black uppercase font-black">Amount</p>
-                            <p className="text-lg font-black font-black">{formatTHB(amount)}</p>
+                            <p className="text-[8px] text-emerald-200 font-black uppercase">Amount</p>
+                            <p className="text-lg font-black">{formatTHB(amount)}</p>
                          </div>
                          <button onClick={() => {
                             navigator.clipboard.writeText("0638986566");
                             alert("คัดลอกเลขบัญชีแล้ว!");
-                         }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black">COPY</button>
+                         }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black active:scale-90 transition-transform">COPY</button>
                     </div>
                 </div>
 
                 <label className={`block w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95
-                    ${uploading ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-gray-900 text-white hover:bg-black font-black font-black'}`}>
+                    ${uploading ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-gray-900 text-white hover:bg-black'}`}>
                     {uploading ? '⚙️ AI Verifying...' : '📸 ยืนยันการโอน'}
                     <input type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading} />
                 </label>
             </div>
 
+            {/* Modal แจ้งผล */}
             {statusModal.show && (
                 <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center font-black">
-                        <div className={`w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center text-2xl font-black ${statusModal.success ? 'bg-emerald-50 text-emerald-500 font-black' : 'bg-red-50 text-red-500 font-black'}`}>
+                    <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center">
+                        <div className={`w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center text-2xl font-black ${statusModal.success ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-500'}`}>
                             {statusModal.success ? '✓' : '✕'}
                         </div>
-                        <h2 className="text-xl font-black mb-2 font-black font-black">{statusModal.message}</h2>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-8 font-black font-black">{statusModal.details}</p>
-                        <button onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({...statusModal, show: false})} className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase ${statusModal.success ? 'bg-emerald-600 text-white font-black' : 'bg-gray-900 text-white font-black'}`}>
-                            {statusModal.success ? 'รับใบเสร็จ' : 'ลองใหม่'}
+                        <h2 className="text-xl font-black mb-2">{statusModal.message}</h2>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-8 font-black">{statusModal.details}</p>
+                        <button onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({...statusModal, show: false})} className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-100' : 'bg-gray-900 text-white'}`}>
+                            {statusModal.success ? 'ดูใบเสร็จ' : 'ลองใหม่'}
                         </button>
                     </div>
                 </div>
