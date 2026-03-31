@@ -20,7 +20,6 @@ export default function BankTransfer() {
 
     const storage = getStorage(app);
 
-    // 🔍 1. ฟังก์ชันอ่าน Mini QR จากสลิป
     const scanSlipForPayload = (file) => {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -41,12 +40,10 @@ export default function BankTransfer() {
         });
     };
 
-    // 🚀 2. ฟังก์ชันหลักในการอัปโหลดและตรวจสอบ
     const handleUploadSlip = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        console.log("--- [1] START UPLOAD ---");
         setUploading(true);
         try {
             const payload = await scanSlipForPayload(file);
@@ -60,25 +57,17 @@ export default function BankTransfer() {
                 body: JSON.stringify({ payload: payload }) 
             });
             const result = await verifyRes.json();
-            
-            console.log("--- [2] API RESULT ---", result);
 
-            // ✨ [FIXED LOGIC]: เช็คผ่าน result.success ตามที่โชว์ใน Console
             if (result && result.success === true) {
-                
-                // แกะข้อมูลจากชั้น data
                 const slipResponse = result.data; 
                 const slipData = slipResponse.rawSlip || slipResponse;
                 
-                // 🛡️ [Triple Lock]: ดึงค่ามาตรวจสอบ
                 const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
                 const receiverName = slipData.receiver?.account?.name?.th || "";
                 const receiverAccount = slipData.receiver?.account?.bank?.account || "";
                 const transRef = slipData.transRef;
 
-                console.log("--- [3] VERIFYING VALUES ---", { receiverName, receiverAccount, slipAmount, target: amount });
-
-                // ตรวจสอบความถูกต้อง (Flexible Check)
+                // Triple Lock Verification
                 const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
                 const isAccountValid = receiverAccount.includes("8656");
                 const isAmountValid = Math.abs(Number(slipAmount) - Number(amount)) < 1;
@@ -97,7 +86,7 @@ export default function BankTransfer() {
                     });
                 }
 
-                // 🛡️ [เช็คสลิปซ้ำ]
+                // Check Duplicate Slip
                 const duplicateQuery = query(collection(db, 'orders'), where('transRef', '==', transRef));
                 const duplicateSnap = await getDocs(duplicateQuery);
                 if (!duplicateSnap.empty) {
@@ -105,7 +94,7 @@ export default function BankTransfer() {
                     return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัสธุรกรรม ${transRef} ถูกใช้งานแล้ว` });
                 }
 
-                // ✅ [ผ่านด่านทั้งหมด]: อัปเดต Firebase และ Storage
+                // Upload to Storage & Update Firestore
                 const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
@@ -117,35 +106,31 @@ export default function BankTransfer() {
                     const orderDoc = snap.docs[0];
                     const orderData = orderDoc.data();
                     
-                    // ตัดสต๊อก
                     const updateStockPromises = (orderData.items || []).map(item => 
                         updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
                     );
                     await Promise.all(updateStockPromises);
                     
-                    // อัปเดต Order
                     await updateDoc(orderDoc.ref, { 
                         status: 'paid', 
                         slipUrl: downloadURL, 
                         transRef: transRef, 
                         updatedAt: serverTimestamp(),
-                        verifiedBy: 'Bank Transfer Triple Lock (Fixed Path)'
+                        verifiedBy: 'Bank Transfer Triple Lock (Stable)'
                     });
                     
                     setUploading(false);
-                    setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ตรวจสอบยอดเงินและบัญชีถูกต้อง ขอบคุณครับ' });
+                    setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ยืนยันออเดอร์และตัดสต๊อกเรียบร้อย' });
                 }
             } else {
                 setUploading(false);
                 setStatusModal({ 
-                    show: true, 
-                    success: false, 
+                    show: true, success: false, 
                     message: 'ตรวจสอบไม่สำเร็จ', 
-                    details: result?.message || 'ข้อมูลสลิปนี้ไม่ผ่านการตรวจสอบจากระบบ' 
+                    details: result?.message || 'สลิปไม่ผ่านการตรวจสอบจากระบบธนาคาร' 
                 });
             }
         } catch (error) {
-            console.error("--- ERROR ---", error);
             setUploading(false);
             setStatusModal({ show: true, success: false, message: 'เกิดข้อผิดพลาด', details: error.message });
         }
@@ -153,11 +138,10 @@ export default function BankTransfer() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center font-sans font-black uppercase tracking-tighter">
-            <div className="max-w-sm w-full bg-white rounded-[3.5rem] p-10 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-500">
+            <div className="max-w-sm w-full bg-white rounded-[3.5rem] p-10 shadow-2xl border border-gray-100">
                 <h1 className="text-xl font-black mb-1 text-gray-800 leading-none">Bank Transfer</h1>
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-10 border-b pb-2 leading-none">K-BANK PAYMENT</p>
 
-                {/* 💳 บัตรกสิกรไทย (Green Style) */}
                 <div className="bg-emerald-700 rounded-[2.5rem] p-8 text-white mb-8 text-left relative overflow-hidden shadow-xl shadow-emerald-100">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 -mr-10 -mt-10 rounded-full blur-2xl"></div>
                     <p className="text-[9px] text-emerald-200 tracking-[0.3em] font-black mb-4 uppercase">Kasikornbank</p>
@@ -172,18 +156,17 @@ export default function BankTransfer() {
                          <button onClick={() => {
                             navigator.clipboard.writeText("0638986566");
                             alert("คัดลอกเลขบัญชีแล้ว!");
-                         }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black active:scale-90 transition-transform">COPY</button>
+                         }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black">COPY</button>
                     </div>
                 </div>
 
                 <label className={`block w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase cursor-pointer transition-all shadow-xl active:scale-95
-                    ${uploading ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-gray-900 text-white hover:bg-black'}`}>
+                    ${uploading ? 'bg-gray-100 text-gray-400' : 'bg-gray-900 text-white hover:bg-black'}`}>
                     {uploading ? '⚙️ AI Verifying...' : '📸 ยืนยันการโอน'}
                     <input type="file" accept="image/*" className="hidden" onChange={handleUploadSlip} disabled={uploading} />
                 </label>
             </div>
 
-            {/* Modal แจ้งผล */}
             {statusModal.show && (
                 <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center">
