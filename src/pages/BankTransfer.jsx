@@ -117,7 +117,7 @@ export default function BankTransfer() {
                 }
             } else {
                 setUploading(false);
-                setStatusModal({ show: true, success: false, message: 'สลิปไม่ถูกต้อง', details: 'ข้อมูลสลิปนี้ตรวจสอบไม่ผ่านระบบ AI' });
+                setStatusModal({ show: true, success: false, message: 'สลิปไม่ถูกต้อง', details: 'ข้อมูลสลิปนี้ตรวจสอบไม่ผ่านระบบ' });
             }
         } catch (error) {
             setUploading(false);
