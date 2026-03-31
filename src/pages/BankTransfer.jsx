@@ -20,7 +20,6 @@ export default function BankTransfer() {
 
     const storage = getStorage(app);
 
-    // 🔍 [สแกนสลิป]: อ่าน Payload เพื่อดึงข้อมูลธนาคาร
     const scanSlipForPayload = (file) => {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -62,32 +61,36 @@ export default function BankTransfer() {
             if (result && (result.event === "FOUND" || result.status === 200)) {
                 const slipData = result.data?.rawSlip || result.data || result;
                 
-                // 🛡️ [Triple Lock]: เช็คชื่อ "ณัฐวุฒิ" และเลขบัญชีกสิกร "8656"
+                // 🛡️ [Triple Lock]: ปรับปรุงการดึงข้อมูลให้แม่นยำขึ้น
                 const receiverName = slipData.receiver?.account?.name?.th || "";
                 const receiverAccount = slipData.receiver?.account?.bank?.account || 
                                         slipData.receiver?.account?.proxy?.account || "";
+                const slipAmount = result.data?.amountInSlip || slipData.amount?.amount || 0;
 
-                // ล็อคเป้าหมายเลข 0638986566 (เราเช็คเลขท้าย 4-6 ตัวเพื่อความแม่นยำ)
-                const isCorrectAccount = receiverAccount.includes("6566") || receiverAccount.includes("0638986566");
-                const isCorrectName = receiverName.includes("ณัฐวุฒิ");
+                // ✨ ลบช่องว่างออกก่อนเช็คชื่อ และเช็คเลข 8656 ตามสลิปจริงของบอส
+                const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
+                const isAccountValid = receiverAccount.includes("8656");
 
-                if (!isCorrectName || !isCorrectAccount) {
+                if (!isNameValid || !isAccountValid) {
                     setUploading(false);
                     return setStatusModal({ 
                         show: true, success: false, 
                         message: 'บัญชีผู้รับไม่ถูกต้อง', 
-                        details: `สลิปนี้โอนไปที่: ${receiverName} (${receiverAccount}) โปรดโอนเข้ากสิกรไทย 063-8-98656-6 เท่านั้น` 
+                        details: `สลิปโอนไปที่: ${receiverName} (${receiverAccount})` 
                     });
                 }
 
                 // 💰 [Check Amount]
-                const slipAmount = result.data?.amountInSlip || 0;
                 if (Math.abs(Number(slipAmount) - Number(amount)) > 0.1) {
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'ยอดโอนไม่ตรง!', details: `ยอดในสลิป ${slipAmount} บ. (ยอดออเดอร์ ${amount} บ.)` });
+                    return setStatusModal({ 
+                        show: true, success: false, 
+                        message: 'ยอดโอนไม่ตรง!', 
+                        details: `ยอดในสลิป ${slipAmount} บ. (ยอดออเดอร์ ${amount} บ.)` 
+                    });
                 }
 
-                // ✅ [Success]: บันทึกและตัดสต๊อก
+                // ✅ [Success]: บันทึกข้อมูล
                 const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
@@ -109,7 +112,7 @@ export default function BankTransfer() {
                         slipUrl: downloadURL, 
                         transRef: slipData.transRef, 
                         updatedAt: serverTimestamp(),
-                        verifiedBy: 'KBANK Manual V2'
+                        verifiedBy: 'KBANK Manual V2 (Flexible Check)'
                     });
                     
                     setUploading(false);
@@ -131,7 +134,6 @@ export default function BankTransfer() {
                 <h1 className="text-xl font-black mb-1 text-gray-800 tracking-tighter leading-none">Bank Transfer</h1>
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-10 border-b pb-2 leading-none">K-BANKING PAYMENT</p>
 
-                {/* 💳 บัตรธนาคารกสิกรไทย */}
                 <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-[2rem] p-8 text-white mb-8 text-left relative overflow-hidden shadow-xl shadow-emerald-200">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 -mr-10 -mt-10 rounded-full blur-2xl"></div>
                     <p className="text-[9px] text-emerald-200 tracking-[0.3em] font-black mb-4">KASIKORNBANK</p>
