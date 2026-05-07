@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { collection, query, where, onSnapshot } from 'firebase/firestore'; 
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'; 
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { CATEGORIES } from '../lib/utils';
 import ProductCard from '../components/products/ProductCard';
@@ -19,30 +19,32 @@ export default function Products() {
             return;
         }
 
-        // 🚨 ปรับ Query ให้ดึงง่ายขึ้น (เอา orderBy ออกก่อนเพื่อกันบั๊ก createdAt ไม่มีค่า)
-        const q = query(
-            collection(db, 'products'), 
-            where('status', '==', 'active')
-        );
+        // ✅ [OPTIMIZATION] เปลี่ยนจาก onSnapshot เป็น getDocs + ใช้ limit()
+        const loadProducts = async () => {
+            try {
+                const q = query(
+                    collection(db, 'products'), 
+                    where('status', '==', 'active'),
+                    orderBy('createdAt', 'desc'),
+                    limit(500) // ✅ จำกัดการดึงข้อมูล
+                );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-            
-            // ✅ มาเรียงลำดับในฝั่งเราเอง (Client-side sorting)
-            const sortedData = data.sort((a, b) => {
-                const dateA = a.createdAt?.seconds || 0;
-                const dateB = b.createdAt?.seconds || 0;
-                return dateB - dateA;
-            });
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+                
+                setProducts(data);
+                setLoading(false);
+            } catch (error) {
+                console.error("Firestore Error:", error);
+                setLoading(false);
+            }
+        };
 
-            setProducts(sortedData);
-            setLoading(false);
-        }, (error) => {
-            console.error("Firestore Error:", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe(); 
+        loadProducts();
+        
+        // ✅ [OPTIMIZATION] Refresh data ทุก 5 นาที แทนการทำ real-time listeners
+        const interval = setInterval(loadProducts, 5 * 60 * 1000);
+        return () => clearInterval(interval);
     }, []);
 
     const filtered = useMemo(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTHB, ORDER_STATUSES } from '../lib/utils';
@@ -48,13 +48,32 @@ export default function Orders() {
 
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const orderData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setOrders(orderData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-            setLoading(false);
-        });
-        return () => unsubscribe();
+        
+        // ✅ [OPTIMIZATION] เปลี่ยนจาก onSnapshot เป็น getDocs + ใช้ limit()
+        const loadOrders = async () => {
+            try {
+                const q = query(
+                    collection(db, 'orders'),
+                    where('userId', '==', user.uid),
+                    orderBy('createdAt', 'desc'),
+                    limit(100) // ✅ จำกัดการดึงข้อมูล
+                );
+                
+                const snapshot = await getDocs(q);
+                const orderData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setOrders(orderData);
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+                setLoading(false);
+            }
+        };
+
+        loadOrders();
+        
+        // ✅ [OPTIMIZATION] Refresh data ทุก 30 วินาที
+        const interval = setInterval(loadOrders, 30 * 1000);
+        return () => clearInterval(interval);
     }, [user]);
 
     // 🚀 [จุดแก้ไขสำคัญ]: ฟังก์ชันจัดการปุ่มจ่ายเงิน แยกตามวิธีที่เลือกไว้

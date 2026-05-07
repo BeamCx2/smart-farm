@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { formatTHB, CATEGORIES } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
@@ -18,10 +18,15 @@ export default function ProductManager() {
     const load = async () => {
         try {
             setLoading(true);
-            const snap = await getDocs(collection(db, 'products'));
+            // ✅ [OPTIMIZATION] ดึงเฉพาะ 200 products แรก
+            const q = query(
+                collection(db, 'products'),
+                orderBy('createdAt', 'desc'),
+                limit(200)
+            );
+            const snap = await getDocs(q);
             const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-            const sortedData = data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-            setProducts(sortedData);
+            setProducts(data);
         } catch (err) {
             addToast('ไม่สามารถโหลดข้อมูลได้', 'error');
         } finally {
