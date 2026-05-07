@@ -40,7 +40,15 @@ export default function Receipt() {
     const handlePrint = () => {
         const receiptEl = document.getElementById('receipt-print');
         if (!receiptEl) return;
-        const printWindow = window.open('', '_blank', 'width=600,height=800');
+
+        // copy all stylesheets from current page
+        const styles = Array.from(document.styleSheets).map(sheet => {
+            try {
+                return Array.from(sheet.cssRules).map(r => r.cssText).join('\n');
+            } catch { return ''; }
+        }).join('\n');
+
+        const printWindow = window.open('', '_blank', 'width=700,height=900');
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
@@ -48,13 +56,17 @@ export default function Receipt() {
                 <meta charset="utf-8" />
                 <title>Receipt</title>
                 <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: sans-serif; background: white; }
-                    @page { margin: 10mm; size: auto; }
-                    @media print { body { margin: 0; } }
+                    ${styles}
+                    * { box-sizing: border-box; }
+                    body { margin: 0; padding: 0; background: white; font-family: sans-serif; }
+                    @page { margin: 10mm; size: A4; }
                 </style>
             </head>
-            <body>${receiptEl.innerHTML}</body>
+            <body>
+                <div style="display:flex; justify-content:center; padding: 20px;">
+                    ${receiptEl.outerHTML}
+                </div>
+            </body>
             </html>
         `);
         printWindow.document.close();
@@ -62,7 +74,7 @@ export default function Receipt() {
         setTimeout(() => {
             printWindow.print();
             printWindow.close();
-        }, 500);
+        }, 800);
     };
 
     return (
