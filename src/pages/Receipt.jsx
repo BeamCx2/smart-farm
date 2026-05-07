@@ -38,7 +38,7 @@ export default function Receipt() {
     const fullAddress = `${customer.address || ''} ${customer.subDistrict || ''} ${customer.district || ''} ${customer.province || ''} ${customer.zipcode || ''}`.trim();
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6 sm:p-12 font-sans overflow-x-hidden text-gray-800">
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6 sm:p-12 font-sans overflow-x-hidden text-gray-800 print:min-h-0 print:bg-white print:p-0 print:block">
             
             {/* 🛠 Toolbar (no-print) */}
             <div className="max-w-md w-full flex justify-end gap-2 mb-4 no-print text-white">
@@ -127,6 +127,14 @@ export default function Receipt() {
 
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
+                    html, body, #root {
+                        height: auto !important;
+                        min-height: 0 !important;
+                        overflow: visible !important;
+                        background: white !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
                     html, body {
                         height: auto !important;
                         overflow: visible !important;
