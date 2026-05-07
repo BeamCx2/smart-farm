@@ -152,10 +152,6 @@ export default function Checkout() {
                                 <span>Subtotal</span>
                                 <span>{formatTHB(subtotal)}</span>
                             </div>
-                            <div className="flex justify-between text-[10px] text-gray-400 font-black tracking-widest uppercase">
-                                <span>Shipping</span>
-                                <span>{formatTHB(shipping)}</span>
-                            </div>
                             <div className="flex justify-between items-center text-emerald-900 pt-6 border-t border-gray-50">
                                 <span className="font-black text-sm uppercase">Total</span>
                                 <span className="text-4xl font-black tracking-tighter">{formatTHB(total)}</span>
