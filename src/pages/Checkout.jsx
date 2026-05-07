@@ -13,7 +13,8 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
-    const { items, subtotal, shipping, total, clearCart } = useCart();
+    // [แก้ไข]: เพิ่ม Default values เพื่อป้องกัน ReferenceError กรณี useCart ส่งค่ามาไม่ครบ
+    const { items = [], subtotal = 0, shipping = 0, total = 0, clearCart } = useCart();
     const { user, loading: authLoading } = useAuth();
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -34,7 +35,9 @@ export default function Checkout() {
 
     if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
     if (!user) return <Navigate to="/login" replace />;
-    if (items.length === 0 && !submitting) return <Navigate to="/cart" replace />;
+    
+    // [แก้ไข]: เพิ่มความปลอดภัยในการเช็ค items.length
+    if ((!items || items.length === 0) && !submitting) return <Navigate to="/cart" replace />;
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -48,7 +51,11 @@ export default function Checkout() {
         const newOrderRef = doc(collection(db, 'orders'));
 
         try {
-            // 📝 บันทึกข้อมูลออเดอร์ลง Firebase
+            // [แก้ไข]: ป้องกันค่า undefined ก่อนลง Firebase
+            const finalSubtotal = Number(subtotal) || 0;
+            const finalShipping = Number(shipping) || 0;
+            const finalTotal = Number(total) || 0;
+
             batch.set(newOrderRef, {
                 orderId: currentOrderId,
                 userId: user.uid,
@@ -56,12 +63,14 @@ export default function Checkout() {
                 items: items.map(i => ({ 
                     id: i.id, 
                     name: i.name, 
-                    price: i.price, 
-                    qty: i.qty, 
+                    price: Number(i.price) || 0, 
+                    qty: Number(i.qty) || 1, 
                     image: i.image || '' 
                 })),
-                subtotal, shipping, total,
-                totalSatang: toSatang(total),
+                subtotal: finalSubtotal, 
+                shipping: finalShipping, 
+                total: finalTotal,
+                totalSatang: toSatang(finalTotal),
                 paymentMethod, 
                 status: 'pending',
                 createdAt: serverTimestamp(),
@@ -69,33 +78,31 @@ export default function Checkout() {
             
             await batch.commit();
             addToast('สร้างคำสั่งซื้อเรียบร้อย', 'success');
-            clearCart();
             
-            // 🚀 [จุดแก้ไขสำคัญ]: แยกเส้นทางตามวิธีชำระเงิน
+            // ล้างตะกร้าหลังจากชำระเงินสำเร็จ (หรือย้ายไปล้างหน้าขอบคุณก็ได้)
+            if (clearCart) clearCart();
+            
             if (paymentMethod === 'promptpay') {
-                // ไปหน้าสแกน QR
-                navigate('/payment', { state: { amount: total, orderId: currentOrderId } });
+                navigate('/payment', { state: { amount: finalTotal, orderId: currentOrderId } });
             } else {
-                // ไปหน้าโอนผ่านบัญชีธนาคาร (BankTransfer.jsx)
-                navigate('/bank-transfer', { state: { amount: total, orderId: currentOrderId } });
+                navigate('/bank-transfer', { state: { amount: finalTotal, orderId: currentOrderId } });
             }
 
         } catch (err) {
+            console.error("Checkout Error:", err);
             addToast('ล้มเหลว: ' + err.message, 'error');
             setSubmitting(false);
         }
     };
 
     return (
-        <section className="max-w-7xl mx-auto px-4 py-10 font-sans text-left font-black">
+        <section className="max-w-7xl mx-auto px-4 py-10 font-sans text-left">
             <h1 className="text-2xl font-black mb-2 text-emerald-900 uppercase tracking-tighter">💳 CHECKOUT</h1>
             <p className="text-gray-400 mb-8 font-black text-[10px] uppercase tracking-[0.3em]">Smart Farm Gateway System</p>
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     <div className="lg:col-span-2 space-y-8">
-                        
-                        {/* 📍 ข้อมูลจัดส่ง */}
                         <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-gray-100">
                             <h3 className="font-black mb-8 text-emerald-700 text-lg uppercase leading-none border-l-4 border-emerald-500 pl-4">📍 SHIPPING ADDRESS</h3>
                             
@@ -126,14 +133,13 @@ export default function Checkout() {
                             </div>
                         </div>
 
-                        {/* 💰 วิธีชำระเงิน */}
                         <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-gray-100">
                             <h3 className="font-black mb-8 text-emerald-700 text-lg uppercase leading-none border-l-4 border-emerald-500 pl-4">💰 PAYMENT METHOD</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 {PAYMENT_METHODS.map((m) => (
                                     <label key={m.id} className={`flex items-center gap-5 p-7 rounded-[2rem] border-2 cursor-pointer transition-all ${paymentMethod === m.id ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-50 hover:border-emerald-100'}`}>
                                         <input type="radio" checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} className="accent-emerald-600 w-5 h-5" />
-                                        <div className="leading-none">
+                                        <div className="leading-none text-left">
                                             <div className="font-black text-xs text-gray-800 uppercase tracking-tight">{m.label}</div>
                                             <div className="text-[9px] text-gray-400 mt-2 uppercase tracking-widest">{m.desc}</div>
                                         </div>
@@ -143,22 +149,21 @@ export default function Checkout() {
                         </div>
                     </div>
 
-                    {/* สรุปรายการ */}
                     <div className="bg-white rounded-[3.5rem] p-10 shadow-2xl shadow-emerald-100/50 h-fit lg:sticky lg:top-24 border border-emerald-50">
                         <h3 className="font-black text-xl mb-10 text-emerald-900 border-b border-gray-50 pb-6 uppercase tracking-tighter text-center">ORDER SUMMARY</h3>
                         
                         <div className="space-y-4 mb-10">
                             <div className="flex justify-between text-[10px] text-gray-400 font-black tracking-widest uppercase">
                                 <span>Subtotal</span>
-                                <span>{formatTHB(subtotal)}</span>
+                                <span>{formatTHB(subtotal || 0)}</span>
                             </div>
                             <div className="flex justify-between text-[10px] text-gray-400 font-black tracking-widest uppercase">
                                 <span>Shipping</span>
-                                <span>{formatTHB(shipping)}</span>
+                                <span>{formatTHB(shipping || 0)}</span>
                             </div>
                             <div className="flex justify-between items-center text-emerald-900 pt-6 border-t border-gray-50">
                                 <span className="font-black text-sm uppercase">Total</span>
-                                <span className="text-4xl font-black tracking-tighter">{formatTHB(total)}</span>
+                                <span className="text-4xl font-black tracking-tighter">{formatTHB(total || 0)}</span>
                             </div>
                         </div>
 
