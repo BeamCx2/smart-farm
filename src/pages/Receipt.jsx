@@ -127,20 +127,29 @@ export default function Receipt() {
 
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
+                    html, body {
+                        height: auto !important;
+                        overflow: visible !important;
+                        background: white !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
                     body * { visibility: hidden; background: white !important; }
                     .no-print { display: none !important; }
                     #receipt-print, #receipt-print * { visibility: visible; }
                     #receipt-print {
-                        position: absolute;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        top: 0;
-                        width: 100%;
-                        max-width: 100%;
+                        position: relative !important;
+                        left: auto !important;
+                        transform: none !important;
+                        top: auto !important;
+                        width: 100% !important;
+                        height: auto !important;
                         border: none !important;
                         box-shadow: none !important;
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
                     }
-                    @page { margin: 10mm; }
+                    @page { margin: 10mm; size: auto; }
                 }
             ` }} />
         </div>
