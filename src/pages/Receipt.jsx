@@ -37,12 +37,40 @@ export default function Receipt() {
     const customer = order.customer || {};
     const fullAddress = `${customer.address || ''} ${customer.subDistrict || ''} ${customer.district || ''} ${customer.province || ''} ${customer.zipcode || ''}`.trim();
 
+    const handlePrint = () => {
+        const receiptEl = document.getElementById('receipt-print');
+        if (!receiptEl) return;
+        const printWindow = window.open('', '_blank', 'width=600,height=800');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8" />
+                <title>Receipt</title>
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: sans-serif; background: white; }
+                    @page { margin: 10mm; size: auto; }
+                    @media print { body { margin: 0; } }
+                </style>
+            </head>
+            <body>${receiptEl.innerHTML}</body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
+
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6 sm:p-12 font-sans overflow-x-hidden text-gray-800 print:min-h-0 print:bg-white print:p-0 print:block">
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6 sm:p-12 font-sans overflow-x-hidden text-gray-800">
             
             {/* 🛠 Toolbar (no-print) */}
             <div className="max-w-md w-full flex justify-end gap-2 mb-4 no-print text-white">
-                <button onClick={() => window.print()} className="p-3 bg-emerald-600 rounded-2xl shadow-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-2">
+                <button onClick={handlePrint} className="p-3 bg-emerald-600 rounded-2xl shadow-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-2">
                     <span className="text-xl">🖨️</span>
                     <span className="text-[10px] font-black uppercase">Print</span>
                 </button>
@@ -124,42 +152,6 @@ export default function Receipt() {
                     --- Thank you for your support ---
                 </p>
             </div>
-
-            <style dangerouslySetInnerHTML={{ __html: `
-                @media print {
-                    html, body, #root {
-                        height: auto !important;
-                        min-height: 0 !important;
-                        overflow: visible !important;
-                        background: white !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                    }
-                    html, body {
-                        height: auto !important;
-                        overflow: visible !important;
-                        background: white !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                    }
-                    body * { visibility: hidden; background: white !important; }
-                    .no-print { display: none !important; }
-                    #receipt-print, #receipt-print * { visibility: visible; }
-                    #receipt-print {
-                        position: relative !important;
-                        left: auto !important;
-                        transform: none !important;
-                        top: auto !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        page-break-after: avoid !important;
-                        break-after: avoid !important;
-                    }
-                    @page { margin: 10mm; size: auto; }
-                }
-            ` }} />
         </div>
     );
 }
