@@ -17,6 +17,13 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+// 🐛 DEBUG: Check if env vars are loaded
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey ? '✅ Loaded' : '❌ Missing',
+  projectId: firebaseConfig.projectId ? '✅ Loaded' : '❌ Missing',
+  authDomain: firebaseConfig.authDomain ? '✅ Loaded' : '❌ Missing'
+});
+
 // 🛡️ ป้องกันการ Initialize ซ้ำ (Singleton Pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
