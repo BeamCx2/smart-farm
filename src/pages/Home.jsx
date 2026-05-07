@@ -14,20 +14,17 @@ useEffect(() => {
     async function load() {
         try {
             setLoading(true);
-            // 1. ดึงสินค้า active ทั้งหมดออกมา (ไม่ต้องใส่ orderBy ใน query)
-            const q = query(collection(db, 'products'), where('status', '==', 'active'));
+            // ✅ [OPTIMIZATION] ใช้ orderBy + limit ระดับ query แล้ว
+            const q = query(
+                collection(db, 'products'),
+                where('status', '==', 'active'),
+                orderBy('createdAt', 'desc'),
+                limit(8) // ✅ จำกัดที่ query level
+            );
             const snap = await getDocs(q);
             
             const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-            // 2. มาเรียงลำดับเองที่นี่ (ถ้าชิ้นไหนไม่มี createdAt ให้เอาไปไว้ล่างสุด)
-            const sortedData = data.sort((a, b) => {
-                const dateA = a.createdAt?.seconds || 0;
-                const dateB = b.createdAt?.seconds || 0;
-                return dateB - dateA;
-            }).slice(0, 8); // เอาแค่ 8 ชิ้นแรก
-
-            setProducts(sortedData);
+            setProducts(data);
         } catch (e) {
             console.error(e);
         } finally {

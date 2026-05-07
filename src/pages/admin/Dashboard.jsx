@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { formatTHB, formatDate, ORDER_STATUSES } from '../../lib/utils';
 
@@ -19,10 +19,21 @@ export default function Dashboard() {
     useEffect(() => {
         async function fetchStats() {
             try {
-                const orderSnap = await getDocs(collection(db, 'orders'));
+                // ✅ [OPTIMIZATION] ดึงเฉพาะ 100 orders ล่าสุด แทนทั้งหมด
+                const orderQuery = query(
+                    collection(db, 'orders'),
+                    orderBy('createdAt', 'desc'),
+                    limit(100)
+                );
+                const orderSnap = await getDocs(orderQuery);
                 const orders = orderSnap.docs.map(d => d.data());
                 
-                const productSnap = await getDocs(collection(db, 'products'));
+                // ✅ [OPTIMIZATION] ดึงเฉพาะ 1000 products แรก
+                const productQuery = query(
+                    collection(db, 'products'),
+                    limit(1000)
+                );
+                const productSnap = await getDocs(productQuery);
                 
                 // 1. คำนวณยอดขาย: เอาทุกสถานะ ยกเว้น 'pending', 'cancelled' และ 'waiting_verify'
                 const totalSales = orders

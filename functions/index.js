@@ -14,8 +14,12 @@ setGlobalOptions({ region: "asia-southeast1" });
 exports.getscbqr = onCall({ cors: true }, async (request) => {
     const { amount } = request.data;
     
-    // 🚨 บอสแก้เบอร์โทรตรงนี้เป็นเบอร์ที่ผูก PromptPay ของบอสครับ
-    const mobileNumber = '0822024218'; 
+    // � ดึงเบอร์โทร PromptPay จาก environment variables
+    const mobileNumber = process.env.PROMPTPAY_MOBILE || process.env.VITE_PROMPTPAY_MOBILE;
+    
+    if (!mobileNumber) {
+        throw new Error('ไม่พบการตั้งค่า PromptPay mobile number');
+    }
     
     try {
         console.log(`Generating PromptPay QR for amount: ${amount}`);
