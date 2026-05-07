@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "functions": [
     {
@@ -16,4 +17,24 @@
       "**/node_modules/**"
     ]
   }
+=======
+{
+  "functions": [
+    {
+      "source": "functions",
+      "runtime": "nodejs20"
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+>>>>>>> 333117e554d91461d5abe32f8b17a295b591eb82
 }

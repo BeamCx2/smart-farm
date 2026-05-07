@@ -1,148 +1,194 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { formatTHB } from '../lib/utils';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { formatTHB, ORDER_STATUSES } from '../lib/utils';
+import { Navigate, useNavigate } from 'react-router-dom';
+
+// ⏰ Component นับถอยหลัง (เหมือนเดิม)
+function OrderTimer({ createdAt }) {
+    const [timeLeft, setTimeLeft] = useState("");
+    useEffect(() => {
+        if (!createdAt || !createdAt.seconds) return;
+        const calculateTime = () => {
+            const expiryTime = createdAt.seconds + (24 * 60 * 60); 
+            const now = Math.floor(Date.now() / 1000);
+            const diff = expiryTime - now;
+            if (diff <= 0) {
+                setTimeLeft("ยกเลิกออเดอร์แล้ว");
+            } else {
+                const h = Math.floor(diff / 3600);
+                const m = Math.floor((diff % 3600) / 60);
+                const s = diff % 60;
+                setTimeLeft(`${h}ชม. ${m}น. ${s}ว.`);
+            }
+        };
+        const timer = setInterval(calculateTime, 1000);
+        calculateTime();
+        return () => clearInterval(timer);
+    }, [createdAt]);
+    return <span className="font-black text-red-600">{timeLeft}</span>;
+}
 
 export default function Orders() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState(null);
+    const { user, loading: authLoading } = useAuth();
+    const navigate = useNavigate();
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [viewOrder, setViewOrder] = useState(null);
 
-  useEffect(() => {
-    if (!user) return;
+    const handleSyncAutoCancel = async (orderId) => {
+        try {
+            await updateDoc(doc(db, 'orders', orderId), {
+                status: 'cancelled',
+                cancelledAt: serverTimestamp()
+            });
+        } catch (error) { console.error("Auto-cancel failed:", error); }
+    };
 
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.uid)
-    );
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const orderData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setOrders(orderData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [user]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const orderData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    // 🚀 [จุดแก้ไขสำคัญ]: ฟังก์ชันจัดการปุ่มจ่ายเงิน แยกตามวิธีที่เลือกไว้
+    const handlePaymentRedirect = (order) => {
+        const paymentState = { 
+            amount: order.total, 
+            orderId: order.orderId || order.id.slice(0, 8) 
+        };
 
-      // เรียงลำดับ ใหม่ไปเก่า
-      const sortedOrders = orderData.sort((a, b) => {
-        const dateA = a.createdAt?.seconds || 0;
-        const dateB = b.createdAt?.seconds || 0;
-        return dateB - dateA;
-      });
+        // 📍 แยกเส้นทางตาม paymentMethod ใน Firebase
+        if (order.paymentMethod === 'bank') {
+            // ถ้าเลือกโอนผ่านธนาคาร ให้ไปหน้า BankTransfer
+            navigate('/bank-transfer', { state: paymentState });
+        } else {
+            // ถ้าเป็น PromptPay หรืออื่นๆ ให้ไปหน้า Payment (QR)
+            navigate('/payment', { state: paymentState });
+        }
+    };
 
-      setOrders(sortedOrders);
-      setLoading(false);
-    }, (error) => {
-      console.error("Firestore Error:", error);
-      setLoading(false);
-    });
+    if (authLoading || loading) return <div className="p-20 text-center animate-pulse font-black text-emerald-600 uppercase">Fetching Orders...</div>;
+    if (!user) return <Navigate to="/register" replace />;
 
-    return () => unsubscribe();
-  }, [user]);
-
-  if (authLoading) return <div className="p-20 text-center animate-pulse font-bold text-emerald-600">กำลังตรวจสอบสิทธิ์...</div>;
-  if (!user) return <Navigate to="/register" replace />;
-  if (loading) return <div className="p-20 text-center animate-pulse font-bold text-emerald-600">กำลังโหลดข้อมูล...</div>;
-
-  if (orders.length === 0) {
     return (
-      <section className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <div className="text-7xl mb-6">🥗</div>
-        <h2 className="text-xl font-bold mb-4">ยังไม่มีประวัติการสั่งซื้อ</h2>
-        <Link to="/products" className="px-8 py-3 bg-emerald-600 text-white rounded-full font-bold">ไปช้อปเลย</Link>
-      </section>
-    );
-  }
+        <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen font-sans font-black">
+            <h1 className="text-xl font-black mb-10 text-gray-800 uppercase tracking-tight flex items-center gap-3">
+                <span className="bg-emerald-600 text-white w-8 h-8 rounded-xl flex items-center justify-center text-sm">#</span>
+                คำสั่งซื้อของฉัน
+            </h1>
 
-  return (
-    <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
-      <h1 className="text-xl font-black mb-8 text-gray-800 uppercase tracking-tight">📜 คำสั่งซื้อของฉัน</h1>
-      
-      <div className="space-y-4">
-        {orders.map((order) => (
-          <div key={order.id} className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-            <div 
-              className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer"
-              onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-lg">
-                  {order.status === 'completed' || order.status === 'shipped' || order.status === 'finished' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
-                </div>
-                <div>
-                  <h3 className="font-black text-gray-800 text-sm">#{order.orderId || order.id.slice(0, 8)}</h3>
-                  <p className="text-[10px] text-gray-400 font-bold">
-                    {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'Loading...'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4 ml-auto">
-                <div className="text-right">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">ยอดสุทธิ</p>
-                  <p className="font-black text-emerald-600 text-base">{formatTHB(order.total)}</p>
-                </div>
-                
-                <div className="flex flex-col items-end gap-1.5">
-                  {/* ✅ โชว์วิธีชำระเงิน */}
-                  <div className="px-2 py-0.5 bg-gray-50 rounded-lg border border-gray-100">
-                    <span className="text-[8px] font-black text-emerald-600 uppercase">
-                      {order.paymentMethod || 'PROMPTPAY'}
-                    </span>
-                  </div>
+            <div className="space-y-4 font-black">
+                {orders.map((order) => {
+                    const statusCfg = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+                    const isPending = order.status === 'pending';
+                    const isExpired = isPending && Math.floor(Date.now() / 1000) > (order.createdAt?.seconds + 86400);
 
-                  {/* ✅ Badge สถานะ */}
-                  <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-tight ${
-                    order.status === 'completed' || order.status === 'shipped' || order.status === 'finished' ? 'bg-emerald-100 text-emerald-600' : 
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
-                    'bg-amber-100 text-amber-600'
-                  }`}>
-                    {order.status === 'completed' || order.status === 'shipped' || order.status === 'finished' ? 'เสร็จสิ้นแล้ว' : 
-                     order.status === 'paid' ? 'ชำระเงินแล้ว' :
-                     order.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'รอดำเนินการ'}
-                  </span>
+                    if (isExpired) handleSyncAutoCancel(order.id);
+                    
+                    return (
+                        <div key={order.id} 
+                            className={`bg-white rounded-[2.5rem] border p-7 flex flex-wrap items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all group
+                                ${isPending ? 'border-amber-200 ring-2 ring-amber-50' : 'border-gray-100'}`}>
+                            
+                            <div className="flex items-center gap-5 flex-1 cursor-pointer font-black" onClick={() => setViewOrder(order)}>
+                                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
+                                    {order.status === 'shipped' ? '🚚' : order.status === 'paid' ? '💰' : order.status === 'finished' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
+                                </div>
+                                <div>
+                                    <h3 className="text-gray-900 text-base tracking-tighter uppercase font-black">#{order.orderId || order.id.slice(0, 8)}</h3>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5">
+                                        {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'Syncing...'}
+                                    </p>
+                                    {isPending && (
+                                        <div className="mt-2 flex items-center gap-2 bg-red-50 px-3 py-1 rounded-lg w-fit">
+                                            <span className="text-[9px] text-red-400 uppercase tracking-widest leading-none">⏳ หมดเวลาใน:</span>
+                                            <OrderTimer createdAt={order.createdAt} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                  {/* ปุ่มชำระเงิน (ถ้ายังไม่จ่าย) */}
-                  {order.status === 'pending' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/test-payment', { state: { amount: order.total, orderId: order.orderId || order.id.slice(0, 8), firebaseDocId: order.id } });
-                      }}
-                      className="text-[9px] bg-emerald-600 text-white px-3 py-1 rounded-lg font-black"
-                    >
-                      💳 ชำระเงิน
-                    </button>
-                  )}
-                </div>
-                <span className={`text-gray-300 text-xs transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}>▼</span>
-              </div>
+                            <div className="flex items-center gap-6 font-black">
+                                <div className="text-right hidden sm:block mr-2 font-black">
+                                    <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1 leading-none font-black">ยอดสุทธิ</p>
+                                    <p className="text-gray-900 text-xl leading-none font-black">{formatTHB(order.total)}</p>
+                                </div>
+                                
+                                {isPending && !isExpired ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePaymentRedirect(order); // 🚀 เรียกใช้ฟังก์ชันแยกทาง
+                                        }}
+                                        className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-emerald-100 hover:bg-emerald-700 active:scale-95 transition-all"
+                                    >
+                                        💳 จ่ายเงิน
+                                    </button>
+                                ) : (
+                                    <span onClick={() => setViewOrder(order)} className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border shadow-sm cursor-pointer
+                                        ${statusCfg.color === 'green' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                                          statusCfg.color === 'yellow' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
+                                          statusCfg.color === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                        {statusCfg.label}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
-            {/* ส่วนกางรายละเอียดสินค้า */}
-            {expandedId === order.id && (
-              <div className="px-6 pb-6 pt-2 border-t border-gray-50 bg-gray-50/20">
-                <div className="space-y-3">
-                  <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest">รายการสินค้า</h4>
-                  {order.items?.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <img src={item.image || 'https://placehold.co/50'} className="w-8 h-8 rounded-lg object-cover" />
-                      <div className="flex-1">
-                        <p className="font-bold text-xs text-gray-800">{item.name}</p>
-                        <p className="text-[10px] text-gray-500">{formatTHB(item.price)} x {item.qty}</p>
-                      </div>
-                      <p className="font-black text-xs text-gray-700">{formatTHB(item.price * item.qty)}</p>
+            {/* 🚀 Modal รายละเอียด (เหมือนเดิม) */}
+            {viewOrder && (
+                <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+                    <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full max-h-[96vh] flex flex-col shadow-2xl relative font-black">
+                        <button onClick={() => setViewOrder(null)} className="absolute top-6 right-6 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 font-black">✕</button>
+                        <h2 className="text-lg font-black text-gray-900 uppercase tracking-tighter mb-4 shrink-0 font-black font-black">รายละเอียดออเดอร์</h2>
+                        <div className="flex-1 overflow-y-auto space-y-4 font-black">
+                            {viewOrder.status === 'shipped' && viewOrder.trackingNumber && (
+                                <div className="p-4 bg-blue-600 rounded-2xl text-white shadow-lg font-black">
+                                    <p className="text-[8px] font-black uppercase tracking-widest opacity-80">Tracking ID</p>
+                                    <p className="text-lg font-black tracking-widest select-all leading-none">{viewOrder.trackingNumber}</p>
+                                </div>
+                            )}
+                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-2 font-black">📍 Shipping Address</p>
+                                <p className="text-gray-900 text-sm mb-0.5 leading-none font-black">{viewOrder.customer?.name}</p>
+                                <p className="text-[10px] text-emerald-600 mb-2 leading-none font-black">📞 {viewOrder.customer?.phone}</p>
+                                <div className="text-[10px] text-gray-600 font-black uppercase">
+                                    <p className="mb-1 font-black">{viewOrder.customer?.address}</p>
+                                    <p className="font-black">{viewOrder.customer?.subDistrict} {viewOrder.customer?.district} {viewOrder.customer?.province} {viewOrder.customer?.zipcode}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2 font-black">
+                                <p className="text-[9px] text-gray-300 uppercase tracking-widest px-1 mb-1 font-black font-black">Items</p>
+                                {(viewOrder.items || []).map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-50 font-black">
+                                        <img src={item.image} className="w-10 h-10 rounded-lg object-cover" alt="" />
+                                        <div className="flex-1 font-black">
+                                            <p className="text-[11px] text-gray-800 uppercase leading-none font-black font-black">{item.name}</p>
+                                            <p className="text-[9px] text-gray-400 font-black mt-1 uppercase font-black">฿{item.price} x {item.qty}</p>
+                                        </div>
+                                        <p className="text-xs text-emerald-600 font-black font-black">{formatTHB(item.price * item.qty)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-between items-center bg-gray-900 p-5 rounded-2xl text-white mt-auto font-black font-black">
+                                <span className="text-[9px] uppercase tracking-widest opacity-50 font-black">Total Amount</span>
+                                <span className="text-2xl tracking-tighter leading-none font-black">{formatTHB(viewOrder.total)}</span>
+                            </div>
+                        </div>
+                        <button onClick={() => setViewOrder(null)} className="w-full mt-4 py-3 bg-gray-50 text-gray-300 font-black text-[10px] uppercase tracking-[0.3em] rounded-xl hover:text-red-500 font-black font-black">Close</button>
                     </div>
-                  ))}
                 </div>
-              </div>
             )}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+        </section>
+    );
 }

@@ -21,8 +21,10 @@ import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// ✅ Import หน้า Payment ตัวใหม่ (SCB API)
+// ✅ Import หน้า Payment, BankTransfer และ Receipt
 import Payment from './pages/payment'; 
+import BankTransfer from './pages/BankTransfer'; // 👈 เพิ่มตัวนี้
+import Receipt from './pages/Receipt'; 
 
 // --- 👑 Import Pages (Admin) ---
 import Dashboard from './pages/admin/Dashboard';
@@ -60,7 +62,7 @@ export default function App() {
                 {/* 🏠 Main Layout Wrapper */}
                 <Route element={<Layout />}>
                   
-                  {/* 🔓 หน้าที่ใครก็เข้าดูได้ (Public) */}
+                  {/* 🔓 Public Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:id" element={<ProductDetail />} />
@@ -68,14 +70,18 @@ export default function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/login" element={<Login />} />
 
-                  {/* 🔒 หน้าที่ต้องล็อกอินเท่านั้น (Private) */}
+                  {/* 🔒 Private Routes */}
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                   
-                  {/* ✅ เปลี่ยนจาก test-payment เป็น payment (SCB Gateway) */}
+                  {/* ✅ ช่องทางการชำระเงินต่างๆ */}
                   <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+                  <Route path="/bank-transfer" element={<ProtectedRoute><BankTransfer /></ProtectedRoute>} />
 
-                  {/* 👑 Admin Zone (Private) */}
+                  {/* ✅ เส้นทางใบเสร็จ */}
+                  <Route path="/receipt/:orderId" element={<ProtectedRoute><Receipt /></ProtectedRoute>} />
+
+                  {/* 👑 Admin Zone */}
                   <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<Dashboard />} />
                     <Route path="products" element={<ProductManager />} />
