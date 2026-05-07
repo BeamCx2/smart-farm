@@ -55,11 +55,6 @@ export default function Cart() {
                     <h3 className="font-bold text-lg mb-6">สรุปคำสั่งซื้อ</h3>
                     <div className="space-y-3 text-sm">
                         <div className="flex justify-between"><span className="text-gray-500">ราคารวม</span><span>{formatTHB(subtotal)}</span></div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">ค่าจัดส่ง</span>
-                            <span>{shipping === 0 ? <span className="text-emerald-600 font-semibold">ฟรี</span> : formatTHB(shipping)}</span>
-                        </div>
-                        {/* {shipping > 0 && <p className="text-xs text-gray-400 text-right">สั่งซื้อ ฿1,500 ขึ้นไป ส่งฟรี</p>} */}
                         <hr className="border-gray-200 dark:border-gray-700" />
                         <div className="flex justify-between text-base font-bold pt-2">
                             <span>ยอดรวม</span>
