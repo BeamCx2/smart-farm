@@ -29,13 +29,7 @@ export default function Receipt() {
     // 1. รวมราคาสินค้าจริง (Subtotal ของสินค้า)
     const itemsTotal = order.items?.reduce((acc, item) => acc + (item.price * item.qty), 0) || 0;
     
-    // 🚚 2. ค่าจัดส่ง (ตามเงื่อนไขบอส)
-    const shippingFee = itemsTotal > 1500 ? 0 : 100;
-    
-    // 🧾 3. คำนวณภาษีเฉพาะตัว "สินค้า" (ถ้าบอสอยากให้เลขภาษีล้อไปกับราคาสินค้า 2 บาท)
-    // หรือจะคำนวณจากยอดรวม 102 บาท แล้วโชว์ Subtotal รวมค่าส่งก็ได้ครับ
-    // ในที่นี้ผมขอใช้แบบ "โชว์ยอดรวมก่อนภาษี (สินค้า+ค่าส่ง)" เพื่อให้รวมกันได้ 102 พอดีครับ
-    const netTotal = itemsTotal + shippingFee;
+    const netTotal = itemsTotal;
     const vatAmount = netTotal * (7 / 107);
     const subTotalBeforeVat = netTotal - vatAmount;
 
@@ -118,11 +112,6 @@ export default function Receipt() {
                     <div className="flex justify-between text-[11px] font-bold uppercase text-gray-400">
                         <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
                         <span className="text-black font-black">{formatTHB(vatAmount)}</span>
-                    </div>
-                    
-                    {/* แสดงบรรทัดค่าส่งแยกเพื่อความโปร่งใส แต่ไม่เอาไปบวกซ้ำข้างบนเพราะรวมใน Subtotal แล้ว */}
-                    <div className="flex justify-between text-[9px] font-bold uppercase text-gray-300 pt-1">
-                        <span>* รวมค่าจัดส่ง {shippingFee === 0 ? 'FREE' : formatTHB(shippingFee)} ในราคาสุทธิแล้ว</span>
                     </div>
 
                     <div className="flex justify-between items-center text-lg font-black uppercase pt-4 mt-1 border-t border-gray-100">
