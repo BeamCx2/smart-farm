@@ -13,8 +13,6 @@
     "@stripe/stripe-js": "^8.8.0",
     "axios": "^1.13.6",
     "firebase": "^12.9.0",
-    "firebase-admin": "^13.9.0",
-    "firebase-functions": "^7.2.5",
     "jsqr": "^1.4.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
@@ -34,8 +32,5 @@
     "globals": "^16.5.0",
     "tailwindcss": "^4.2.1",
     "vite": "^7.3.1"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.60.3"
   }
 }
