@@ -1,10 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase } from "firebase/database"; // สำหรับ Realtime Database ที่ใช้ใน Smart Farm
-import { getFirestore } from "firebase/firestore"; // ถ้าใช้ Firestore ด้วย
+import { getDatabase } from "firebase/database"; // สำคัญมากสำหรับ Smart Farm เพื่อดึงค่าเซนเซอร์
 
 const firebaseConfig = {
-  // แนะนำ: เปลี่ยนค่าเหล่านี้ไปใส่ใน .env และเรียกใช้ผ่าน import.meta.env
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
@@ -15,11 +13,8 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// Export ตัวแปรไปใช้ในหน้าอื่น (เช่น หน้าควบคุมปั๊มน้ำ หรือหน้าดูเซนเซอร์)
-export const db = getDatabase(app);
-export const firestore = getFirestore(app);
+export const db = getDatabase(app); 
 export default app;
