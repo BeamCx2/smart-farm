@@ -4,10 +4,9 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
     collection, query, where, getDocs, updateDoc,
-    serverTimestamp, doc
+    serverTimestamp, doc, increment
 } from 'firebase/firestore';
-import { ref as dbRef, update, increment } from 'firebase/database';
-import { db, rtdb } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatTHB } from '../lib/utils';
 import app from '../lib/firebase';
@@ -147,7 +146,7 @@ export default function Payment() {
                     const orderData = orderDoc.data();
 
                     const updateStockPromises = (orderData.items || []).map(item =>
-                        update(dbRef(rtdb, `products/${item.id}`), { stock: increment(-item.qty) })
+                        updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
                     );
                     await Promise.all(updateStockPromises);
 

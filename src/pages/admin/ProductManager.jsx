@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ref, onValue, set, push, update, remove, serverTimestamp } from 'firebase/database';
-import { rtdb } from '../../lib/firebase'; 
+import {
+    collection, onSnapshot, addDoc, updateDoc, deleteDoc,
+    doc, serverTimestamp, query, orderBy
+} from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { formatTHB, CATEGORIES } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -14,13 +17,10 @@ export default function ProductManager() {
     const { addToast } = useToast();
 
     useEffect(() => {
-        const productsRef = ref(rtdb, 'products');
-        return onValue(productsRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                setProducts(list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
-            } else { setProducts([]); }
+        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+        return onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setProducts(data);
             setLoading(false);
         });
     }, []);
@@ -31,11 +31,10 @@ export default function ProductManager() {
         try {
             const data = { ...form, price: Number(form.price), stock: Number(form.stock), updatedAt: serverTimestamp() };
             if (editId) {
-                await update(ref(rtdb, `products/${editId}`), data);
+                await updateDoc(doc(db, 'products', editId), data);
                 addToast('อัปเดตสินค้าแล้ว', 'success');
             } else {
-                const newRef = push(ref(rtdb, 'products'));
-                await set(newRef, { ...data, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
                 addToast('เพิ่มสินค้าใหม่แล้ว', 'success');
             }
             setModalOpen(false);
@@ -44,7 +43,7 @@ export default function ProductManager() {
     };
 
     const handleDelete = async (id) => {
-        if (confirm('ลบสินค้าชิ้นนี้?')) await remove(ref(rtdb, `products/${id}`));
+        if (confirm('ลบสินค้าชิ้นนี้?')) await deleteDoc(doc(db, 'products', id));
     };
 
     if (loading) return <div className="p-20 text-center font-black animate-pulse">LOADING FARM DATA...</div>;

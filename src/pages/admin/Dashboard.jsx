@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { ref, onValue } from 'firebase/database';
-import { db, rtdb } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
 import { formatTHB, formatDate, ORDER_STATUSES } from '../../lib/utils';
 
 // ❌ ลบ import { getDemoProducts } ออกเรียบร้อยครับ
@@ -29,15 +28,10 @@ export default function Dashboard() {
                 const orderSnap = await getDocs(orderQuery);
                 const orders = orderSnap.docs.map(d => d.data());
                 
-                // ✅ [OPTIMIZATION] นับจำนวนสินค้าจาก Realtime Database
-                const productsRef = ref(rtdb, 'products');
-                const productCount = new Promise((resolve) => {
-                    onValue(productsRef, (snapshot) => {
-                        const data = snapshot.val();
-                        const count = data ? Object.keys(data).length : 0;
-                        resolve(count);
-                    }, { onlyOnce: true });
-                });
+                // ✅ [OPTIMIZATION] นับจำนวนสินค้าจาก Firestore
+                const productQuery = query(collection(db, 'products'));
+                const productSnap = await getDocs(productQuery);
+                const productCount = productSnap.size;
                 
                 // 1. คำนวณยอดขาย: เอาทุกสถานะ ยกเว้น 'pending', 'cancelled' และ 'waiting_verify'
                 const totalSales = orders
@@ -57,7 +51,7 @@ export default function Dashboard() {
                 setStats({
                     totalSales,
                     orderCount: orders.length,
-                    productCount: await productCount,
+                    productCount,
                     pendingOrders: pending
                 });
             } catch (error) {

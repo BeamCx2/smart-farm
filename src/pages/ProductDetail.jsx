@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref, onValue } from 'firebase/database';
-import { rtdb } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useCart } from '../contexts/CartContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatTHB } from '../lib/utils';
@@ -20,22 +20,17 @@ export default function ProductDetail() {
     useEffect(() => {
         if (!id) return;
 
-        // ✅ ดึงข้อมูลสินค้าแบบ Real-time จาก Realtime Database
-        const productsRef = ref(rtdb, 'products');
-        const unsubscribe = onValue(productsRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const productData = Object.keys(data).map(key => ({ id: key, ...data[key] })).find(p => p.id === id);
-                if (productData) {
-                    setProduct(productData);
-                } else {
-                    addToast('ไม่พบข้อมูลสินค้านี้', 'error');
-                    navigate('/products');
-                }
+        // ✅ ดึงข้อมูลสินค้าแบบ Real-time จาก Firebase
+        const unsubscribe = onSnapshot(doc(db, 'products', id), (docSnap) => {
+            if (docSnap.exists()) {
+                setProduct({ id: docSnap.id, ...docSnap.data() });
             } else {
                 addToast('ไม่พบข้อมูลสินค้านี้', 'error');
                 navigate('/products');
             }
+            setLoading(false);
+        }, (err) => {
+            console.error("Error fetching product:", err);
             setLoading(false);
         });
 
