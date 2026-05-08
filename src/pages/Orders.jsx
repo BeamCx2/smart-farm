@@ -97,11 +97,14 @@ export default function Orders() {
     if (!user) return <Navigate to="/register" replace />;
 
     return (
-        <section className="max-w-4xl mx-auto px-4 py-10 min-h-screen font-sans font-black">
-            <h1 className="text-xl font-black mb-10 text-gray-800 uppercase tracking-tight flex items-center gap-3">
-                <span className="bg-emerald-600 text-white w-8 h-8 rounded-xl flex items-center justify-center text-sm">#</span>
-                คำสั่งซื้อของฉัน
-            </h1>
+        <section className="max-w-5xl mx-auto px-4 py-10 min-h-screen font-sans font-black text-white bg-slate-950">
+            <div className="mb-10 rounded-[3rem] bg-slate-900/80 border border-slate-700 shadow-2xl shadow-slate-950/30 p-8 backdrop-blur-xl">
+                <h1 className="text-3xl font-black mb-3 uppercase tracking-tight flex items-center gap-3 text-emerald-300">
+                    <span className="bg-emerald-500/20 text-emerald-100 w-10 h-10 rounded-2xl flex items-center justify-center text-base">#</span>
+                    คำสั่งซื้อของฉัน
+                </h1>
+                <p className="text-sm text-slate-400 max-w-2xl">ดูสถานะคำสั่งซื้อล่าสุดได้ที่หน้าเดียว พร้อมสรุปยอดและการแจ้งเตือนชำระเงินทันที</p>
+            </div>
 
             <div className="space-y-4 font-black">
                 {orders.map((order) => {
@@ -113,21 +116,21 @@ export default function Orders() {
                     
                     return (
                         <div key={order.id} 
-                            className={`bg-white rounded-[2.5rem] border p-7 flex flex-wrap items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all group
-                                ${isPending ? 'border-amber-200 ring-2 ring-amber-50' : 'border-gray-100'}`}>
+                            className={`bg-slate-900/95 rounded-[2.5rem] border p-7 flex flex-wrap items-center justify-between gap-6 shadow-2xl shadow-slate-950/20 transition-all group
+                                ${isPending ? 'border-amber-300/40 ring-2 ring-amber-500/10' : 'border-slate-700'}`}>
                             
                             <div className="flex items-center gap-5 flex-1 cursor-pointer font-black" onClick={() => setViewOrder(order)}>
-                                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
+                                <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
                                     {order.status === 'shipped' ? '🚚' : order.status === 'paid' ? '💰' : order.status === 'finished' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
                                 </div>
                                 <div>
-                                    <h3 className="text-gray-900 text-base tracking-tighter uppercase font-black">#{order.orderId || order.id.slice(0, 8)}</h3>
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5">
+                                    <h3 className="text-white text-base tracking-tighter uppercase font-black">#{order.orderId || order.id.slice(0, 8)}</h3>
+                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">
                                         {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'Syncing...'}
                                     </p>
                                     {isPending && (
-                                        <div className="mt-2 flex items-center gap-2 bg-red-50 px-3 py-1 rounded-lg w-fit">
-                                            <span className="text-[9px] text-red-400 uppercase tracking-widest leading-none">⏳ หมดเวลาใน:</span>
+                                        <div className="mt-2 flex items-center gap-2 bg-red-500/10 px-3 py-1 rounded-lg w-fit">
+                                            <span className="text-[9px] text-red-200 uppercase tracking-widest leading-none">⏳ หมดเวลาใน:</span>
                                             <OrderTimer createdAt={order.createdAt} />
                                         </div>
                                     )}
@@ -136,25 +139,25 @@ export default function Orders() {
 
                             <div className="flex items-center gap-6 font-black">
                                 <div className="text-right hidden sm:block mr-2 font-black">
-                                    <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1 leading-none font-black">ยอดสุทธิ</p>
-                                    <p className="text-gray-900 text-xl leading-none font-black">{formatTHB(order.total)}</p>
+                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1 leading-none font-black">ยอดสุทธิ</p>
+                                    <p className="text-emerald-300 text-xl leading-none font-black">{formatTHB(order.total)}</p>
                                 </div>
                                 
                                 {isPending && !isExpired ? (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handlePaymentRedirect(order); // 🚀 เรียกใช้ฟังก์ชันแยกทาง
+                                            handlePaymentRedirect(order);
                                         }}
-                                        className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-emerald-100 hover:bg-emerald-700 active:scale-95 transition-all"
+                                        className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] shadow-2xl shadow-emerald-500/25 hover:bg-emerald-400 active:scale-95 transition-all"
                                     >
                                         💳 จ่ายเงิน
                                     </button>
                                 ) : (
                                     <span onClick={() => setViewOrder(order)} className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border shadow-sm cursor-pointer
-                                        ${statusCfg.color === 'green' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                          statusCfg.color === 'yellow' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                                          statusCfg.color === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                        ${statusCfg.color === 'green' ? 'bg-emerald-500/10 text-emerald-200 border-emerald-500/20' : 
+                                          statusCfg.color === 'yellow' ? 'bg-amber-500/10 text-amber-200 border-amber-500/20' : 
+                                          statusCfg.color === 'blue' ? 'bg-blue-500/10 text-blue-200 border-blue-500/20' : 'bg-red-500/10 text-red-200 border-red-500/20'}`}>
                                         {statusCfg.label}
                                     </span>
                                 )}
@@ -166,10 +169,10 @@ export default function Orders() {
 
             {/* 🚀 Modal รายละเอียด (เหมือนเดิม) */}
             {viewOrder && (
-                <div className="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-                    <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full max-h-[96vh] flex flex-col shadow-2xl relative font-black">
-                        <button onClick={() => setViewOrder(null)} className="absolute top-6 right-6 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 font-black">✕</button>
-                        <h2 className="text-lg font-black text-gray-900 uppercase tracking-tighter mb-4 shrink-0 font-black font-black">รายละเอียดออเดอร์</h2>
+                <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-xl flex items-center justify-center p-2 sm:p-4">
+                    <div className="bg-slate-950/95 rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full max-h-[96vh] flex flex-col shadow-2xl shadow-black/40 relative font-black border border-slate-800">
+                        <button onClick={() => setViewOrder(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all">✕</button>
+                        <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-4 shrink-0">รายละเอียดออเดอร์</h2>
                         <div className="flex-1 overflow-y-auto space-y-4 font-black">
                             {viewOrder.status === 'shipped' && viewOrder.trackingNumber && (
                                 <div className="p-4 bg-blue-600 rounded-2xl text-white shadow-lg font-black">
@@ -177,13 +180,13 @@ export default function Orders() {
                                     <p className="text-lg font-black tracking-widest select-all leading-none">{viewOrder.trackingNumber}</p>
                                 </div>
                             )}
-                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-2 font-black">📍 Shipping Address</p>
-                                <p className="text-gray-900 text-sm mb-0.5 leading-none font-black">{viewOrder.customer?.name}</p>
-                                <p className="text-[10px] text-emerald-600 mb-2 leading-none font-black">📞 {viewOrder.customer?.phone}</p>
-                                <div className="text-[10px] text-gray-600 font-black uppercase">
-                                    <p className="mb-1 font-black">{viewOrder.customer?.address}</p>
-                                    <p className="font-black">{viewOrder.customer?.subDistrict} {viewOrder.customer?.district} {viewOrder.customer?.province} {viewOrder.customer?.zipcode}</p>
+                            <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                                <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-2">📍 Shipping Address</p>
+                                <p className="text-white text-sm mb-0.5 leading-none font-black">{viewOrder.customer?.name}</p>
+                                <p className="text-emerald-300 mb-2 leading-none font-black">📞 {viewOrder.customer?.phone}</p>
+                                <div className="text-[10px] text-slate-300 uppercase">
+                                    <p className="mb-1">{viewOrder.customer?.address}</p>
+                                    <p>{viewOrder.customer?.subDistrict} {viewOrder.customer?.district} {viewOrder.customer?.province} {viewOrder.customer?.zipcode}</p>
                                 </div>
                             </div>
                             <div className="space-y-2 font-black">
@@ -199,12 +202,12 @@ export default function Orders() {
                                     </div>
                                 ))}
                             </div>
-                            <div className="flex justify-between items-center bg-gray-900 p-5 rounded-2xl text-white mt-auto font-black font-black">
-                                <span className="text-[9px] uppercase tracking-widest opacity-50 font-black">Total Amount</span>
+                            <div className="flex justify-between items-center bg-slate-800 p-5 rounded-2xl text-white mt-auto">
+                                <span className="text-[9px] uppercase tracking-widest opacity-60">Total Amount</span>
                                 <span className="text-2xl tracking-tighter leading-none font-black">{formatTHB(viewOrder.total)}</span>
                             </div>
                         </div>
-                        <button onClick={() => setViewOrder(null)} className="w-full mt-4 py-3 bg-gray-50 text-gray-300 font-black text-[10px] uppercase tracking-[0.3em] rounded-xl hover:text-red-500 font-black font-black">Close</button>
+                        <button onClick={() => setViewOrder(null)} className="w-full mt-4 py-3 bg-white/10 text-slate-200 font-black text-[10px] uppercase tracking-[0.3em] rounded-xl hover:bg-white/20 hover:text-white transition-all">Close</button>
                     </div>
                 </div>
             )}
