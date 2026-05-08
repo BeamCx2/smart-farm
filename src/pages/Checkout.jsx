@@ -13,7 +13,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
-    const { items, subtotal, shipping, total, clearCart } = useCart();
+    const { items, subtotal, total, clearCart } = useCart();
     const { user, loading: authLoading } = useAuth();
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -60,17 +60,18 @@ export default function Checkout() {
                     qty: i.qty, 
                     image: i.image || '' 
                 })),
-                subtotal, shipping, total,
+                subtotal,
+                total,
                 totalSatang: toSatang(total),
-                paymentMethod, 
+                paymentMethod,
                 status: 'pending',
                 createdAt: serverTimestamp(),
             });
-            
+
             await batch.commit();
             addToast('สร้างคำสั่งซื้อเรียบร้อย', 'success');
             clearCart();
-            
+
             // 🚀 [จุดแก้ไขสำคัญ]: แยกเส้นทางตามวิธีชำระเงิน
             if (paymentMethod === 'promptpay') {
                 // ไปหน้าสแกน QR

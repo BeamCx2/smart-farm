@@ -173,6 +173,13 @@ export default function Orders() {
                     <div className="bg-slate-950/95 rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full max-h-[96vh] flex flex-col shadow-2xl shadow-black/40 relative font-black border border-slate-800">
                         <button onClick={() => setViewOrder(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all">✕</button>
                         <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-4 shrink-0">รายละเอียดออเดอร์</h2>
+                        <div className="flex flex-wrap gap-3 mb-4">
+                            <span className={`px-4 py-2 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black ${statusCfg.color === 'green' ? 'bg-emerald-500/15 text-emerald-200' : statusCfg.color === 'yellow' ? 'bg-amber-500/15 text-amber-200' : statusCfg.color === 'blue' ? 'bg-sky-500/15 text-sky-200' : 'bg-red-500/15 text-red-200'}`}>
+                                {statusCfg.label}
+                            </span>
+                            <span className="px-4 py-2 rounded-2xl bg-slate-800 text-slate-200 text-[10px] uppercase tracking-[0.2em] font-black">#{viewOrder.orderId || viewOrder.id.slice(0, 8)}</span>
+                            <span className="px-4 py-2 rounded-2xl bg-slate-800 text-slate-200 text-[10px] uppercase tracking-[0.2em] font-black">{viewOrder.paymentMethod === 'bank' ? 'Bank Transfer' : 'PromptPay'}</span>
+                        </div>
                         <div className="flex-1 overflow-y-auto space-y-4 font-black">
                             {viewOrder.status === 'shipped' && viewOrder.trackingNumber && (
                                 <div className="p-4 bg-blue-600 rounded-2xl text-white shadow-lg font-black">

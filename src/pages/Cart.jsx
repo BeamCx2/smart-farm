@@ -3,7 +3,7 @@ import { useCart } from '../contexts/CartContext';
 import { formatTHB } from '../lib/utils';
 
 export default function Cart() {
-    const { items, removeFromCart, updateQty, subtotal, shipping, total } = useCart();
+    const { items, removeFromCart, updateQty, subtotal, total } = useCart();
 
     if (items.length === 0) {
         return (
@@ -133,19 +133,6 @@ export default function Cart() {
                                     <span className="text-gray-600 dark:text-gray-400">ราคาสินค้า</span>
                                     <span className="font-bold">{formatTHB(subtotal)}</span>
                                 </div>
-
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600 dark:text-gray-400">ค่าจัดส่ง</span>
-                                    <span className="font-bold text-emerald-600">
-                                        {subtotal >= 500 ? 'ฟรี' : formatTHB(shipping)}
-                                    </span>
-                                </div>
-
-                                {subtotal >= 500 && (
-                                    <div className="text-sm text-emerald-600 font-medium bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-3 py-2">
-                                        🎉 รับส่งฟรี! (เมื่อซื้อครบ 500 บาท)
-                                    </div>
-                                )}
 
                                 <hr className="border-gray-200 dark:border-gray-700" />
 

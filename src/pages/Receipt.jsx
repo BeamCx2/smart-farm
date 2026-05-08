@@ -25,13 +25,9 @@ export default function Receipt() {
     if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-[10px] uppercase tracking-[0.2em]">Loading Receipt...</div>;
     if (!order) return <div className="min-h-screen flex items-center justify-center font-black text-[10px] uppercase tracking-[0.2em]">Order Not Found</div>;
 
-    // 💰 [Logic การคำนวณใหม่เพื่อความสมเหตุสมผล]
-    // 1. รวมราคาสินค้าจริง (Subtotal ของสินค้า)
+    // 💰 [Logic การคำนวณใหม่เพื่อใช้ยอดจริงจากฐานข้อมูล]
     const itemsTotal = order.items?.reduce((acc, item) => acc + (item.price * item.qty), 0) || 0;
-    
-    const netTotal = itemsTotal;
-    const vatAmount = netTotal * (7 / 107);
-    const subTotalBeforeVat = netTotal - vatAmount;
+    const orderTotal = typeof order.total === 'number' ? order.total : itemsTotal;
 
     // 👤 ข้อมูลลูกค้าจาก Map 'customer'
     const customer = order.customer || {};
@@ -79,7 +75,7 @@ export default function Receipt() {
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6 sm:p-12 font-sans overflow-x-hidden text-gray-800">
-            
+
             {/* 🛠 Toolbar (no-print) */}
             <div className="max-w-md w-full flex justify-end gap-2 mb-4 no-print text-white">
                 <button onClick={handlePrint} className="p-3 bg-emerald-600 rounded-2xl shadow-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-2">
@@ -93,7 +89,7 @@ export default function Receipt() {
 
             {/* 📄 Receipt Paper */}
             <div id="receipt-print" className="max-w-md w-full bg-white shadow-2xl p-8 sm:p-12 border border-gray-50 flex flex-col items-center relative">
-                
+
                 <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4 border-2 border-emerald-500/10">
                     <span className="text-3xl">🌿</span>
                 </div>
@@ -114,7 +110,7 @@ export default function Receipt() {
                         <span className="opacity-40">ORDER ID:</span>
                         <span>#{order.orderId}</span>
                     </div>
-                    
+
                     <div className="bg-gray-50 p-5 rounded-[2.5rem] border border-gray-100 mt-4 text-left">
                         <p className="text-[8px] text-emerald-600 mb-2 tracking-[0.2em] font-black uppercase border-b border-emerald-100 w-fit">Customer Info</p>
                         <p className="text-gray-900 text-[14px] mb-1 font-black leading-none">{customer.name || 'ลูกค้าทั่วไป'}</p>
@@ -143,20 +139,16 @@ export default function Receipt() {
                     </div>
                 </div>
 
-                {/* 💰 สรุปยอดเงิน (แก้ไขให้ตัวเลขสอดคล้องกัน) */}
+                {/* 💰 สรุปยอดเงิน (ใช้ยอดจริงจากออเดอร์) */}
                 <div className="w-full border-t-2 border-black pt-5 space-y-2 mb-10">
                     <div className="flex justify-between text-[11px] font-bold uppercase text-gray-400">
-                        <span>ยอดรวมก่อนภาษี (Subtotal)</span>
-                        <span className="text-black font-black">{formatTHB(subTotalBeforeVat)}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold uppercase text-gray-400">
-                        <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
-                        <span className="text-black font-black">{formatTHB(vatAmount)}</span>
+                        <span>ยอดรวมสินค้า (Subtotal)</span>
+                        <span className="text-black font-black">{formatTHB(itemsTotal)}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-lg font-black uppercase pt-4 mt-1 border-t border-gray-100">
-                        <span className="text-gray-900 leading-none">Net Total Amount</span>
-                        <span className="text-emerald-600 text-2xl leading-none font-black">{formatTHB(netTotal)}</span>
+                        <span className="text-gray-900 leading-none">ยอดรวมทั้งสิ้น</span>
+                        <span className="text-emerald-600 text-2xl leading-none font-black">{formatTHB(orderTotal)}</span>
                     </div>
                 </div>
 
