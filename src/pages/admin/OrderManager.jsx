@@ -32,211 +32,139 @@ export default function OrderManager() {
         } catch (e) { addToast('ผิดพลาด: ' + e.message, 'error'); }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-emerald-950 dark:via-gray-900 dark:to-emerald-900 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/30 rounded-full blur-xl animate-float"></div>
-                    <div className="absolute top-40 right-20 w-24 h-24 bg-amber-200/40 rounded-full blur-lg animate-float" style={{ animationDelay: '1s' }}></div>
-                    <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-emerald-300/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
-                </div>
-                <div className="text-center animate-fade-in-up">
-                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-float">
-                        <span className="text-2xl">🛒</span>
-                    </div>
-                    <div className="spinner w-8 h-8 mx-auto mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">กำลังโหลดข้อมูลคำสั่งซื้อ...</p>
-                </div>
+    if (loading) return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <div className="text-center">
+                <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-500 font-medium">กำลังโหลดข้อมูล...</p>
             </div>
-        );
-    }
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-emerald-950 dark:via-gray-900 dark:to-emerald-900 text-slate-900 dark:text-slate-200 relative overflow-hidden">
-            {/* Background decorations */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-16 left-8 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl animate-float"></div>
-                <div className="absolute top-36 right-16 w-28 h-28 bg-cyan-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute bottom-28 left-1/4 w-44 h-44 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute bottom-20 right-10 w-24 h-24 bg-slate-200/30 dark:bg-slate-700/40 rounded-full blur-md animate-float" style={{ animationDelay: '0.5s' }}></div>
-            </div>
-
-            <div className="relative z-10 p-4 sm:p-8">
+        <div className="min-h-screen bg-slate-50 p-4 sm:p-8 font-sans text-slate-900">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-12 animate-fade-in-up">
-                    <div className="w-20 h-20 bg-white/80 dark:bg-slate-900/80 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-emerald-500/10 animate-float">
-                        <span className="text-3xl">🛒</span>
-                    </div>
-                    <h1 className="text-4xl font-black text-emerald-700 dark:text-emerald-300 mb-4">จัดการคำสั่งซื้อ</h1>
-                    <p className="text-gray-600 dark:text-slate-400 text-lg">ติดตามและจัดการคำสั่งซื้อทั้งหมดของร้านค้า</p>
+                <div className="mb-8">
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">ORDER HUB</h1>
+                    <p className="text-slate-500 uppercase text-xs font-bold tracking-widest mt-1">Management Console</p>
                 </div>
 
-                {/* Orders Table */}
-                <div className="glass rounded-3xl shadow-2xl shadow-black/10 dark:shadow-black/50 overflow-hidden animate-fade-in-up mb-8 border border-slate-200/70 dark:border-slate-700 bg-white/80 dark:bg-slate-950/90">
+                {/* Table */}
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-slate-900 dark:text-slate-200">
-                            <thead className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200/70 dark:border-slate-700">
-                                <tr>
-                                    <th className="px-6 py-5 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">รหัสคำสั่งซื้อ</th>
-                                    <th className="px-6 py-5 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">ลูกค้า</th>
-                                    <th className="px-6 py-5 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">สถานะ</th>
-                                    <th className="px-6 py-5 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">วันที่</th>
-                                    <th className="px-6 py-5 text-right text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">ยอดรวม</th>
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200">
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Order ID</th>
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
+                                    <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                    <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
-                                {orders.map((o, index) => {
-                                    const statusCfg = ORDER_STATUSES[o.status] || ORDER_STATUSES.pending;
-                                    return (
-                                        <tr
-                                            key={o.id}
-                                            onClick={() => { setSelectedOrder(o); setTrackingNum(o.trackingNumber || ''); }}
-                                            className="hover:bg-slate-100 dark:hover:bg-white/10 transition-all duration-200 cursor-pointer group animate-fade-in-up"
-                                            style={{ animationDelay: `${index * 0.05}s` }}
-                                        >
-                                            <td className="px-6 py-6 text-left">
-                                                <div className="text-emerald-600 dark:text-emerald-300 font-bold hover:text-emerald-500 dark:hover:text-emerald-200 transition-colors">
-                                                    #{o.orderId || o.id.slice(0, 8)}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6 text-left">
-                                                <div className="text-slate-900 dark:text-slate-100 font-semibold">{o.customer?.name}</div>
-                                                <div className="text-slate-500 dark:text-slate-400 text-sm">{o.customer?.phone}</div>
-                                            </td>
-                                            <td className="px-6 py-6 text-center">
-                                                <div className={`inline-flex items-center px-4 py-2 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg
-                                                    ${statusCfg.color === 'green' ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' :
-                                                      statusCfg.color === 'yellow' ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30' :
-                                                      statusCfg.color === 'blue' ? 'bg-blue-500/20 text-blue-600 border border-blue-500/30' :
-                                                      'bg-red-500/20 text-red-600 border border-red-500/30'}`}>
-                                                    {statusCfg.label}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6 text-center text-gray-600 dark:text-gray-400 text-sm">
-                                                {formatDateTime(o.createdAt)}
-                                            </td>
-                                            <td className="px-6 py-6 text-right">
-                                                <div className="text-emerald-300 font-black text-lg">
-                                                    {formatTHB(o.total || o.amount)}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                            <tbody className="divide-y divide-slate-100">
+                                {orders.map((o) => (
+                                    <tr key={o.id} onClick={() => { setSelectedOrder(o); setTrackingNum(o.trackingNumber || ''); }} className="hover:bg-emerald-50/50 cursor-pointer transition-colors">
+                                        <td className="px-6 py-5 font-bold text-emerald-700 text-sm">#{o.orderId || o.id.slice(0, 8)}</td>
+                                        <td className="px-6 py-5">
+                                            <div className="font-bold text-slate-800">{o.customer?.name}</div>
+                                            <div className="text-xs text-slate-400">{o.customer?.phone}</div>
+                                        </td>
+                                        <td className="px-6 py-5 text-center">
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border ${
+                                                o.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                                o.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                                o.status === 'shipped' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                                'bg-slate-50 text-slate-500 border-slate-200'
+                                            }`}>
+                                                {ORDER_STATUSES[o.status]?.label || o.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5 text-right font-black text-slate-800">{formatTHB(o.total || o.amount)}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
+            </div>
 
-                {/* Order Detail Modal */}
-                {selectedOrder && (
-<div className="fixed inset-0 bg-black/40 dark:bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4 z-[999] animate-in fade-in scale-in-center">
-                        <div className="glass rounded-3xl p-8 max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl shadow-black/10 dark:shadow-black/70 overflow-hidden border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-950/95">
-                            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-                                <div>
-                                    <h2 className="text-4xl font-black text-emerald-700 dark:text-emerald-300 mb-2">รายละเอียดคำสั่งซื้อ</h2>
-                                    <p className="text-gray-600 dark:text-slate-400">#{selectedOrder.orderId || selectedOrder.id.slice(0, 8)}</p>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedOrder(null)}
-                                    className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center text-gray-500 dark:text-gray-300 hover:text-red-500 transition-all hover:scale-110"
-                                >
-                                    ✕
-                                </button>
+            {/* Modal - ปรับ Layout ใหม่ให้พอดีหน้า */}
+            {selectedOrder && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-white">
+                        
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase">Order Details</h2>
+                                <p className="text-emerald-600 font-bold text-[10px] tracking-widest uppercase">#{selectedOrder.orderId || selectedOrder.id.slice(0, 8)}</p>
                             </div>
+                            <button onClick={() => setSelectedOrder(null)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 hover:text-red-500 transition-colors">✕</button>
+                        </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-hidden flex-1">
-                                {/* Left Column - Customer & Items */}
-                                <div className="lg:col-span-5 space-y-6 overflow-y-auto custom-scrollbar">
-                                    {/* Customer Info */}
-                                    <div className="glass rounded-2xl p-6 border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-950/90">
-                                        <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                            <span className="text-xl">👤</span>
-                                            ข้อมูลลูกค้า
-                                        </h4>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{selectedOrder.customer?.name}</p>
-                                                <p className="text-emerald-600 dark:text-emerald-400 font-medium">📞 {selectedOrder.customer?.phone}</p>
-                                            </div>
-                                            <div className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                                                <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">ที่อยู่จัดส่ง:</p>
-                                                <p>{selectedOrder.customer?.address}</p>
-                                                <p>ต.{selectedOrder.customer?.subDistrict} อ.{selectedOrder.customer?.district}</p>
-                                                <p>จ.{selectedOrder.customer?.province} {selectedOrder.customer?.zipcode}</p>
-                                            </div>
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                
+                                {/* Left: Info & Items */}
+                                <div className="lg:col-span-4 space-y-6">
+                                    <section className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Customer Info</h3>
+                                        <p className="font-black text-slate-800 text-base mb-1">{selectedOrder.customer?.name}</p>
+                                        <p className="text-emerald-600 font-bold text-sm mb-3">{selectedOrder.customer?.phone}</p>
+                                        <div className="text-xs text-slate-500 leading-relaxed bg-white p-3 rounded-xl border border-slate-100">
+                                            {selectedOrder.customer?.address} {selectedOrder.customer?.subDistrict} {selectedOrder.customer?.district} {selectedOrder.customer?.province} {selectedOrder.customer?.zipcode}
                                         </div>
-                                    </div>
+                                    </section>
 
-                                    {/* Order Items */}
-                                    <div className="glass rounded-2xl p-6 border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-950/90">
-                                        <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                            <span className="text-xl">🛒</span>
-                                            รายการสินค้า
-                                        </h4>
-                                        <div className="space-y-3">
+                                    <section className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Order Items</h3>
+                                        <div className="space-y-2">
                                             {(selectedOrder.items || []).map((item, i) => (
-                                                <div key={i} className="flex justify-between items-center p-4 bg-slate-100/80 dark:bg-slate-900/80 rounded-xl border border-slate-200/70 dark:border-slate-700">
+                                                <div key={i} className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
                                                     <div>
-                                                        <p className="text-slate-900 dark:text-slate-100 font-medium">{item.name}</p>
-                                                        <p className="text-emerald-600 dark:text-emerald-400 text-sm">จำนวน: {item.qty}</p>
+                                                        <p className="text-xs font-bold text-slate-800">{item.name}</p>
+                                                        <p className="text-[10px] text-emerald-600 font-black uppercase">x{item.qty}</p>
                                                     </div>
-                                                    <p className="text-slate-900 dark:text-slate-100 font-bold">{formatTHB(item.price * item.qty)}</p>
+                                                    <p className="text-xs font-black text-slate-800">{formatTHB(item.price * item.qty)}</p>
                                                 </div>
                                             ))}
                                         </div>
+                                    </section>
+                                </div>
+
+                                {/* Center: Slip - ปรับให้เล็กลงพอดีหน้า */}
+                                <div className="lg:col-span-4 flex flex-col">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Payment Slip</h3>
+                                    <div className="bg-slate-100 rounded-3xl overflow-hidden border-2 border-dashed border-slate-200 flex-1 flex items-center justify-center relative group min-h-[300px]">
+                                        {selectedOrder.slipUrl ? (
+                                            <img src={selectedOrder.slipUrl} className="w-full h-full object-contain p-2" alt="slip" />
+                                        ) : (
+                                            <p className="text-[10px] font-black text-slate-300 uppercase">No Slip Uploaded</p>
+                                        )}
                                     </div>
                                 </div>
 
-                                {/* Right Column - Payment & Status */}
-                                <div className="lg:col-span-7 flex flex-col space-y-6">
-                                    {/* Total Amount */}
-                                    <div className="glass rounded-2xl p-8 border border-slate-200/70 dark:border-slate-700 text-center bg-white/90 dark:bg-slate-900/90">
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">ยอดรวมทั้งสิ้น</p>
-                                        <p className="text-4xl font-black text-emerald-600 dark:text-emerald-300">{formatTHB(selectedOrder.total || selectedOrder.amount)}</p>
+                                {/* Right: Summary & Action */}
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="bg-emerald-900 p-6 rounded-[2rem] text-center shadow-xl shadow-emerald-900/20">
+                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">Grand Total</p>
+                                        <p className="text-3xl font-black text-white">{formatTHB(selectedOrder.total || selectedOrder.amount)}</p>
                                     </div>
 
-                                    {/* Payment Slip */}
-                                    <div className="glass rounded-2xl p-6 flex-1 border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-950/90">
-                                        <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                            <span className="text-xl">💳</span>
-                                            สลิปการชำระเงิน
-                                        </h4>
-                                        <div className="bg-slate-100/80 dark:bg-slate-900/80 rounded-3xl overflow-hidden min-h-[240px] flex items-center justify-center border border-slate-200/70 dark:border-slate-800 shadow-inner">
-                                            {selectedOrder.slipUrl ? (
-                                                <img
-                                                    src={selectedOrder.slipUrl}
-                                                    alt="Payment Slip"
-                                                    className="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                                                    onClick={() => window.open(selectedOrder.slipUrl, '_blank')}
-                                                />
-                                            ) : (
-                                                <div className="text-center text-slate-400">
-                                                    <div className="text-4xl mb-2">📄</div>
-                                                    <p>รอการอัปโหลดสลิป</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Status Update */}
-                                    <div className="glass rounded-2xl p-6 border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-950/90">
-                                        <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                            <span className="text-xl">⚙️</span>
-                                            อัปเดตสถานะ
-                                        </h4>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                                    <section className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Update Status</h3>
+                                        <div className="grid grid-cols-2 gap-2">
                                             {Object.entries(ORDER_STATUSES).map(([key, val]) => (
                                                 <button
                                                     key={key}
-                                                    onClick={() => {
-                                                        if (key !== 'shipped') updateStatus(selectedOrder.id, key);
-                                                        else setSelectedOrder({...selectedOrder, status: 'shipped'});
-                                                    }}
-                                                    className={`py-3 px-4 rounded-2xl text-sm font-bold uppercase tracking-widest transition-all transform
-                                                        ${selectedOrder.status === key
-                                                            ? 'bg-emerald-500 text-slate-950 shadow-2xl shadow-emerald-500/30'
-                                                            : 'bg-slate-100/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                                                    onClick={() => key !== 'shipped' ? updateStatus(selectedOrder.id, key) : setSelectedOrder({...selectedOrder, status: 'shipped'})}
+                                                    className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${
+                                                        selectedOrder.status === key 
+                                                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30' 
+                                                        : 'bg-white text-slate-400 border border-slate-200 hover:border-emerald-200 hover:text-emerald-600'
+                                                    }`}
                                                 >
                                                     {val.label}
                                                 </button>
@@ -244,38 +172,34 @@ export default function OrderManager() {
                                         </div>
 
                                         {selectedOrder.status === 'shipped' && (
-                                            <div className="flex gap-3 animate-fade-in-up">
-                                                <input
-                                                    type="text"
-                                                    value={trackingNum}
+                                            <div className="mt-4 p-3 bg-white rounded-2xl border border-emerald-100 space-y-2 animate-in slide-in-from-top-2">
+                                                <input 
+                                                    type="text" 
+                                                    value={trackingNum} 
                                                     onChange={(e) => setTrackingNum(e.target.value)}
-                                                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200/70 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:border-emerald-400 outline-none transition-all"
-                                                    placeholder="หมายเลขติดตามพัสดุ..."
+                                                    className="w-full px-4 py-2 text-xs font-bold bg-slate-50 rounded-lg outline-none focus:ring-1 ring-emerald-500"
+                                                    placeholder="Tracking Number..."
                                                 />
-                                                <button
+                                                <button 
                                                     onClick={() => updateStatus(selectedOrder.id, 'shipped', trackingNum)}
-                                                    className="px-6 py-3 bg-emerald-500 text-slate-950 font-bold rounded-xl shadow-2xl shadow-emerald-500/25 transition-all hover:-translate-y-1"
+                                                    className="w-full py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg"
                                                 >
-                                                    บันทึก
+                                                    SAVE TRACKING
                                                 </button>
                                             </div>
                                         )}
-                                    </div>
+                                    </section>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="mt-8 pt-6 border-t border-slate-200/70 dark:border-slate-700">
-                                <button
-                                    onClick={() => setSelectedOrder(null)}
-                                    className="w-full py-4 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold rounded-xl border border-slate-200/70 dark:border-slate-700 shadow-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-all hover:-translate-y-1"
-                                >
-                                    ปิดรายละเอียด
-                                </button>
-                            </div>
+                        {/* Footer */}
+                        <div className="p-6 bg-slate-50 border-t border-slate-100">
+                            <button onClick={() => setSelectedOrder(null)} className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[11px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-100 transition-colors">Close Console</button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }
