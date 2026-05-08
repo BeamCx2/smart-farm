@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { 
-    collection, query, where, getDocs, updateDoc, 
-    serverTimestamp, doc, increment 
+import {
+    collection, query, where, getDocs, updateDoc,
+    serverTimestamp, doc, increment
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { formatTHB } from '../lib/utils';
-import app from '../lib/firebase'; 
-import jsQR from 'jsqr'; 
+import app from '../lib/firebase';
+import jsQR from 'jsqr';
 
 export default function BankTransfer() {
     const location = useLocation();
@@ -20,24 +20,36 @@ export default function BankTransfer() {
 
     const storage = getStorage(app);
 
-    const scanSlipForPayload = (file) => {
-        return new Promise((resolve) => {
+    const scanSlipForPayload = async (file) => {
+        const imageBitmap = await (window.createImageBitmap ? createImageBitmap(file) : new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width; canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    resolve(code ? code.data : null);
-                };
+                img.onload = () => resolve(img);
+                img.onerror = reject;
                 img.src = e.target.result;
             };
+            reader.onerror = reject;
             reader.readAsDataURL(file);
-        });
+        }));
+
+        const width = imageBitmap.width;
+        const height = imageBitmap.height;
+        const maxSide = 1024;
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        const targetWidth = Math.max(200, Math.round(width * scale));
+        const targetHeight = Math.max(200, Math.round(height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
+
+        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+        const code = jsQR(imageData.data, targetWidth, targetHeight);
+        imageBitmap.close?.();
+        return code ? code.data : null;
     };
 
     const handleUploadSlip = async (e) => {
@@ -54,14 +66,14 @@ export default function BankTransfer() {
 
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                 method: 'POST',
-                body: JSON.stringify({ payload: payload }) 
+                body: JSON.stringify({ payload: payload })
             });
             const result = await verifyRes.json();
 
             if (result && result.success === true) {
-                const slipResponse = result.data; 
+                const slipResponse = result.data;
                 const slipData = slipResponse.rawSlip || slipResponse;
-                
+
                 const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
                 const receiverName = slipData.receiver?.account?.name?.th || "";
                 const receiverAccount = slipData.receiver?.account?.bank?.account || "";
@@ -79,10 +91,10 @@ export default function BankTransfer() {
                     if (!isAccountValid) errorDetails += "[เลขบัญชีไม่ตรง] ";
                     if (!isAmountValid) errorDetails += "[ยอดเงินไม่ตรง] ";
 
-                    return setStatusModal({ 
-                        show: true, success: false, 
-                        message: 'ข้อมูลในสลิปไม่ตรงเงื่อนไข', 
-                        details: errorDetails + `ตรวจพบ: ${receiverName} ยอด ${slipAmount}บ.` 
+                    return setStatusModal({
+                        show: true, success: false,
+                        message: 'ข้อมูลในสลิปไม่ตรงเงื่อนไข',
+                        details: errorDetails + `ตรวจพบ: ${receiverName} ยอด ${slipAmount}บ.`
                     });
                 }
 
@@ -105,29 +117,29 @@ export default function BankTransfer() {
                 if (!snap.empty) {
                     const orderDoc = snap.docs[0];
                     const orderData = orderDoc.data();
-                    
-                    const updateStockPromises = (orderData.items || []).map(item => 
+
+                    const updateStockPromises = (orderData.items || []).map(item =>
                         updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
                     );
                     await Promise.all(updateStockPromises);
-                    
-                    await updateDoc(orderDoc.ref, { 
-                        status: 'paid', 
-                        slipUrl: downloadURL, 
-                        transRef: transRef, 
+
+                    await updateDoc(orderDoc.ref, {
+                        status: 'paid',
+                        slipUrl: downloadURL,
+                        transRef: transRef,
                         updatedAt: serverTimestamp(),
                         verifiedBy: 'Bank Transfer Triple Lock (Stable)'
                     });
-                    
+
                     setUploading(false);
                     setStatusModal({ show: true, success: true, message: 'แจ้งโอนสำเร็จ!', details: 'ยืนยันออเดอร์และตัดสต๊อกเรียบร้อย' });
                 }
             } else {
                 setUploading(false);
-                setStatusModal({ 
-                    show: true, success: false, 
-                    message: 'ตรวจสอบไม่สำเร็จ', 
-                    details: result?.message || 'สลิปไม่ผ่านการตรวจสอบจากระบบธนาคาร' 
+                setStatusModal({
+                    show: true, success: false,
+                    message: 'ตรวจสอบไม่สำเร็จ',
+                    details: result?.message || 'สลิปไม่ผ่านการตรวจสอบจากระบบธนาคาร'
                 });
             }
         } catch (error) {
@@ -147,16 +159,16 @@ export default function BankTransfer() {
                     <p className="text-[9px] text-emerald-200 tracking-[0.3em] font-black mb-4 uppercase">Kasikornbank</p>
                     <p className="text-xl font-black tracking-widest mb-1">063 - 8 - 98656 - 6</p>
                     <p className="text-[10px] font-black text-white/80 mb-6 uppercase tracking-widest">Nattawut P.</p>
-                    
+
                     <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl backdrop-blur-sm">
-                         <div>
+                        <div>
                             <p className="text-[8px] text-emerald-200 font-black uppercase">Amount</p>
                             <p className="text-lg font-black">{formatTHB(amount)}</p>
-                         </div>
-                         <button onClick={() => {
+                        </div>
+                        <button onClick={() => {
                             navigator.clipboard.writeText("0638986566");
                             alert("คัดลอกเลขบัญชีแล้ว!");
-                         }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black">COPY</button>
+                        }} className="text-[9px] bg-white text-emerald-700 px-4 py-2 rounded-xl font-black">COPY</button>
                     </div>
                 </div>
 
@@ -175,7 +187,7 @@ export default function BankTransfer() {
                         </div>
                         <h2 className="text-xl font-black mb-2">{statusModal.message}</h2>
                         <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-8 font-black">{statusModal.details}</p>
-                        <button onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({...statusModal, show: false})} className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-100' : 'bg-gray-900 text-white'}`}>
+                        <button onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({ ...statusModal, show: false })} className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${statusModal.success ? 'bg-emerald-600 text-white shadow-emerald-100' : 'bg-gray-900 text-white'}`}>
                             {statusModal.success ? 'ดูใบเสร็จ' : 'ลองใหม่'}
                         </button>
                     </div>
