@@ -1,15 +1,14 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database"; // ✅ เปลี่ยนจาก getFirestore เป็น getDatabase
 import { getFunctions } from "firebase/functions";
-import { getStorage } from "firebase/storage"; // ✅ เพิ่ม: สำหรับเก็บรูปภาพสินค้า/โปรไฟล์
-import { getAnalytics } from "firebase/analytics"; // ✅ เพิ่ม: สำหรับดูสถิติคนเข้าชม
+import { getStorage } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
-// 🔐 Load Firebase config from environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL, // ตัวนี้แหละคือที่อยู่ของ Realtime DB
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -17,18 +16,15 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// 🛡️ ป้องกันการ Initialize ซ้ำ (Singleton Pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// 🚨 ส่งออกบริการหลัก (Core Services)
-export const db = getFirestore(app);
+// 🚨 แก้ไขตรงนี้ครับบอส
+export const db = getDatabase(app); // ✅ เปลี่ยนเป็น getDatabase เพื่อให้ตรงกับหน้า Admin
 export const auth = getAuth(app);
-export const storage = getStorage(app); // เรียกใช้ด้วย: import { storage } from './lib/firebase'
-export const functions = getFunctions(app, 'asia-southeast1'); 
+export const storage = getStorage(app);
+export const functions = getFunctions(app, 'asia-southeast1');
 
-// 📈 เปิดใช้งาน Analytics (เฉพาะตอนรันบน Browser)
 export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
-
 export const isFirebaseConfigured = true;
 
 export default app;

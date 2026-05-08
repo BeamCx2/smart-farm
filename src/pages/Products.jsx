@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'; 
+// เปลี่ยนมาใช้ ref และ onValue จาก firebase/database
+import { ref, onValue } from 'firebase/database';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { CATEGORIES } from '../lib/utils';
 import ProductCard from '../components/products/ProductCard';
@@ -19,41 +20,44 @@ export default function Products() {
             return;
         }
 
-        // ✅ [OPTIMIZATION] เปลี่ยนจาก onSnapshot เป็น getDocs + ใช้ limit()
-        const loadProducts = async () => {
-            try {
-                const q = query(
-                    collection(db, 'products'), 
-                    where('status', '==', 'active'),
-                    orderBy('createdAt', 'desc'),
-                    limit(500) // ✅ จำกัดการดึงข้อมูล
-                );
+        // เชื่อมต่อไปยัง Node ที่ชื่อ 'products' ใน Realtime Database
+        const productsRef = ref(db, 'products');
 
-                const snapshot = await getDocs(q);
-                const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-                
-                setProducts(data);
-                setLoading(false);
-            } catch (error) {
-                console.error("Firestore Error:", error);
-                setLoading(false);
+        // ดึงข้อมูลแบบ Real-time (ถ้า Admin แก้ไข หน้าร้านจะเปลี่ยนตามทันที)
+        const unsubscribe = onValue(productsRef, (snapshot) => {
+            const data = snapshot.val();
+
+            if (data) {
+                // ข้อมูลจาก Realtime DB จะมาเป็น Object ต้องแปลงเป็น Array ก่อน
+                const productList = Object.keys(data).map(key => ({
+                    id: key,
+                    ...data[key]
+                }));
+
+                // กรองเอาเฉพาะสินค้าที่เป็น active และเรียงตามวันที่สร้าง (ถ้ามี)
+                const sortedData = productList
+                    .filter(p => p.status === 'active')
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                setProducts(sortedData);
+            } else {
+                setProducts([]);
             }
-        };
+            setLoading(false);
+        }, (error) => {
+            console.error("Database Error:", error);
+            setLoading(false);
+        });
 
-        loadProducts();
-        
-        // ✅ [OPTIMIZATION] Refresh data ทุก 5 นาที แทนการทำ real-time listeners
-        const interval = setInterval(loadProducts, 5 * 60 * 1000);
-        return () => clearInterval(interval);
+        // คืนค่าฟังก์ชันเพื่อปิดการเชื่อมต่อเมื่อเปลี่ยนหน้า
+        return () => unsubscribe();
     }, []);
 
     const filtered = useMemo(() => {
         return products.filter((p) => {
-            // เช็คหมวดหมู่
             const matchCat = activeCategory === 'ทั้งหมด' || p.category === activeCategory;
-            // เช็คคำค้นหา
-            const matchSearch = !search || 
-                p.name.toLowerCase().includes(search.toLowerCase()) || 
+            const matchSearch = !search ||
+                p.name.toLowerCase().includes(search.toLowerCase()) ||
                 (p.description || '').toLowerCase().includes(search.toLowerCase());
             return matchCat && matchSearch;
         });
@@ -95,11 +99,10 @@ export default function Products() {
                     <button
                         key={cat}
                         onClick={() => setCategory(cat)}
-                        className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${
-                            activeCategory === cat
-                            ? 'bg-emerald-600 text-white shadow-md'
-                            : 'bg-white dark:bg-gray-900 border border-gray-50 text-gray-400 hover:text-emerald-600'
-                        }`}
+                        className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${activeCategory === cat
+                                ? 'bg-emerald-600 text-white shadow-md'
+                                : 'bg-white dark:bg-gray-900 border border-gray-50 text-gray-400 hover:text-emerald-600'
+                            }`}
                     >
                         {cat}
                     </button>
