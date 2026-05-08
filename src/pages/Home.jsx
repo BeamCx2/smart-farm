@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { ref, onValue } from 'firebase/database';
+import { rtdb, isFirebaseConfigured } from '../lib/firebase';
 import { formatTHB, CATEGORIES } from '../lib/utils';
 import ProductCard from '../components/products/ProductCard';
 
@@ -11,27 +11,28 @@ export default function Home() {
 
 // ในไฟล์ src/pages/Home.jsx
 useEffect(() => {
-    async function load() {
-        try {
-            setLoading(true);
-            // ✅ [OPTIMIZATION] ใช้ orderBy + limit ระดับ query แล้ว
-            const q = query(
-                collection(db, 'products'),
-                where('status', '==', 'active'),
-                orderBy('createdAt', 'desc'),
-                limit(8) // ✅ จำกัดที่ query level
-            );
-            const snap = await getDocs(q);
-            
-            const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-            setProducts(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+    if (!isFirebaseConfigured) {
+        setProducts([]);
+        setLoading(false);
+        return;
     }
-    load();
+
+    const productsRef = ref(rtdb, 'products');
+    return onValue(productsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            // กรองเฉพาะสินค้าที่สถานะเป็น active และจำกัด 8 ชิ้นแรก
+            const activeProducts = list
+                .filter(p => p.status === 'active')
+                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                .slice(0, 8);
+            setProducts(activeProducts);
+        } else {
+            setProducts([]);
+        }
+        setLoading(false);
+    });
 }, []);
 
     return (
