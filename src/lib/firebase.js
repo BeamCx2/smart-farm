@@ -19,9 +19,9 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// ✅ แยกชื่อเพื่อความชัวร์
-export const db = getFirestore(app);   // ไว้ใช้กับ Profile (Firestore)
-export const rtdb = getDatabase(app); // ไว้ใช้กับ สินค้า (Realtime DB)
+// 🚨 แยกชื่อให้ชัดเจน: rtdb คือตู้สินค้าที่บอสใช้จัดการ
+export const db = getFirestore(app);        
+export const rtdb = getDatabase(app);      
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);
