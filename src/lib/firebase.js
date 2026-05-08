@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore"; // สำหรับ Cloud Firestore
-import { getDatabase } from "firebase/database";   // สำหรับ Realtime Database
+import { getFirestore } from "firebase/firestore"; 
+import { getDatabase } from "firebase/database";   
 import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
@@ -19,13 +19,13 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// 🚨 แยกท่อส่งข้อมูลให้ชัดเจน
-export const db = getDatabase(app);        // ✅ ใช้กับ Smart Farm / สินค้า (ไอคอนฟ้า)
-export const firestore = getFirestore(app); // ✅ ใช้กับ User Profile / ข้อมูลอื่นๆ (ไอคอนส้ม)
+// 🚨 จุดสำคัญ: แยกชื่อ export
+export const db = getFirestore(app);        // สำหรับ Profile/User (ใช้ชื่อ db เพื่อไม่ให้โค้ดเก่าพัง)
+export const rtdb = getDatabase(app);      // สำหรับสินค้า/ฟาร์ม (Realtime DB)
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app, 'asia-southeast1');
+export const functions = getFunctions(app, 'asia-southeast1'); 
 export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 export const isFirebaseConfigured = true;
 
