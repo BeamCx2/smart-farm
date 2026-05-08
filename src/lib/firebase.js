@@ -19,9 +19,9 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// 🚨 จุดสำคัญ: แยกชื่อ export
-export const db = getFirestore(app);        // สำหรับ Profile/User (ใช้ชื่อ db เพื่อไม่ให้โค้ดเก่าพัง)
-export const rtdb = getDatabase(app);      // สำหรับสินค้า/ฟาร์ม (Realtime DB)
+// ✅ แยกชื่อเพื่อความชัวร์
+export const db = getFirestore(app);   // ไว้ใช้กับ Profile (Firestore)
+export const rtdb = getDatabase(app); // ไว้ใช้กับ สินค้า (Realtime DB)
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);
