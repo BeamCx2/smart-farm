@@ -177,35 +177,35 @@ export default function Payment() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-emerald-950 dark:via-gray-900 dark:to-emerald-900 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden transition-colors duration-300">
             {/* Background decorations */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/30 dark:bg-emerald-500/10 rounded-full blur-3xl animate-float"></div>
-                <div className="absolute top-40 right-20 w-24 h-24 bg-amber-200/30 dark:bg-cyan-500/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-emerald-300/20 dark:bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute bottom-20 right-10 w-28 h-28 bg-white/20 dark:bg-slate-700/40 rounded-full blur-2xl animate-float" style={{ animationDelay: '0.5s' }}></div>
+                <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/40 dark:bg-emerald-500/5 rounded-full blur-3xl animate-float"></div>
+                <div className="absolute top-40 right-20 w-24 h-24 bg-amber-200/40 dark:bg-cyan-500/5 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-emerald-300/20 dark:bg-emerald-400/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 right-10 w-28 h-28 bg-gray-200/30 dark:bg-slate-700/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '0.5s' }}></div>
             </div>
 
             <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in duration-500">
                 {/* Header */}
                 <div className="text-center mb-10 animate-fade-in-up">
-                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl animate-bounce">
+                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg dark:shadow-lg dark:shadow-emerald-900/30 animate-bounce">
                         <span className="text-3xl">💳</span>
                     </div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-emerald-700 dark:text-emerald-300 mb-2 leading-tight">
+                    <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-2 leading-tight">
                         ชำระเงิน
                     </h1>
-                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
                         ยืนยันการโอนเงินผ่าน PromptPay
                     </p>
                 </div>
 
                 {/* Main Card */}
-                <div className="glass rounded-3xl p-8 shadow-2xl shadow-emerald-500/10 dark:shadow-black/50 border border-white/70 dark:border-slate-700 mb-8 animate-fade-in-up backdrop-blur-xl">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl dark:shadow-2xl dark:shadow-black/40 border border-gray-200 dark:border-gray-700 mb-8 animate-fade-in-up">
                     {/* Order Summary */}
-                    <div className="bg-gradient-to-br from-emerald-50/80 dark:from-emerald-900/20 to-white/50 dark:to-slate-900/30 rounded-2xl p-6 mb-8 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-600">
                         <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">รหัสคำสั่งซื้อ</p>
-                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-6">Order #{orderId}</p>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-6">Order #{orderId}</p>
 
                         <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">ยอดเงินที่ต้องชำระ</p>
                         <p className="text-5xl font-black text-emerald-600 dark:text-emerald-400 leading-tight">
@@ -215,24 +215,24 @@ export default function Payment() {
 
                     {/* QR Code Section */}
                     <div className="mb-8">
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4 text-center">
+                        <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-4 text-center">
                             📱 สแกน QR ด้านล่าง
                         </p>
-                        <div className="flex justify-center bg-white dark:bg-slate-950 p-8 rounded-2xl shadow-lg border-2 border-emerald-200/50 dark:border-slate-700 transition-transform hover:scale-[1.02] duration-300">
+                        <div className="flex justify-center bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg dark:shadow-lg dark:shadow-black/30 border-2 border-gray-300 dark:border-gray-600 transition-transform hover:scale-[1.02] duration-300">
                             {loading ? (
                                 <div className="flex flex-col items-center justify-center gap-3">
-                                    <div className="animate-spin h-12 w-12 border-4 border-emerald-100 dark:border-emerald-900 border-t-emerald-600 rounded-full"></div>
-                                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500">กำลังสร้าง QR Code...</p>
+                                    <div className="animate-spin h-12 w-12 border-4 border-gray-300 dark:border-gray-600 border-t-emerald-600 dark:border-t-emerald-400 rounded-full"></div>
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">กำลังสร้าง QR Code...</p>
                                 </div>
                             ) : qrRawData ? (
                                 <div className="flex flex-col items-center gap-3">
                                     <QRCodeCanvas value={qrRawData} size={240} level="H" includeMargin={true} />
-                                    <p className="text-xs text-gray-400 dark:text-gray-600 font-medium">PromptPay QR Code</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">PromptPay QR Code</p>
                                 </div>
                             ) : (
                                 <div className="text-center">
                                     <div className="text-5xl mb-2">⏳</div>
-                                    <p className="text-sm font-semibold text-gray-400 dark:text-gray-600">กำลังเตรียม...</p>
+                                    <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">กำลังเตรียม...</p>
                                 </div>
                             )}
                         </div>
@@ -242,8 +242,8 @@ export default function Payment() {
                     <div className="space-y-3">
                         <label className={`block w-full py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest cursor-pointer transition-all duration-300 transform active:scale-95 shadow-lg border-2
                             ${uploading
-                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed border-gray-300 dark:border-gray-600'
-                                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/30 dark:shadow-emerald-900/30 border-emerald-400 hover:shadow-lg hover:-translate-y-0.5'}`}>
+                                ? 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 cursor-not-allowed border-gray-400 dark:border-gray-600'
+                                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-700 dark:hover:to-emerald-800 text-white shadow-emerald-500/40 dark:shadow-emerald-900/40 border-emerald-400 dark:border-emerald-700 hover:shadow-lg hover:-translate-y-0.5'}`}>
                             {uploading ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span>
@@ -263,16 +263,15 @@ export default function Payment() {
                                 disabled={uploading || loading}
                             />
                         </label>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 text-center font-medium">
                             ✓ AI ตรวจสลิปอัตโนมัติ • ระบบตัดสต๊อกทันที
                         </p>
                     </div>
                 </div>
 
                 {/* Info Box */}
-                <div className="glass rounded-2xl p-6 border border-blue-200/50 dark:border-blue-800/30 bg-blue-50/50 dark:bg-blue-900/10 text-center animate-fade-in-up">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                        💡 <span className="font-semibold">ระบบจะตรวจสอบสลิปโดยอัตโนมัติ</span> หลังจากอัปโหลด และเปิดใบเสร็จรับเงินให้ทันที
+                <div className="bg-blue-50 dark:bg-blue-900/30 rounded-2xl p-6 border border-blue-200 dark:border-blue-700/50 text-center animate-fade-in-up">
+                    <p className="text-xs text-gray-700 dark:text-gray-200">
                     </p>
                 </div>
             </div>
@@ -280,11 +279,11 @@ export default function Payment() {
             {/* Modal */}
             {statusModal.show && (
                 <div className="fixed inset-0 z-[1000] bg-black/40 dark:bg-black/60 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="glass rounded-3xl p-10 max-w-sm w-full shadow-2xl shadow-black/20 dark:shadow-black/50 border border-white/80 dark:border-slate-700 bg-white/95 dark:bg-slate-950/95 text-center animate-in zoom-in-95 duration-300">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-10 max-w-sm w-full shadow-2xl dark:shadow-2xl dark:shadow-black/50 border border-gray-200 dark:border-gray-700 text-center animate-in zoom-in-95 duration-300">
                         <div className={`w-24 h-24 rounded-full mx-auto mb-8 flex items-center justify-center text-5xl font-black transition-transform
                             ${statusModal.success
-                                ? 'bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20 text-emerald-600 dark:text-emerald-400 scale-in-95 animate-bounce'
-                                : 'bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-800/20 text-red-600 dark:text-red-400'}`}>
+                                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 scale-in-95 animate-bounce'
+                                : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'}`}>
                             {statusModal.success ? '✓' : '✕'}
                         </div>
                         <h2 className={`text-2xl font-black mb-4 leading-tight
@@ -293,15 +292,15 @@ export default function Payment() {
                                 : 'text-red-700 dark:text-red-400'}`}>
                             {statusModal.message}
                         </h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 leading-relaxed font-medium">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-8 leading-relaxed font-medium">
                             {statusModal.details}
                         </p>
                         <button
                             onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({ ...statusModal, show: false })}
                             className={`w-full py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all duration-300 transform hover:-translate-y-1 shadow-lg active:scale-95
                                 ${statusModal.success
-                                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/30 dark:shadow-emerald-900/30'
-                                    : 'bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 text-white hover:from-gray-900 hover:to-black shadow-gray-500/30'}`}
+                                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-700 dark:hover:to-emerald-800 text-white shadow-emerald-500/40 dark:shadow-emerald-900/40'
+                                    : 'bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white shadow-gray-500/30'}`}
                         >
                             {statusModal.success ? '👉 ดูใบเสร็จรับเงิน' : '🔄 ลองใหม่'}
                         </button>
