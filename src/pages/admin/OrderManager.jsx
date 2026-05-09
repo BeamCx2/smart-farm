@@ -27,8 +27,16 @@ export default function OrderManager() {
             if (newStatus === 'shipped' && tracking) updateData.trackingNumber = tracking;
             await updateDoc(doc(db, 'orders', orderId), updateData);
             addToast('อัปเดตสถานะสำเร็จ', 'success');
-            load();
-            if (selectedOrder) setSelectedOrder(null);
+
+            // ✅ Reload ข้อมูล order ให้ latest เพื่อแสดง slipUrl ที่อัปเดท
+            const updatedSnap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+            const updatedOrders = updatedSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setOrders(updatedOrders);
+
+            // ✅ Update selectedOrder ให้แสดง slipUrl ที่เพิ่งอัปเดท
+            const updated = updatedOrders.find(o => o.id === orderId);
+            if (updated) setSelectedOrder(updated);
+            else setSelectedOrder(null);
         } catch (e) { addToast('ผิดพลาด: ' + e.message, 'error'); }
     };
 
@@ -76,7 +84,7 @@ export default function OrderManager() {
                 <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[1000] animate-in fade-in duration-200">
                     {/* เปลี่ยนสีพื้นหลังตามโหมด (bg-gray-800 / bg-gray-100) */}
                     <div className="bg-gray-100 dark:bg-gray-800 rounded-[2.5rem] w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl relative overflow-hidden border border-gray-200 dark:border-gray-700">
-                        
+
                         <div className="p-8 flex justify-between items-start">
                             <div>
                                 <h2 className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mb-1">รายละเอียดคำสั่งซื้อ</h2>
@@ -87,7 +95,7 @@ export default function OrderManager() {
 
                         <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                
+
                                 {/* คอลัมน์ซ้าย: ข้อมูลลูกค้าและสินค้า */}
                                 <div className="lg:col-span-5 space-y-4">
                                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200 dark:border-gray-700">
@@ -121,14 +129,30 @@ export default function OrderManager() {
                                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 flex flex-col items-center">
                                         <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">ยอดรวมทั้งสิ้น</p>
                                         <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-4">{formatTHB(selectedOrder.total || selectedOrder.amount)}</p>
-                                        
+
                                         <h3 className="text-gray-800 dark:text-gray-100 font-bold mb-3 self-start text-xs">💳 สลิปการชำระเงิน</h3>
                                         {/* ล็อกขนาดสลิปเพื่อไม่ให้บังส่วนล่าง */}
-                                        <div className="w-full max-w-[340px] aspect-[3/4] bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                                            {selectedOrder.slipUrl ? (
-                                                <img src={selectedOrder.slipUrl} className="w-full h-full object-contain" alt="Payment Slip" />
+                                        <div className="w-full max-w-[340px] aspect-[3/4] bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center relative">
+                                            {selectedOrder.slipUrl && selectedOrder.slipUrl.trim() ? (
+                                                <>
+                                                    <img
+                                                        src={selectedOrder.slipUrl}
+                                                        className="w-full h-full object-contain"
+                                                        alt="Payment Slip"
+                                                        crossOrigin="anonymous"
+                                                        onLoad={() => console.log('✅ Slip image loaded:', selectedOrder.slipUrl)}
+                                                        onError={(e) => {
+                                                            console.error('❌ Slip image failed to load:', selectedOrder.slipUrl);
+                                                            e.target.style.display = 'none';
+                                                            e.target.parentElement.innerHTML = '<div class="text-center"><p class="text-gray-400 text-xs font-bold">ไม่สามารถแสดงรูปภาพ</p><p class="text-gray-300 text-[10px] mt-2 break-all">' + selectedOrder.slipUrl + '</p></div>';
+                                                        }}
+                                                    />
+                                                </>
                                             ) : (
-                                                <p className="text-gray-400 text-xs italic">ยังไม่มีการแนบสลิป</p>
+                                                <div className="text-center">
+                                                    <p className="text-gray-400 text-xs italic">ยังไม่มีการแนบสลิป</p>
+                                                    <p className="text-gray-300 text-[10px] mt-2">สถานะ: {selectedOrder.status}</p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -140,12 +164,11 @@ export default function OrderManager() {
                                             {Object.entries(ORDER_STATUSES).map(([key, val]) => (
                                                 <button
                                                     key={key}
-                                                    onClick={() => key !== 'shipped' ? updateStatus(selectedOrder.id, key) : setSelectedOrder({...selectedOrder, status: 'shipped'})}
-                                                    className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${
-                                                        selectedOrder.status === key 
-                                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                                    }`}
+                                                    onClick={() => key !== 'shipped' ? updateStatus(selectedOrder.id, key) : setSelectedOrder({ ...selectedOrder, status: 'shipped' })}
+                                                    className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${selectedOrder.status === key
+                                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                                        }`}
                                                 >
                                                     {val.label}
                                                 </button>
@@ -154,8 +177,8 @@ export default function OrderManager() {
 
                                         {selectedOrder.status === 'shipped' && (
                                             <div className="mt-3 flex gap-2 animate-in slide-in-from-top-2">
-                                                <input type="text" value={trackingNum} onChange={(e)=>setTrackingNum(e.target.value)} className="flex-1 px-4 py-2 rounded-xl text-xs bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 outline-none focus:ring-1 ring-emerald-500" placeholder="เลขติดตามพัสดุ..." />
-                                                <button onClick={()=>updateStatus(selectedOrder.id, 'shipped', trackingNum)} className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase shadow-md">บันทึก</button>
+                                                <input type="text" value={trackingNum} onChange={(e) => setTrackingNum(e.target.value)} className="flex-1 px-4 py-2 rounded-xl text-xs bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 outline-none focus:ring-1 ring-emerald-500" placeholder="เลขติดตามพัสดุ..." />
+                                                <button onClick={() => updateStatus(selectedOrder.id, 'shipped', trackingNum)} className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase shadow-md">บันทึก</button>
                                             </div>
                                         )}
                                     </div>
