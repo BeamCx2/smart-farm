@@ -11,7 +11,7 @@ function OrderTimer({ createdAt }) {
     useEffect(() => {
         if (!createdAt || !createdAt.seconds) return;
         const calculateTime = () => {
-            const expiryTime = createdAt.seconds + (24 * 60 * 60); 
+            const expiryTime = createdAt.seconds + (24 * 60 * 60);
             const now = Math.floor(Date.now() / 1000);
             const diff = expiryTime - now;
             if (diff <= 0) {
@@ -72,9 +72,9 @@ export default function Orders() {
     }, [user]);
 
     const handlePaymentRedirect = (order) => {
-        const paymentState = { 
-            amount: order.total, 
-            orderId: order.orderId || order.id.slice(0, 8) 
+        const paymentState = {
+            amount: order.total,
+            orderId: order.orderId || order.id.slice(0, 8)
         };
         if (order.paymentMethod === 'bank') {
             navigate('/bank-transfer', { state: paymentState });
@@ -87,66 +87,101 @@ export default function Orders() {
     if (!user) return <Navigate to="/register" replace />;
 
     return (
-        <section className="max-w-5xl mx-auto px-4 py-10 min-h-screen font-sans font-black transition-colors duration-300 bg-white dark:bg-slate-950">
-            {/* Header - Sync Dark/Light Mode */}
-            <div className="mb-10 rounded-[3rem] bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 shadow-xl p-8 backdrop-blur-xl">
-                <h1 className="text-3xl font-black mb-3 uppercase tracking-tight flex items-center gap-3 text-emerald-600 dark:text-emerald-300">
-                    <span className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-100 w-10 h-10 rounded-2xl flex items-center justify-center text-base">#</span>
-                    คำสั่งซื้อของฉัน
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-2xl">ดูสถานะคำสั่งซื้อล่าสุดได้ที่หน้าเดียว พร้อมสรุปยอดและการแจ้งเตือนชำระเงินทันที</p>
+        <section className="max-w-6xl mx-auto px-4 py-12 min-h-screen font-sans font-black transition-colors duration-300 bg-gradient-to-br from-white via-emerald-50/30 to-white dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+            {/* Header - Professional Luxury Design */}
+            <div className="mb-12 rounded-3xl bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-emerald-950 dark:via-gray-900 dark:to-emerald-900 border border-emerald-200/50 dark:border-emerald-700/30 shadow-lg p-8 backdrop-blur-sm">
+                <div className="flex items-start gap-4 mb-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center text-white text-lg shadow-lg">
+                        📦
+                    </div>
+                    <div>
+                        <h1 className="text-4xl font-black mb-2 text-emerald-600 dark:text-emerald-300 tracking-tight">คำสั่งซื้อของฉัน</h1>
+                        <p className="text-sm text-emerald-600/70 dark:text-emerald-300/60 max-w-2xl">ติดตามสถานะคำสั่งซื้อของคุณได้ในที่เดียว ดูรายละเอียด ราคา และการจัดส่งได้ทันที</p>
+                    </div>
+                </div>
             </div>
 
-            <div className="space-y-4 font-black">
+            <div className="space-y-5 font-black">
                 {orders.map((order) => {
                     const statusCfg = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
                     const isPending = order.status === 'pending';
                     const isExpired = isPending && order.createdAt?.seconds && Math.floor(Date.now() / 1000) > (order.createdAt.seconds + 86400);
 
                     if (isExpired) handleSyncAutoCancel(order.id);
-                    
+
                     return (
-                        <div key={order.id} 
-                            className={`bg-white dark:bg-slate-900/95 rounded-[2.5rem] border p-7 flex flex-wrap items-center justify-between gap-6 shadow-sm transition-all group
-                                ${isPending ? 'border-amber-500/40 ring-2 ring-amber-500/10' : 'border-slate-100 dark:border-slate-700'}`}>
-                            
-                            <div className="flex items-center gap-5 flex-1 cursor-pointer font-black" onClick={() => setViewOrder(order)}>
-                                <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                                    {order.status === 'shipped' ? '🚚' : order.status === 'paid' ? '💰' : order.status === 'finished' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
-                                </div>
-                                <div>
-                                    <h3 className="text-slate-900 dark:text-white text-base tracking-tighter uppercase font-black">#{order.orderId || order.id.slice(0, 8)}</h3>
-                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">
-                                        {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'Syncing...'}
-                                    </p>
-                                    {isPending && (
-                                        <div className="mt-2 flex items-center gap-2 bg-red-500/10 px-3 py-1 rounded-lg w-fit">
-                                            <span className="text-[9px] text-red-600 dark:text-red-200 uppercase tracking-widest leading-none font-black">⏳ หมดเวลาใน:</span>
-                                            <OrderTimer createdAt={order.createdAt} />
+                        <div key={order.id}
+                            className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-6 flex flex-col gap-5 shadow-md hover:shadow-xl transition-all group cursor-pointer
+                                ${isPending ? 'border-amber-400/40 dark:border-amber-600/40 bg-gradient-to-r from-white to-amber-50/30 dark:from-gray-800 dark:to-amber-950/20' : 'border-gray-200 dark:border-gray-700'}`}
+                            onClick={() => setViewOrder(order)}>
+
+                            {/* Header Row */}
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-4 flex-1">
+                                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-600/20 dark:from-emerald-900/40 dark:to-emerald-700/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shrink-0">
+                                        {order.status === 'shipped' ? '🚚' : order.status === 'paid' ? '💳' : order.status === 'finished' ? '✅' : order.status === 'cancelled' ? '❌' : '⏳'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 flex-wrap mb-2">
+                                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wide">#{order.orderId || order.id.slice(0, 8)}</h3>
+                                            <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest whitespace-nowrap
+                                                ${statusCfg.color === 'green' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
+                                                    statusCfg.color === 'yellow' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' :
+                                                        statusCfg.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'}`}>
+                                                {statusCfg.label}
+                                            </span>
                                         </div>
-                                    )}
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('th-TH') : 'กำลังซิงค์...'}
+                                        </p>
+                                        {isPending && (
+                                            <div className="mt-3 inline-flex items-center gap-2 bg-red-100 dark:bg-red-900/30 px-3 py-2 rounded-lg">
+                                                <span className="text-xs text-red-700 dark:text-red-300 uppercase font-black">⏳ หมดเวลาใน:</span>
+                                                <OrderTimer createdAt={order.createdAt} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">ยอดทั้งหมด</p>
+                                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{formatTHB(order.total)}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-6 font-black">
-                                <div className="text-right hidden sm:block mr-2 font-black">
-                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-black">ยอดสุทธิ</p>
-                                    <p className="text-emerald-600 dark:text-emerald-300 text-xl font-black">{formatTHB(order.total)}</p>
+                            {/* Products Preview */}
+                            {(order.items || []).length > 0 && (
+                                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 font-black">สินค้า ({order.items.length})</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-32 overflow-y-auto">
+                                        {order.items.map((item, i) => (
+                                            <div key={i} className="flex flex-col items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+                                                <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover" onError={(e) => e.target.src = 'https://via.placeholder.com/50'} />
+                                                <div className="text-center flex-1 min-w-0">
+                                                    <p className="text-xs font-black text-gray-800 dark:text-gray-200 truncate">{item.name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-black">x{item.qty}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                
+                            )}
+
+                            {/* Footer Row */}
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="font-black">{order.items?.length || 0}</span> สินค้า
+                                </div>
                                 {isPending && !isExpired ? (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handlePaymentRedirect(order); }}
-                                        className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 active:scale-95 transition-all"
+                                        className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg text-xs font-black uppercase tracking-wide shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
                                     >
-                                        💳 จ่ายเงิน
+                                        💳 ชำระเงิน
                                     </button>
                                 ) : (
-                                    <span onClick={() => setViewOrder(order)} className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border cursor-pointer
-                                        ${statusCfg.color === 'green' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-200 border-emerald-500/20' : 
-                                          statusCfg.color === 'yellow' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-200 border-amber-500/20' : 
-                                          statusCfg.color === 'blue' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-200 border-blue-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-200 border-red-500/20'}`}>
-                                        {statusCfg.label}
+                                    <span className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase">
+                                        {order.status === 'finished' ? '✅ เสร็จสิ้น' : order.status === 'cancelled' ? '❌ ยกเลิก' : 'รอดำเนินการ'}
                                     </span>
                                 )}
                             </div>
@@ -155,51 +190,104 @@ export default function Orders() {
                 })}
             </div>
 
-            {/* Modal - Sync Dark/Light Mode */}
+            {/* Empty State */}
+            {orders.length === 0 && !loading && (
+                <div className="text-center py-16">
+                    <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <span className="text-4xl">📭</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3">ยังไม่มีออเดอร์</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">เริ่มช้อปปิ้งวันนี้และหลังจากนั้นคุณจะเห็นออเดอร์ของคุณปรากฏที่นี่</p>
+                    <a href="/products" className="inline-block px-8 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black rounded-lg shadow-lg transition-all hover:-translate-y-1">
+                        🛍️ ไปช้อปปิ้ง
+                    </a>
+                </div>
+            )}
+
+            {/* Modal - Professional Luxury Design */}
             {viewOrder && (
-                <div className="fixed inset-0 z-[1000] bg-black/60 dark:bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-950 rounded-[2.5rem] p-8 max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl relative font-black border border-slate-200 dark:border-slate-800">
-                        <button onClick={() => setViewOrder(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-300 hover:text-red-500 transition-all">✕</button>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-4 shrink-0">รายละเอียดออเดอร์</h2>
-                        
-                        <div className="flex-1 overflow-y-auto space-y-4 font-black custom-scrollbar pr-2">
+                <div className="fixed inset-0 z-[1000] bg-black/40 dark:bg-black/60 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl dark:shadow-2xl dark:shadow-black/50 relative font-black border border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => setViewOrder(null)}
+                            className="absolute top-6 right-6 w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-all hover:scale-110">
+                            ✕
+                        </button>
+
+                        <div className="mb-6 shrink-0">
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">รายละเอียดออเดอร์</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">#{viewOrder.orderId || viewOrder.id.slice(0, 8)}</p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto space-y-5 pr-3 custom-scrollbar">
+                            {/* Tracking Info */}
                             {viewOrder.status === 'shipped' && viewOrder.trackingNumber && (
-                                <div className="p-4 bg-blue-600 rounded-2xl text-white shadow-lg font-black">
-                                    <p className="text-[8px] font-black uppercase tracking-widest opacity-80">Tracking ID</p>
-                                    <p className="text-lg font-black tracking-widest select-all leading-none">{viewOrder.trackingNumber}</p>
+                                <div className="p-5 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 rounded-2xl text-white shadow-lg">
+                                    <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-2">📍 Tracking ID</p>
+                                    <p className="text-lg font-black tracking-widest select-all">{viewOrder.trackingNumber}</p>
                                 </div>
                             )}
 
-                            <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                <p className="text-[9px] text-slate-400 uppercase tracking-widest mb-2 font-black">📍 Shipping Address</p>
-                                <p className="text-slate-900 dark:text-white text-sm mb-0.5 font-black">{viewOrder.customer?.name}</p>
-                                <p className="text-emerald-600 dark:text-emerald-300 mb-2 font-black">📞 {viewOrder.customer?.phone}</p>
-                                <div className="text-[10px] text-slate-500 dark:text-slate-300 uppercase leading-relaxed">
-                                    <p>{viewOrder.customer?.address}</p>
-                                    <p>{viewOrder.customer?.subDistrict} {viewOrder.customer?.district} {viewOrder.customer?.province} {viewOrder.customer?.zipcode}</p>
+                            {/* Status Badge */}
+                            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 font-black">สถานะ</p>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-black text-gray-900 dark:text-white">{ORDER_STATUSES[viewOrder.status]?.label || 'ไม่ทราบสถานะ'}</span>
+                                    <span className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wide
+                                        ${ORDER_STATUSES[viewOrder.status]?.color === 'green' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
+                                            ORDER_STATUSES[viewOrder.status]?.color === 'yellow' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' :
+                                                ORDER_STATUSES[viewOrder.status]?.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'}`}>
+                                        {ORDER_STATUSES[viewOrder.status]?.label || 'N/A'}
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="space-y-2 font-black">
-                                <p className="text-[9px] text-slate-400 uppercase tracking-widest px-1 mb-1 font-black">Items</p>
-                                {(viewOrder.items || []).map((item, i) => (
-                                    <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-white p-2 rounded-xl border border-slate-100">
-                                        <img src={item.image} className="w-10 h-10 rounded-lg object-cover" alt="" />
-                                        <div className="flex-1">
-                                            <p className="text-[11px] text-slate-800 uppercase leading-none font-black">{item.name}</p>
-                                            <p className="text-[9px] text-slate-400 font-black mt-1 uppercase">฿{item.price} x {item.qty}</p>
-                                        </div>
-                                        <p className="text-xs text-emerald-600 font-black">{formatTHB(item.price * item.qty)}</p>
-                                    </div>
-                                ))}
+                            {/* Shipping Address */}
+                            <div className="p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 font-black">📍 ที่อยู่จัดส่ง</p>
+                                <div className="space-y-2">
+                                    <p className="text-gray-900 dark:text-white font-black text-sm">{viewOrder.customer?.name}</p>
+                                    <p className="text-emerald-600 dark:text-emerald-400 font-black text-sm">📞 {viewOrder.customer?.phone}</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                                        {viewOrder.customer?.address}<br />
+                                        {viewOrder.customer?.subDistrict} {viewOrder.customer?.district}<br />
+                                        {viewOrder.customer?.province} {viewOrder.customer?.zipcode}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="flex justify-between items-center bg-slate-900 dark:bg-slate-800 p-5 rounded-2xl text-white mt-auto">
-                                <span className="text-[9px] uppercase tracking-widest opacity-60 font-black">Total Amount</span>
-                                <span className="text-2xl tracking-tighter leading-none font-black">{formatTHB(viewOrder.total)}</span>
+                            {/* Items */}
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 font-black">📦 สินค้า</p>
+                                <div className="space-y-2">
+                                    {(viewOrder.items || []).map((item, i) => (
+                                        <div key={i} className="flex gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+                                            <img src={item.image} alt={item.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" onError={(e) => e.target.src = 'https://via.placeholder.com/64'} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-black text-gray-900 dark:text-white mb-1">{item.name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 font-black">ราคา: ฿{item.price} × {item.qty}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatTHB(item.price * item.qty)}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Total Amount */}
+                            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-700 dark:to-emerald-800 p-6 rounded-2xl text-white mt-4">
+                                <p className="text-xs uppercase tracking-widest opacity-80 mb-2 font-black">ยอดรวมทั้งสิ้น</p>
+                                <p className="text-3xl font-black tracking-tight">{formatTHB(viewOrder.total)}</p>
                             </div>
                         </div>
-                        <button onClick={() => setViewOrder(null)} className="w-full mt-4 py-3 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-200 font-black text-[10px] uppercase tracking-[0.3em] rounded-xl hover:bg-emerald-500 hover:text-white transition-all">Close</button>
+
+                        {/* Action Buttons */}
+                        <button
+                            onClick={() => setViewOrder(null)}
+                            className="w-full mt-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-black text-sm uppercase tracking-wider rounded-xl transition-all">
+                            ปิด
+                        </button>
                     </div>
                 </div>
             )}
