@@ -6,6 +6,8 @@ import { formatTHB, formatDate, ORDER_STATUSES } from '../../lib/utils';
 export default function Dashboard() {
     const [stats, setStats] = useState({
         totalSales: 0,
+        todaySales: 0,
+        paidSales: 0,
         orderCount: 0,
         productCount: 0,
         pendingOrders: 0
@@ -38,7 +40,23 @@ export default function Dashboard() {
                     )
                     .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-                // 2. คำนวณรายการรอดำเนินการ: นับเฉพาะ 'pending' และ 'waiting_verify' (รอตรวจสลิป)
+                // 2. คำนวณยอดขายที่ชำระแล้ว: เฉพาะสถานะ 'paid' เท่านั้น
+                const paidSales = orders
+                    .filter(o => o.status === 'paid')
+                    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+                // 3. คำนวณยอดขายวันนี้: ตัดตามวันที่ปัจจุบัน
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todaySales = orders
+                    .filter(o => {
+                        const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+                        orderDate.setHours(0, 0, 0, 0);
+                        return orderDate.getTime() === today.getTime() && o.status === 'paid';
+                    })
+                    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+                // 4. คำนวณรายการรอดำเนินการ: นับเฉพาะ 'pending' และ 'waiting_verify' (รอตรวจสลิป)
                 const pending = orders.filter(o =>
                     o.status === 'pending' ||
                     o.status === 'waiting_verify'
@@ -46,6 +64,8 @@ export default function Dashboard() {
 
                 setStats({
                     totalSales,
+                    todaySales,
+                    paidSales,
                     orderCount: orders.length,
                     productCount,
                     pendingOrders: pending
@@ -113,7 +133,7 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">ยอดขายที่ชำระแล้ว</p>
-                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{formatTHB(stats.totalSales)}</p>
+                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{formatTHB(stats.paidSales)}</p>
                         <div className="mt-4 flex items-center text-xs text-gray-500">
                             <span className="text-green-500 mr-1">↗</span>
                             <span>+12.5% จากเดือนที่แล้ว</span>
@@ -181,10 +201,10 @@ export default function Dashboard() {
                     <p className="text-gray-600 dark:text-gray-400 mb-6">วันนี้เป็นวันที่ดีเยี่ยมในการจัดการร้านค้าของคุณ</p>
                     <div className="flex flex-wrap justify-center gap-4">
                         <div className="px-6 py-3 bg-emerald-500/10 rounded-2xl text-emerald-600 dark:text-emerald-400 font-medium">
-                            📈 ยอดขายวันนี้: {formatTHB(stats.totalSales * 0.1)}
+                            📈 ยอดขายวันนี้: {formatTHB(stats.todaySales)}
                         </div>
                         <div className="px-6 py-3 bg-blue-500/10 rounded-2xl text-blue-600 dark:text-blue-400 font-medium">
-                            🎯 ออเดอร์ใหม่: {Math.floor(stats.orderCount * 0.3)}
+                            🎯 รอดำเนินการ: {stats.pendingOrders} รายการ
                         </div>
                     </div>
                 </div>
