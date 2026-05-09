@@ -10,6 +10,15 @@ exports.handler = async (event) => {
   try {
     const { accessToken } = JSON.parse(event.body);
 
+    // ✅ ดึง KBank credentials จาก environment variables
+    const partnerId = process.env.KBANK_PARTNER_ID;
+    const partnerSecret = process.env.KBANK_PARTNER_SECRET;
+    const merchantId = process.env.KBANK_MERCHANT_ID;
+
+    if (!partnerId || !partnerSecret || !merchantId) {
+      throw new Error('ไม่พบการตั้งค่า KBank credentials ใน environment variables');
+    }
+
     // 🚨 จุดไคลแม็กซ์รอบนี้: สร้างเวลาประเทศไทย (+07:00) เป๊ะๆ
     const now = new Date();
     // บวกเวลาเพิ่ม 7 ชั่วโมง (Netlify รันอยู่บนเวลา UTC)
@@ -27,10 +36,10 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         "partnerTxnUid": "PARTNERTEST0001", 
-        "partnerId": "PTR1051673", 
-        "partnerSecret": "d4bded59200547bc85903574a293831b",
-        "requestDt": formattedDate, // ส่งเวลาไทยเข้าไป
-        "merchantId": "KB102057149704", 
+        "partnerId": partnerId,
+        "partnerSecret": partnerSecret,
+        "requestDt": formattedDate,
+        "merchantId": merchantId,
         "qrType": "3",
         "txnAmount": 1.00, 
         "txnCurrencyCode": "THB", 

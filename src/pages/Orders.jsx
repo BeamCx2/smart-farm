@@ -67,7 +67,9 @@ export default function Orders() {
 
     useEffect(() => {
         loadOrders();
-        const interval = setInterval(loadOrders, 30 * 1000);
+        // ✅ [OPTIMIZATION] ลด polling จาก 30 วินาที เป็น 2 นาที (120000ms)
+        // เพื่อลด Firestore reads และประหยัด bandwidth
+        const interval = setInterval(loadOrders, 120 * 1000);
         return () => clearInterval(interval);
     }, [user]);
 

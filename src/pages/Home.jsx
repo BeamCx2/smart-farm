@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { formatTHB, CATEGORIES } from '../lib/utils';
+import { getCache, setCache, isCacheValid } from '../lib/cache';
 import ProductCard from '../components/products/ProductCard';
 
 export default function Home() {
@@ -14,6 +15,16 @@ useEffect(() => {
     async function load() {
         try {
             setLoading(true);
+            
+            // ✅ [OPTIMIZATION] ตรวจสอบ cache ก่อน
+            const cacheKey = 'home_featured_products';
+            if (isCacheValid(cacheKey)) {
+                const cachedData = getCache(cacheKey);
+                setProducts(cachedData);
+                setLoading(false);
+                return;
+            }
+
             // ✅ [OPTIMIZATION] ใช้ orderBy + limit ระดับ query แล้ว
             const q = query(
                 collection(db, 'products'),
@@ -24,6 +35,9 @@ useEffect(() => {
             const snap = await getDocs(q);
 
             const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            
+            // ✅ เก็บใน cache
+            setCache(cacheKey, data);
             setProducts(data);
         } catch (e) {
             console.error(e);

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { CATEGORIES } from '../lib/utils';
+import { getCache, setCache, isCacheValid } from '../lib/cache';
 import ProductCard from '../components/products/ProductCard';
 
 export default function Products() {
@@ -23,16 +24,28 @@ export default function Products() {
 
         const loadProducts = async () => {
             try {
+                // ✅ [OPTIMIZATION] ตรวจสอบ cache ก่อน
+                const cacheKey = 'products_active_list';
+                if (isCacheValid(cacheKey)) {
+                    const cachedData = getCache(cacheKey);
+                    setProducts(cachedData);
+                    setLoading(false);
+                    return;
+                }
+
+                // ✅ [OPTIMIZATION] ลด limit จาก 500 เป็น 100
                 const q = query(
                     collection(db, 'products'),
                     where('status', '==', 'active'),
                     orderBy('createdAt', 'desc'),
-                    limit(500)
+                    limit(100)
                 );
 
                 const snapshot = await getDocs(q);
                 const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+                // ✅ เก็บใน cache สำหรับครั้งถัดไป
+                setCache(cacheKey, data);
                 setProducts(data);
                 setLoading(false);
             } catch (error) {
