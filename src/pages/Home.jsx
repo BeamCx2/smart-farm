@@ -10,43 +10,43 @@ export default function Home() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-// ในไฟล์ src/pages/Home.jsx
-useEffect(() => {
-    async function load() {
-        try {
-            setLoading(true);
-            
-            // ✅ [OPTIMIZATION] ตรวจสอบ cache ก่อน
-            const cacheKey = 'home_featured_products';
-            if (isCacheValid(cacheKey)) {
-                const cachedData = getCache(cacheKey);
-                setProducts(cachedData);
+    // ในไฟล์ src/pages/Home.jsx
+    useEffect(() => {
+        async function load() {
+            try {
+                setLoading(true);
+
+                // ✅ [OPTIMIZATION] ตรวจสอบ cache ก่อน
+                const cacheKey = 'home_featured_products';
+                if (isCacheValid(cacheKey)) {
+                    const cachedData = getCache(cacheKey);
+                    setProducts(cachedData);
+                    setLoading(false);
+                    return;
+                }
+
+                // ✅ [OPTIMIZATION] ใช้ orderBy + limit ระดับ query แล้ว
+                const q = query(
+                    collection(db, 'products'),
+                    where('status', '==', 'active'),
+                    orderBy('createdAt', 'desc'),
+                    limit(8) // ✅ จำกัดที่ query level
+                );
+                const snap = await getDocs(q);
+
+                const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+                // ✅ เก็บใน cache
+                setCache(cacheKey, data);
+                setProducts(data);
+            } catch (e) {
+                console.error(e);
+            } finally {
                 setLoading(false);
-                return;
             }
-
-            // ✅ [OPTIMIZATION] ใช้ orderBy + limit ระดับ query แล้ว
-            const q = query(
-                collection(db, 'products'),
-                where('status', '==', 'active'),
-                orderBy('createdAt', 'desc'),
-                limit(8) // ✅ จำกัดที่ query level
-            );
-            const snap = await getDocs(q);
-
-            const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-            
-            // ✅ เก็บใน cache
-            setCache(cacheKey, data);
-            setProducts(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
         }
-    }
-    load();
-}, []);
+        load();
+    }, []);
 
     return (
         <>

@@ -22,7 +22,7 @@ exports.handler = async (event) => {
     // 🚨 จุดไคลแม็กซ์รอบนี้: สร้างเวลาประเทศไทย (+07:00) เป๊ะๆ
     const now = new Date();
     // บวกเวลาเพิ่ม 7 ชั่วโมง (Netlify รันอยู่บนเวลา UTC)
-    const localTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); 
+    const localTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
     // ตัดเศษมิลลิวินาทีทิ้ง แล้วต่อท้ายด้วย +07:00
     const formattedDate = localTime.toISOString().split('.')[0] + "+07:00";
 
@@ -35,14 +35,14 @@ exports.handler = async (event) => {
         'env-id': 'QR002'
       },
       body: JSON.stringify({
-        "partnerTxnUid": "PARTNERTEST0001", 
+        "partnerTxnUid": "PARTNERTEST0001",
         "partnerId": partnerId,
         "partnerSecret": partnerSecret,
         "requestDt": formattedDate,
         "merchantId": merchantId,
         "qrType": "3",
-        "txnAmount": 1.00, 
-        "txnCurrencyCode": "THB", 
+        "txnAmount": 1.00,
+        "txnCurrencyCode": "THB",
         "reference1": "INV001",
         "reference2": "HELLOWORLD",
         "reference3": "INV001",
