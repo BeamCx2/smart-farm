@@ -119,11 +119,11 @@ export default function ProductManager() {
 
                                 <div className="flex items-center justify-between">
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest
-                                        ${product.category ? 'bg-emerald-500/20 text-emerald-600' : 'bg-gray-500/20 text-gray-600'}`}>
+                                        ${product.category ? 'bg-emerald-500/20 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-gray-500/20 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'}`}>
                                         {product.category || 'ไม่มีหมวดหมู่'}
                                     </span>
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest
-                                        ${product.status === 'active' ? 'bg-green-500/20 text-green-600' : 'bg-red-500/20 text-red-600'}`}>
+                                        ${product.status === 'active' ? 'bg-green-500/20 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-500/20 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
                                         {product.status === 'active' ? 'ใช้งาน' : 'ปิดใช้งาน'}
                                     </span>
                                 </div>
@@ -133,14 +133,14 @@ export default function ProductManager() {
                             <div className="flex gap-3 mt-6">
                                 <button
                                     onClick={() => { setEditId(product.id); setForm(product); setModalOpen(true); }}
-                                    className="flex-1 btn-secondary py-3 text-gray-800 dark:text-gray-100 font-bold rounded-xl transition-all hover:-translate-y-1 inline-flex items-center justify-center gap-2"
+                                    className="flex-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-3 px-4 font-bold rounded-xl transition-all hover:bg-emerald-200 dark:hover:bg-emerald-900/50 hover:-translate-y-0.5 inline-flex items-center justify-center gap-2"
                                 >
                                     <span>✏️</span>
                                     แก้ไข
                                 </button>
                                 <button
                                     onClick={() => handleDelete(product.id)}
-                                    className="px-4 py-3 bg-red-500/20 text-red-600 font-bold rounded-xl transition-all hover:bg-red-500/30 hover:-translate-y-1 inline-flex items-center justify-center"
+                                    className="px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-bold rounded-xl transition-all hover:bg-red-200 dark:hover:bg-red-900/50 hover:-translate-y-0.5 inline-flex items-center justify-center"
                                 >
                                     🗑️
                                 </button>
@@ -169,15 +169,15 @@ export default function ProductManager() {
 
                 {/* Add/Edit Modal */}
                 {modalOpen && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in scale-in-center">
-                        <div className="glass rounded-3xl p-8 max-w-2xl w-full shadow-2xl">
+                    <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-2xl flex items-center justify-center p-4 z-[999] animate-in fade-in scale-in-center">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-2xl w-full shadow-2xl dark:shadow-2xl dark:shadow-black/50 border border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-3xl font-black gradient-text">
+                                <h2 className="text-3xl font-black text-gray-900 dark:text-white">
                                     {editId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}
                                 </h2>
                                 <button
                                     onClick={() => setModalOpen(false)}
-                                    className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center text-gray-400 hover:text-red-500 transition-all hover:scale-110"
+                                    className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-all hover:scale-110"
                                 >
                                     ✕
                                 </button>
@@ -192,8 +192,8 @@ export default function ProductManager() {
                                     <input
                                         type="text"
                                         value={form.name}
-                                        onChange={(e) => setForm({...form, name: e.target.value})}
-                                        className="w-full px-4 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
+                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/30 outline-none transition-all"
                                         placeholder="ชื่อสินค้า..."
                                         required
                                     />
@@ -206,9 +206,9 @@ export default function ProductManager() {
                                     </label>
                                     <textarea
                                         value={form.description}
-                                        onChange={(e) => setForm({...form, description: e.target.value})}
+                                        onChange={(e) => setForm({ ...form, description: e.target.value })}
                                         rows={3}
-                                        className="w-full px-4 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all resize-none"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/30 outline-none transition-all resize-none"
                                         placeholder="รายละเอียดสินค้า..."
                                     />
                                 </div>
@@ -222,8 +222,8 @@ export default function ProductManager() {
                                         <input
                                             type="number"
                                             value={form.price}
-                                            onChange={(e) => setForm({...form, price: e.target.value})}
-                                            className="w-full px-4 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
+                                            onChange={(e) => setForm({ ...form, price: e.target.value })}
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/30 outline-none transition-all"
                                             placeholder="0"
                                             min="0"
                                             required
@@ -236,8 +236,8 @@ export default function ProductManager() {
                                         <input
                                             type="number"
                                             value={form.stock}
-                                            onChange={(e) => setForm({...form, stock: e.target.value})}
-                                            className="w-full px-4 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
+                                            onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/30 outline-none transition-all"
                                             placeholder="0"
                                             min="0"
                                             required
@@ -252,8 +252,8 @@ export default function ProductManager() {
                                     </label>
                                     <select
                                         value={form.category}
-                                        onChange={(e) => setForm({...form, category: e.target.value})}
-                                        className="w-full px-4 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-gray-800 dark:text-gray-100 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
+                                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/30 outline-none transition-all"
                                         required
                                     >
                                         <option value="">เลือกหมวดหมู่</option>
@@ -271,54 +271,54 @@ export default function ProductManager() {
                                     <input
                                         type="url"
                                         value={form.image}
-                                        onChange={(e) => setForm({...form, image: e.target.value})}
-                                        className="w-full px-4 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
+                                        onChange={(e) => setForm({ ...form, image: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/30 outline-none transition-all"
                                         placeholder="https://example.com/image.jpg"
                                     />
                                 </div>
 
                                 {/* Status */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                                         สถานะ
                                     </label>
                                     <div className="flex gap-4">
-                                        <label className="flex items-center">
+                                        <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="radio"
                                                 value="active"
                                                 checked={form.status === 'active'}
-                                                onChange={(e) => setForm({...form, status: e.target.value})}
-                                                className="mr-2"
+                                                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                                                className="w-4 h-4 cursor-pointer"
                                             />
-                                            <span className="text-gray-700 dark:text-gray-300">ใช้งาน</span>
+                                            <span className="text-gray-700 dark:text-gray-300 font-medium">ใช้งาน</span>
                                         </label>
-                                        <label className="flex items-center">
+                                        <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="radio"
                                                 value="inactive"
                                                 checked={form.status === 'inactive'}
-                                                onChange={(e) => setForm({...form, status: e.target.value})}
-                                                className="mr-2"
+                                                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                                                className="w-4 h-4 cursor-pointer"
                                             />
-                                            <span className="text-gray-700 dark:text-gray-300">ปิดใช้งาน</span>
+                                            <span className="text-gray-700 dark:text-gray-300 font-medium">ปิดใช้งาน</span>
                                         </label>
                                     </div>
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex gap-4 pt-6">
+                                <div className="flex gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                                     <button
                                         type="button"
                                         onClick={() => setModalOpen(false)}
-                                        className="flex-1 btn-secondary py-4 text-gray-800 dark:text-gray-100 font-bold rounded-2xl transition-all hover:-translate-y-1"
+                                        className="flex-1 py-3 px-6 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-bold rounded-xl transition-all hover:bg-gray-300 dark:hover:bg-gray-600 hover:-translate-y-0.5"
                                     >
                                         ยกเลิก
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="flex-1 btn-primary py-4 text-white font-bold rounded-2xl shadow-xl transition-all hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 inline-flex items-center justify-center gap-2"
+                                        className="flex-1 py-3 px-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
                                     >
                                         {saving ? (
                                             <>
@@ -326,9 +326,7 @@ export default function ProductManager() {
                                                 <span>กำลังบันทึก...</span>
                                             </>
                                         ) : (
-                                            <>
-                                                <span>{editId ? 'อัปเดต' : 'เพิ่ม'}สินค้า</span>
-                                            </>
+                                            <span>{editId ? 'อัปเดต' : 'เพิ่ม'}สินค้า</span>
                                         )}
                                     </button>
                                 </div>
