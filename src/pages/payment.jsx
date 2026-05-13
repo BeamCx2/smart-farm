@@ -134,9 +134,11 @@ export default function Payment() {
                 }
 
                 // ✅ [ผ่านด่าน]: บันทึกข้อมูลและตัดสต๊อก
-                const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
+                const slipPath = `slips/${orderId}_${Date.now()}.jpg`;
+                const storageRef = ref(storage, slipPath);
                 await uploadBytes(storageRef, file);
-                const downloadURL = await getDownloadURL(storageRef);
+                // ❌ ไม่ใช้ downloadURL เพราะ expire ได้ - ใช้ slipPath แทน
+                // const downloadURL = await getDownloadURL(storageRef);
 
                 const q = query(collection(db, 'orders'), where('orderId', '==', orderId));
                 const snap = await getDocs(q);
@@ -152,7 +154,8 @@ export default function Payment() {
 
                     await updateDoc(orderDoc.ref, {
                         status: 'paid',
-                        slipUrl: downloadURL,
+                        slipPath: slipPath,  // ✅ เก็บ path แทน URL
+                        slipUrl: '', // ✅ เก็บว่างไว้ให้ admin ดึง real-time
                         transRef: transRef,
                         updatedAt: serverTimestamp(),
                         verifiedBy: 'PromptPay Triple Lock (Stable)'

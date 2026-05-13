@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, storage } from '../../lib/firebase';
+import { ref, getBytes } from 'firebase/storage';
 import { formatTHB, formatDateTime, ORDER_STATUSES } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -9,7 +10,23 @@ export default function OrderManager() {
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [trackingNum, setTrackingNum] = useState('');
+    const [slipImageData, setSlipImageData] = useState(null);
     const { addToast } = useToast();
+
+    // ✅ ดึงรูปภาพสลิปจาก Firebase Storage ด้วย real-time signing
+    const loadSlipImage = async (slipPath) => {
+        if (!slipPath) return null;
+        try {
+            const fileRef = ref(storage, slipPath);
+            const bytes = await getBytes(fileRef);
+            const blob = new Blob([bytes], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            return url;
+        } catch (error) {
+            console.error('❌ Failed to load slip image:', error);
+            return null;
+        }
+    };
 
     const load = async () => {
         try {
@@ -20,6 +37,15 @@ export default function OrderManager() {
     };
 
     useEffect(() => { load(); }, []);
+
+    // ✅ เมื่อเลือก order จะดึงรูปภาพสลิป
+    useEffect(() => {
+        if (selectedOrder && selectedOrder.slipPath) {
+            loadSlipImage(selectedOrder.slipPath).then(url => setSlipImageData(url));
+        } else {
+            setSlipImageData(null);
+        }
+    }, [selectedOrder]);
 
     const updateStatus = async (orderId, newStatus, tracking = '') => {
         try {
@@ -133,21 +159,17 @@ export default function OrderManager() {
                                         <h3 className="text-gray-800 dark:text-gray-100 font-bold mb-3 self-start text-xs">💳 สลิปการชำระเงิน</h3>
                                         {/* ล็อกขนาดสลิปเพื่อไม่ให้บังส่วนล่าง */}
                                         <div className="w-full max-w-[340px] aspect-[3/4] bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center relative">
-                                            {selectedOrder.slipUrl && selectedOrder.slipUrl.trim() ? (
-                                                <>
-                                                    <img
-                                                        src={selectedOrder.slipUrl}
-                                                        className="w-full h-full object-contain"
-                                                        alt="Payment Slip"
-                                                        crossOrigin="anonymous"
-                                                        onLoad={() => console.log('✅ Slip image loaded:', selectedOrder.slipUrl)}
-                                                        onError={(e) => {
-                                                            console.error('❌ Slip image failed to load:', selectedOrder.slipUrl);
-                                                            e.target.style.display = 'none';
-                                                            e.target.parentElement.innerHTML = '<div class="text-center"><p class="text-gray-400 text-xs font-bold">ไม่สามารถแสดงรูปภาพ</p><p class="text-gray-300 text-[10px] mt-2 break-all">' + selectedOrder.slipUrl + '</p></div>';
-                                                        }}
-                                                    />
-                                                </>
+                                            {slipImageData ? (
+                                                <img
+                                                    src={slipImageData}
+                                                    className="w-full h-full object-contain"
+                                                    alt="Payment Slip"
+                                                />
+                                            ) : selectedOrder.slipUrl && selectedOrder.slipUrl.trim() ? (
+                                                <div className="text-center p-4">
+                                                    <p className="text-gray-400 text-xs font-bold mb-2">📥 ดึงรูปภาพจาก Firebase Storage...</p>
+                                                    <p className="text-gray-300 text-[10px] break-all">{selectedOrder.slipUrl.slice(0, 100)}...</p>
+                                                </div>
                                             ) : (
                                                 <div className="text-center">
                                                     <p className="text-gray-400 text-xs italic">ยังไม่มีการแนบสลิป</p>
@@ -166,8 +188,8 @@ export default function OrderManager() {
                                                     key={key}
                                                     onClick={() => key !== 'shipped' ? updateStatus(selectedOrder.id, key) : setSelectedOrder({ ...selectedOrder, status: 'shipped' })}
                                                     className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${selectedOrder.status === key
-                                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                                         }`}
                                                 >
                                                     {val.label}
