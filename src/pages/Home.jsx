@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../lib/firebase';
-import { formatTHB, CATEGORIES } from '../lib/utils';
+import { db } from '../lib/firebase';
+import { CATEGORIES } from '../lib/utils';
 import { getCache, setCache, isCacheValid } from '../lib/cache';
 import ProductCard from '../components/products/ProductCard';
 

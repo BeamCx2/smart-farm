@@ -1,5 +1,4 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { getDatabase } from "firebase/database"; // สำคัญมากสำหรับ Smart Farm เพื่อดึงค่าเซนเซอร์
 
 const firebaseConfig = {
@@ -14,7 +13,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
-export const db = getDatabase(app); 
+export const db = getDatabase(app);
 export default app;

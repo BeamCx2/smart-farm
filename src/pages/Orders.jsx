@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,7 +46,7 @@ export default function Orders() {
         } catch (error) { console.error("Auto-cancel failed:", error); }
     };
 
-    const loadOrders = async () => {
+    const loadOrders = useCallback(async () => {
         if (!user) return;
         try {
             const q = query(
@@ -63,15 +63,13 @@ export default function Orders() {
             console.error("Error fetching orders:", error);
             setLoading(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         loadOrders();
-        // ✅ [OPTIMIZATION] ลด polling จาก 30 วินาที เป็น 2 นาที (120000ms)
-        // เพื่อลด Firestore reads และประหยัด bandwidth
         const interval = setInterval(loadOrders, 120 * 1000);
         return () => clearInterval(interval);
-    }, [user]);
+    }, [loadOrders]);
 
     const handlePaymentRedirect = (order) => {
         const paymentState = {
@@ -87,6 +85,16 @@ export default function Orders() {
 
     if (authLoading || loading) return <div className="p-20 text-center animate-pulse font-black text-emerald-600 uppercase">Fetching Orders...</div>;
     if (!user) return <Navigate to="/register" replace />;
+
+    // eslint-disable-next-line react-hooks/purity
+    const now = Math.floor(Date.now() / 1000);
+
+    // Check for expired pending orders
+    orders.forEach(order => {
+        const isPending = order.status === 'pending';
+        const isExpired = isPending && order.createdAt?.seconds && now > (order.createdAt.seconds + 86400);
+        if (isExpired) handleSyncAutoCancel(order.id);
+    });
 
     return (
         <section className="max-w-6xl mx-auto px-4 py-12 min-h-screen font-sans font-black transition-colors duration-300 bg-gradient-to-br from-white via-emerald-50/30 to-white dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -107,9 +115,7 @@ export default function Orders() {
                 {orders.map((order) => {
                     const statusCfg = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
                     const isPending = order.status === 'pending';
-                    const isExpired = isPending && order.createdAt?.seconds && Math.floor(Date.now() / 1000) > (order.createdAt.seconds + 86400);
-
-                    if (isExpired) handleSyncAutoCancel(order.id);
+                    const isExpired = isPending && order.createdAt?.seconds && now > (order.createdAt.seconds + 86400);
 
                     return (
                         <div key={order.id}

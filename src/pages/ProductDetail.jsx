@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -17,6 +17,28 @@ export default function ProductDetail() {
     const [imageZoom, setImageZoom] = useState(false);
     const { addToCart } = useCart();
     const { addToast } = useToast();
+
+    const loadRelatedProducts = useCallback(async (category, currentId) => {
+        try {
+            const q = query(
+                collection(db, 'products'),
+                where('category', '==', category),
+                where('status', '==', 'active'),
+                orderBy('createdAt', 'desc'),
+                limit(4)
+            );
+
+            const snapshot = await getDocs(q);
+            const related = snapshot.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(p => p.id !== currentId)
+                .slice(0, 3);
+
+            setRelatedProducts(related);
+        } catch (error) {
+            console.error("Error loading related products:", error);
+        }
+    }, []);
 
     useEffect(() => {
         if (!id) return;
@@ -40,29 +62,7 @@ export default function ProductDetail() {
         });
 
         return () => unsubscribe();
-    }, [id, navigate, addToast]);
-
-    const loadRelatedProducts = async (category, currentId) => {
-        try {
-            const q = query(
-                collection(db, 'products'),
-                where('category', '==', category),
-                where('status', '==', 'active'),
-                orderBy('createdAt', 'desc'),
-                limit(4)
-            );
-
-            const snapshot = await getDocs(q);
-            const related = snapshot.docs
-                .map(d => ({ id: d.id, ...d.data() }))
-                .filter(p => p.id !== currentId)
-                .slice(0, 3);
-
-            setRelatedProducts(related);
-        } catch (error) {
-            console.error("Error loading related products:", error);
-        }
-    };
+    }, [id, navigate, addToast, loadRelatedProducts]);
 
     const handleAddToCart = () => {
         if (product && product.stock >= quantity) {
@@ -111,9 +111,8 @@ export default function ProductDetail() {
                                 <img
                                     src={product.image || 'https://placehold.co/600x600/e8f5e9/2e7d32?text=Product'}
                                     alt={product.name}
-                                    className={`w-full aspect-square object-cover transition-all duration-500 ${
-                                        imageZoom ? 'scale-150' : 'group-hover:scale-105'
-                                    }`}
+                                    className={`w-full aspect-square object-cover transition-all duration-500 ${imageZoom ? 'scale-150' : 'group-hover:scale-105'
+                                        }`}
                                 />
 
                                 {/* Overlay badges */}
@@ -173,10 +172,9 @@ export default function ProductDetail() {
                             <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-lg font-bold text-gray-800 dark:text-gray-200">จำนวน</span>
-                                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${
-                                        product.stock <= 5 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                    }`}>
+                                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${product.stock <= 5 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                        }`}>
                                         คงเหลือ {product.stock} ชิ้น
                                     </span>
                                 </div>
@@ -214,11 +212,10 @@ export default function ProductDetail() {
                                 <button
                                     onClick={handleAddToCart}
                                     disabled={product.stock <= 0}
-                                    className={`w-full py-4 rounded-2xl font-black text-lg transition-all shadow-xl ${
-                                        product.stock <= 0
+                                    className={`w-full py-4 rounded-2xl font-black text-lg transition-all shadow-xl ${product.stock <= 0
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
                                             : 'btn-primary text-white hover:-translate-y-1 active:scale-95'
-                                    }`}
+                                        }`}
                                 >
                                     {product.stock <= 0 ? '❌ สินค้าหมดชั่วคราว' : `🛒 เพิ่มลงตะกร้า`}
                                 </button>

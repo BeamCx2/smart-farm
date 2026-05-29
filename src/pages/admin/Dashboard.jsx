@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { formatTHB, formatDate, ORDER_STATUSES } from '../../lib/utils';
+import { formatTHB, ORDER_STATUSES } from '../../lib/utils';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({

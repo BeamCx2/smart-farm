@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db, storage } from '../../lib/firebase';
 import { ref, getBytes } from 'firebase/storage';
-import { formatTHB, formatDateTime, ORDER_STATUSES } from '../../lib/utils';
+import { formatTHB, ORDER_STATUSES } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 
 export default function OrderManager() {
@@ -36,13 +36,17 @@ export default function OrderManager() {
         setLoading(false);
     };
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        load();
+    }, []);
 
     // ✅ เมื่อเลือก order จะดึงรูปภาพสลิป
     useEffect(() => {
         if (selectedOrder && selectedOrder.slipPath) {
             loadSlipImage(selectedOrder.slipPath).then(url => setSlipImageData(url));
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSlipImageData(null);
         }
     }, [selectedOrder]);

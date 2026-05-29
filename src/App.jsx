@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // --- 📦 Import Contexts ---
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -22,9 +21,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 // ✅ Import หน้า Payment, BankTransfer และ Receipt
-import Payment from './pages/payment'; 
+import Payment from './pages/payment';
 import BankTransfer from './pages/BankTransfer'; // 👈 เพิ่มตัวนี้
-import Receipt from './pages/Receipt'; 
+import Receipt from './pages/Receipt';
 
 // --- 👑 Import Pages (Admin) ---
 import Dashboard from './pages/admin/Dashboard';
@@ -34,7 +33,7 @@ import OrderManager from './pages/admin/OrderManager';
 // --- 🛡️ Component เฝ้าประตู (ProtectedRoute) ---
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
@@ -42,11 +41,11 @@ function ProtectedRoute({ children }) {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/register" replace />;
   }
-  
+
   return children;
 }
 
@@ -61,7 +60,7 @@ export default function App() {
               <Routes>
                 {/* 🏠 Main Layout Wrapper */}
                 <Route element={<Layout />}>
-                  
+
                   {/* 🔓 Public Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
@@ -73,7 +72,7 @@ export default function App() {
                   {/* 🔒 Private Routes */}
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-                  
+
                   {/* ✅ ช่องทางการชำระเงินต่างๆ */}
                   <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
                   <Route path="/bank-transfer" element={<ProtectedRoute><BankTransfer /></ProtectedRoute>} />
@@ -90,7 +89,7 @@ export default function App() {
 
                   {/* 🚫 404 - Redirect to Home */}
                   <Route path="*" element={<Navigate to="/" replace />} />
-                  
+
                 </Route>
               </Routes>
             </ToastProvider>

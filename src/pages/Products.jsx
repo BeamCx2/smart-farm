@@ -16,11 +16,7 @@ export default function Products() {
     const activeCategory = searchParams.get('category') || 'ทั้งหมด';
 
     useEffect(() => {
-        if (!isFirebaseConfigured) {
-            setProducts([]);
-            setLoading(false);
-            return;
-        }
+        if (!isFirebaseConfigured) return;
 
         const loadProducts = async () => {
             try {
@@ -185,8 +181,8 @@ export default function Products() {
                                 key={cat}
                                 onClick={() => setCategory(cat)}
                                 className={`px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 card-hover animate-fade-in-scale ${activeCategory === cat
-                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                                        : 'bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 text-gray-600 dark:text-gray-400 hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400'
+                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                    : 'bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 text-gray-600 dark:text-gray-400 hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400'
                                     }`}
                                 style={{ animationDelay: `${index * 0.05}s` }}
                             >

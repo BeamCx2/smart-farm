@@ -16,7 +16,7 @@ export const isCacheValid = (cacheKey) => {
         const cached = localStorage.getItem(`${CACHE_PREFIX}${cacheKey}`);
         if (!cached) return false;
 
-        const { timestamp, data } = JSON.parse(cached);
+        const { timestamp } = JSON.parse(cached);
         const now = Date.now();
         const isExpired = now - timestamp > DEFAULT_CACHE_TTL;
 

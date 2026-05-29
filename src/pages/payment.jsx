@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import {
     collection, query, where, getDocs, updateDoc,
     serverTimestamp, doc, increment
@@ -40,9 +40,9 @@ export default function Payment() {
             }
         };
         handleGenerateQR();
-    }, [amount, orderId]);
+    }, [amount, orderId, getSCBQR]);
 
-    const scanSlipForPayload = async (file) => {
+    const scanSlipForPayload = useCallback(async (file) => {
         const imageBitmap = await (window.createImageBitmap ? createImageBitmap(file) : new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -72,7 +72,7 @@ export default function Payment() {
         const code = jsQR(imageData.data, targetWidth, targetHeight);
         imageBitmap.close?.();
         return code ? code.data : null;
-    };
+    }, []);
 
     const handleUploadSlip = async (e) => {
         const file = e.target.files[0];
@@ -92,53 +92,42 @@ export default function Payment() {
             });
             const result = await verifyRes.json();
 
-            // ✨ [FIXED LOGIC]: เช็คผ่าน result.success ให้เหมือนหน้า Bank
             if (result && result.success === true) {
-
                 const slipResponse = result.data;
                 const slipData = slipResponse.rawSlip || slipResponse;
 
-                // 🛡️ [Triple Lock]: ดึงค่ามาตรวจสอบ
-                const receiverName = slipData.receiver?.account?.name?.th || "";
-                const receiverAccount = slipData.receiver?.account?.proxy?.account ||
-                    slipData.receiver?.account?.bank?.account || "";
                 const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
+                const receiverName = slipData.receiver?.account?.name?.th || "";
+                const receiverAccount = slipData.receiver?.account?.bank?.account || "";
                 const transRef = slipData.transRef;
 
-                // 🚀 ตรวจสอบชื่อ "ณัฐวุฒิ" และ เบอร์พร้อมเพย์ที่ลงท้ายด้วย "4218"
-                const isCorrectName = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
-                const isCorrectAccount = receiverAccount.includes("4218") || receiverAccount.includes("0822024218");
+                const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
+                const isAccountValid = receiverAccount.includes("4218");
                 const isAmountValid = Math.abs(Number(slipAmount) - Number(amount)) < 1;
 
-                if (!isCorrectName || !isCorrectAccount || !isAmountValid) {
+                if (!isNameValid || !isAccountValid || !isAmountValid) {
                     setUploading(false);
-                    let errorMsg = "";
-                    if (!isCorrectName) errorMsg += "[ชื่อผู้รับไม่ตรง] ";
-                    if (!isCorrectAccount) errorMsg += "[บัญชีรับเงินไม่ตรง] ";
-                    if (!isAmountValid) errorMsg += "[ยอดเงินไม่ตรง] ";
+                    let errorDetails = "";
+                    if (!isNameValid) errorDetails += "[ชื่อไม่ตรง] ";
+                    if (!isAccountValid) errorDetails += "[เลขบัญชีไม่ตรง] ";
+                    if (!isAmountValid) errorDetails += "[ยอดเงินไม่ตรง] ";
 
                     return setStatusModal({
-                        show: true,
-                        success: false,
-                        message: 'ข้อมูลไม่ถูกต้อง',
-                        details: errorMsg + `ตรวจพบ: ${receiverName} (${receiverAccount})`
+                        show: true, success: false,
+                        message: 'ข้อมูลในสลิปไม่ตรงเงื่อนไข',
+                        details: errorDetails + `ตรวจพบ: ${receiverName} ยอด ${slipAmount}บ.`
                     });
                 }
 
-                // 🛡️ [เช็คสลิปซ้ำ]
                 const duplicateQuery = query(collection(db, 'orders'), where('transRef', '==', transRef));
                 const duplicateSnap = await getDocs(duplicateQuery);
                 if (!duplicateSnap.empty) {
                     setUploading(false);
-                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `ธุรกรรม ${transRef} ถูกใช้งานแล้ว` });
+                    return setStatusModal({ show: true, success: false, message: 'สลิปนี้เคยใช้ไปแล้ว!', details: `รหัสธุรกรรม ${transRef} ถูกใช้งานแล้ว` });
                 }
 
-                // ✅ [ผ่านด่าน]: บันทึกข้อมูลและตัดสต๊อก
-                const slipPath = `slips/${orderId}_${Date.now()}.jpg`;
-                const storageRef = ref(storage, slipPath);
+                const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, file);
-                // ❌ ไม่ใช้ downloadURL เพราะ expire ได้ - ใช้ slipPath แทน
-                // const downloadURL = await getDownloadURL(storageRef);
 
                 const q = query(collection(db, 'orders'), where('orderId', '==', orderId));
                 const snap = await getDocs(q);
@@ -154,8 +143,7 @@ export default function Payment() {
 
                     await updateDoc(orderDoc.ref, {
                         status: 'paid',
-                        slipPath: slipPath,  // ✅ เก็บ path แทน URL
-                        slipUrl: '', // ✅ เก็บว่างไว้ให้ admin ดึง real-time
+                        slipPath: `slips/${orderId}_${Date.now()}.jpg`,
                         transRef: transRef,
                         updatedAt: serverTimestamp(),
                         verifiedBy: 'PromptPay Triple Lock (Stable)'
@@ -167,10 +155,9 @@ export default function Payment() {
             } else {
                 setUploading(false);
                 setStatusModal({
-                    show: true,
-                    success: false,
-                    message: 'สลิปไม่ถูกต้อง',
-                    details: result?.message || 'ข้อมูลตรวจสอบไม่ผ่านจากระบบธนาคาร'
+                    show: true, success: false,
+                    message: 'ตรวจสอบไม่สำเร็จ',
+                    details: result?.message || 'สลิปไม่ผ่านการตรวจสอบจากระบบธนาคาร'
                 });
             }
         } catch (error) {
@@ -180,22 +167,13 @@ export default function Payment() {
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden transition-colors duration-300">
-            {/* Background decorations */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/40 dark:bg-emerald-500/5 rounded-full blur-3xl animate-float"></div>
-                <div className="absolute top-40 right-20 w-24 h-24 bg-amber-200/40 dark:bg-cyan-500/5 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-emerald-300/20 dark:bg-emerald-400/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute bottom-20 right-10 w-28 h-28 bg-gray-200/30 dark:bg-slate-700/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '0.5s' }}></div>
-            </div>
-
-            <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in duration-500">
-                {/* Header */}
-                <div className="text-center mb-10 animate-fade-in-up">
-                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg dark:shadow-lg dark:shadow-emerald-900/30 animate-bounce">
+        <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6">
+            <div className="relative z-10 w-full max-w-md">
+                <div className="text-center mb-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                         <span className="text-3xl">💳</span>
                     </div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-2 leading-tight">
+                    <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-2">
                         ชำระเงิน
                     </h1>
                     <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -203,113 +181,70 @@ export default function Payment() {
                     </p>
                 </div>
 
-                {/* Main Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl dark:shadow-2xl dark:shadow-black/40 border border-gray-200 dark:border-gray-700 mb-8 animate-fade-in-up">
-                    {/* Order Summary */}
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-600">
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">รหัสคำสั่งซื้อ</p>
-                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-6">Order #{orderId}</p>
-
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">ยอดเงินที่ต้องชำระ</p>
-                        <p className="text-5xl font-black text-emerald-600 dark:text-emerald-400 leading-tight">
-                            {formatTHB(amount)}
-                        </p>
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 sm:p-8 space-y-6">
+                    <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 rounded-2xl p-6 text-center">
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">ยอดเงินที่ต้องชำระ</p>
+                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{formatTHB(amount)}</p>
                     </div>
 
-                    {/* QR Code Section */}
-                    <div className="mb-8">
-                        <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-4 text-center">
-                            📱 สแกน QR ด้านล่าง
-                        </p>
-                        <div className="flex justify-center bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg dark:shadow-lg dark:shadow-black/30 border-2 border-gray-300 dark:border-gray-600 transition-transform hover:scale-[1.02] duration-300">
-                            {loading ? (
-                                <div className="flex flex-col items-center justify-center gap-3">
-                                    <div className="animate-spin h-12 w-12 border-4 border-gray-300 dark:border-gray-600 border-t-emerald-600 dark:border-t-emerald-400 rounded-full"></div>
-                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">กำลังสร้าง QR Code...</p>
-                                </div>
-                            ) : qrRawData ? (
-                                <div className="flex flex-col items-center gap-3">
-                                    <QRCodeCanvas value={qrRawData} size={240} level="H" includeMargin={true} />
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">PromptPay QR Code</p>
-                                </div>
-                            ) : (
-                                <div className="text-center">
-                                    <div className="text-5xl mb-2">⏳</div>
-                                    <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">กำลังเตรียม...</p>
-                                </div>
-                            )}
+                    {loading ? (
+                        <div className="flex justify-center py-10">
+                            <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
                         </div>
-                    </div>
+                    ) : qrRawData ? (
+                        <div className="flex justify-center bg-gray-50 dark:bg-gray-700/50 p-6 rounded-2xl">
+                            <QRCodeCanvas value={qrRawData} size={256} level="H" includeMargin={true} />
+                        </div>
+                    ) : null}
 
-                    {/* Upload Slip Button */}
                     <div className="space-y-3">
-                        <label className={`block w-full py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest cursor-pointer transition-all duration-300 transform active:scale-95 shadow-lg border-2
-                            ${uploading
-                                ? 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 cursor-not-allowed border-gray-400 dark:border-gray-600'
-                                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-700 dark:hover:to-emerald-800 text-white shadow-emerald-500/40 dark:shadow-emerald-900/40 border-emerald-400 dark:border-emerald-700 hover:shadow-lg hover:-translate-y-0.5'}`}>
-                            {uploading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span>
-                                    ⚙️ กำลังตรวจสอบสลิป...
-                                </span>
-                            ) : (
-                                <span className="flex items-center justify-center gap-2">
-                                    📸 ยืนยันการโอน (แนบสลิป)
-                                </span>
-                            )}
-                            <input
-                                id="slip-upload-input"
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleUploadSlip}
-                                disabled={uploading || loading}
-                            />
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            📱 อัพโหลดใบเสร็จ
                         </label>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 text-center font-medium">
-                            ✓ AI ตรวจสลิปอัตโนมัติ • ระบบตัดสต๊อกทันที
-                        </p>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleUploadSlip}
+                            disabled={uploading}
+                            className="w-full px-4 py-3 border-2 border-dashed border-emerald-300 dark:border-emerald-600 rounded-xl text-sm file:hidden focus:outline-none focus:border-emerald-500 disabled:opacity-50 cursor-pointer"
+                        />
                     </div>
-                </div>
 
-                {/* Info Box */}
-                <div className="bg-blue-50 dark:bg-blue-900/30 rounded-2xl p-6 border border-blue-200 dark:border-blue-700/50 text-center animate-fade-in-up">
-                    <p className="text-xs text-gray-700 dark:text-gray-200">
-                    </p>
-                </div>
-            </div>
-
-            {/* Modal */}
-            {statusModal.show && (
-                <div className="fixed inset-0 z-[1000] bg-black/40 dark:bg-black/60 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-10 max-w-sm w-full shadow-2xl dark:shadow-2xl dark:shadow-black/50 border border-gray-200 dark:border-gray-700 text-center animate-in zoom-in-95 duration-300">
-                        <div className={`w-24 h-24 rounded-full mx-auto mb-8 flex items-center justify-center text-5xl font-black transition-transform
-                            ${statusModal.success
-                                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 scale-in-95 animate-bounce'
-                                : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'}`}>
-                            {statusModal.success ? '✓' : '✕'}
+                    {uploading && (
+                        <div className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                            <div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                            กำลังประมวลผล...
                         </div>
-                        <h2 className={`text-2xl font-black mb-4 leading-tight
-                            ${statusModal.success
-                                ? 'text-emerald-700 dark:text-emerald-400'
-                                : 'text-red-700 dark:text-red-400'}`}>
-                            {statusModal.message}
-                        </h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-8 leading-relaxed font-medium">
-                            {statusModal.details}
-                        </p>
-                        <button
-                            onClick={statusModal.success ? () => navigate(`/receipt/${orderId}`) : () => setStatusModal({ ...statusModal, show: false })}
-                            className={`w-full py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all duration-300 transform hover:-translate-y-1 shadow-lg active:scale-95
-                                ${statusModal.success
-                                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-700 dark:hover:to-emerald-800 text-white shadow-emerald-500/40 dark:shadow-emerald-900/40'
-                                    : 'bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white shadow-gray-500/30'}`}
-                        >
-                            {statusModal.success ? '👉 ดูใบเสร็จรับเงิน' : '🔄 ลองใหม่'}
-                        </button>
-                    </div>
+                    )}
                 </div>
-            )}
+
+                {statusModal.show && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full animate-in zoom-in">
+                            <div className="text-center mb-6">
+                                <div className="text-4xl mb-4">
+                                    {statusModal.success ? '✅' : '❌'}
+                                </div>
+                                <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+                                    {statusModal.message}
+                                </h2>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {statusModal.details}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setStatusModal({ show: false, success: false, message: '', details: null });
+                                    if (statusModal.success) navigate(`/receipt/${orderId}`);
+                                }}
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors"
+                            >
+                                ตกลง
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
