@@ -97,8 +97,15 @@ export function AuthProvider({ children }) {
         return cred.user;
     }
 
-    async function googleLogin() {
+    async function googleLogin(options = {}) {
+        const { forceRedirect = false } = options || {};
         const provider = new GoogleAuthProvider();
+        // If caller requests redirect explicitly, do it immediately.
+        if (forceRedirect) {
+            await signInWithRedirect(auth, provider);
+            return;
+        }
+
         try {
             const cred = await signInWithPopup(auth, provider);
             const user = cred.user;

@@ -48,6 +48,17 @@ export default function Login() {
         setLoading(false);
     };
 
+    const handleGoogleRedirect = async () => {
+        setLoading(true);
+        try {
+            // force redirect flow (will navigate away)
+            await googleLogin({ forceRedirect: true });
+        } catch (err) {
+            addToast('ไม่สามารถเริ่มการเข้าสู่ระบบด้วย Redirect: ' + (err.message || err), 'error');
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4 py-12 relative overflow-hidden">
             {/* Background decorations */}
@@ -186,6 +197,16 @@ export default function Login() {
                             </svg>
                             <span>เข้าสู่ระบบด้วย Google</span>
                         </button>
+                        <div className="text-center">
+                            <button
+                                type="button"
+                                onClick={handleGoogleRedirect}
+                                disabled={loading}
+                                className="mt-2 text-sm text-slate-400 hover:text-slate-200"
+                            >
+                                ลองด้วย Redirect แทน (ถ้า popup ถูกบล็อก)
+                            </button>
+                        </div>
                     </div>
 
                     {/* Register Link */}
