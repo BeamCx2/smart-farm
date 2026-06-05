@@ -186,11 +186,10 @@ export default function ChatBot() {
             {/* Chat Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl transition-all duration-300 z-50 ${
-                    isOpen
+                className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl transition-all duration-300 z-50 ${isOpen
                         ? 'bg-red-500 hover:bg-red-600 scale-110'
                         : 'bg-emerald-500 hover:bg-emerald-600 hover:scale-110'
-                }`}
+                    }`}
             >
                 {isOpen ? (
                     <span className="text-white text-2xl">✕</span>
@@ -216,11 +215,10 @@ export default function ChatBot() {
                                 className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div
-                                    className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                                        msg.sender === 'user'
+                                    className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'user'
                                             ? 'bg-emerald-500 text-white'
                                             : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                                    }`}
+                                        }`}
                                 >
                                     <p className="whitespace-pre-line">{msg.text}</p>
                                     <p className="text-xs opacity-60 mt-1">
@@ -257,15 +255,15 @@ export default function ChatBot() {
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
                                 placeholder="ถามอะไรเกี่ยวกับผัก..."
-                                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:border-emerald-400 dark:bg-gray-800 dark:text-white"
+                                className="flex-1 px-4 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:border-emerald-500 transition-colors placeholder-gray-500"
                                 disabled={isTyping}
                             />
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!inputMessage.trim() || isTyping}
-                                className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-lg font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                             >
-                                <span className="text-sm">ส่ง</span>
+                                <span className="text-sm font-bold">📤 ส่ง</span>
                             </button>
                         </div>
                     </div>

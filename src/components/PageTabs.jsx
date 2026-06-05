@@ -19,14 +19,14 @@ const PageTabs = ({ tabs = [], onTabChange = () => { } }) => {
     const tabList = tabs.length > 0 ? tabs : defaultTabs;
 
     return (
-        <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 rounded-lg shadow-md">
+        <div className="flex items-center justify-center gap-3 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 flex-wrap">
             {tabList.map((tab, index) => (
                 <button
                     key={tab.id || index}
                     onClick={() => handleTabClick(index)}
-                    className={`px-6 py-2 rounded-lg font-black text-sm uppercase tracking-wide transition-all duration-300 whitespace-nowrap ${activeTab === index
-                            ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 shadow-sm'
+                    className={`px-6 py-3 rounded-xl font-semibold text-sm uppercase tracking-wider transition-all duration-300 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${activeTab === index
+                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600'
                         }`}
                 >
                     {tab.label}

@@ -24,9 +24,9 @@ export default function Footer() {
                         <input
                             type="email"
                             placeholder="your@email.com"
-                            className="flex-1 px-4 py-3 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-gray-300 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
+                            className="flex-1 px-4 py-3 rounded-xl border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white placeholder-gray-300 focus:border-emerald-400 focus:bg-white/20 outline-none transition-all"
                         />
-                        <button className="btn-primary px-6 py-3 text-white font-bold rounded-2xl shadow-xl transition-all hover:-translate-y-1">
+                        <button className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95">
                             สมัครเลย
                         </button>
                     </div>

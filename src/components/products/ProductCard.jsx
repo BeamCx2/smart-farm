@@ -49,9 +49,9 @@ export default function ProductCard({ product }) {
                     <button
                         onClick={handleAdd}
                         disabled={product.stock <= 0}
-                        className="bg-white text-gray-900 px-6 py-3 rounded-2xl font-bold shadow-xl hover:bg-emerald-50 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-white hover:bg-emerald-50 text-gray-900 px-8 py-3 rounded-xl font-bold shadow-xl transition-all hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {product.stock <= 0 ? 'สินค้าหมด' : 'เพิ่มลงตะกร้า'}
+                        {product.stock <= 0 ? 'สินค้าหมด' : '🛒 เพิ่มลงตะกร้า'}
                     </button>
                 </div>
             </div>

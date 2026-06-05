@@ -183,12 +183,12 @@ export default function Orders() {
                                 {isPending && !isExpired ? (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handlePaymentRedirect(order); }}
-                                        className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg text-xs font-black uppercase tracking-wide shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
+                                        className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-lg text-xs font-bold uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95"
                                     >
                                         💳 ชำระเงิน
                                     </button>
                                 ) : (
-                                    <span className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase">
+                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
                                         {order.status === 'finished' ? '✅ เสร็จสิ้น' : order.status === 'cancelled' ? '❌ ยกเลิก' : 'รอดำเนินการ'}
                                     </span>
                                 )}

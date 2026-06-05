@@ -173,7 +173,7 @@ export default function ProductDetail() {
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-lg font-bold text-gray-800 dark:text-gray-200">จำนวน</span>
                                     <span className={`text-sm font-bold px-3 py-1 rounded-full ${product.stock <= 5 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                                         }`}>
                                         คงเหลือ {product.stock} ชิ้น
                                     </span>
@@ -212,20 +212,20 @@ export default function ProductDetail() {
                                 <button
                                     onClick={handleAddToCart}
                                     disabled={product.stock <= 0}
-                                    className={`w-full py-4 rounded-2xl font-black text-lg transition-all shadow-xl ${product.stock <= 0
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
-                                            : 'btn-primary text-white hover:-translate-y-1 active:scale-95'
+                                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${product.stock <= 0
+                                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white hover:shadow-xl hover:-translate-y-1 active:scale-95'
                                         }`}
                                 >
                                     {product.stock <= 0 ? '❌ สินค้าหมดชั่วคราว' : `🛒 เพิ่มลงตะกร้า`}
                                 </button>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <button className="btn-secondary py-3 rounded-2xl font-bold transition-all hover:-translate-y-0.5">
-                                        ❤️ เพิ่มในรายการโปรด
+                                    <button className="px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition-all hover:-translate-y-0.5 active:scale-95 border border-gray-300 dark:border-gray-700">
+                                        ❤️ โปรด
                                     </button>
-                                    <button className="btn-secondary py-3 rounded-2xl font-bold transition-all hover:-translate-y-0.5">
-                                        📤 แชร์สินค้า
+                                    <button className="px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition-all hover:-translate-y-0.5 active:scale-95 border border-gray-300 dark:border-gray-700">
+                                        📤 แชร์
                                     </button>
                                 </div>
                             </div>

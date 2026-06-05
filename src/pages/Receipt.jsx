@@ -77,13 +77,13 @@ export default function Receipt() {
         <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6 sm:p-12 font-sans overflow-x-hidden text-gray-800">
 
             {/* 🛠 Toolbar (no-print) */}
-            <div className="max-w-md w-full flex justify-end gap-2 mb-4 no-print text-white">
-                <button onClick={handlePrint} className="p-3 bg-emerald-600 rounded-2xl shadow-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-2">
-                    <span className="text-xl">🖨️</span>
-                    <span className="text-[10px] font-black uppercase">Print</span>
+            <div className="max-w-md w-full flex justify-end gap-3 mb-4 no-print">
+                <button onClick={handlePrint} className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 font-semibold">
+                    <span className="text-lg">🖨️</span>
+                    <span className="text-sm font-bold uppercase">Print</span>
                 </button>
-                <button onClick={() => navigate('/')} className="p-3 bg-gray-900 rounded-2xl shadow-xl hover:bg-black transition-all">
-                    <span className="text-[10px] font-black uppercase">Home</span>
+                <button onClick={() => navigate('/')} className="px-5 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all font-semibold">
+                    <span className="text-sm font-bold uppercase">🏠 Home</span>
                 </button>
             </div>
 

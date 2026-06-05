@@ -5,6 +5,8 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     updateProfile,
+    GoogleAuthProvider,
+    signInWithPopup,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -60,6 +62,43 @@ export function AuthProvider({ children }) {
         return cred.user;
     }
 
+    async function googleLogin() {
+        const provider = new GoogleAuthProvider();
+        const cred = await signInWithPopup(auth, provider);
+        const user = cred.user;
+
+        if (!user) {
+            throw new Error('ไม่สามารถเข้าสู่ระบบด้วย Google ได้ในขณะนี้');
+        }
+
+        const userDoc = doc(db, 'users', user.uid);
+        const snap = await getDoc(userDoc);
+
+        const profileData = {
+            name: user.displayName || '',
+            email: user.email || '',
+            role: 'customer',
+            photoURL: user.photoURL || '',
+            updatedAt: serverTimestamp(),
+        };
+
+        try {
+            if (!snap.exists()) {
+                await setDoc(userDoc, {
+                    ...profileData,
+                    createdAt: serverTimestamp(),
+                });
+            } else {
+                await setDoc(userDoc, profileData, { merge: true });
+            }
+        } catch (e) {
+            console.warn('Could not save Google user profile to Firestore:', e.message);
+        }
+
+        setUserProfile(profileData);
+        return user;
+    }
+
     async function logout() {
         await signOut(auth);
     }
@@ -67,7 +106,7 @@ export function AuthProvider({ children }) {
     const isAdmin = userProfile?.role === 'admin';
 
     return (
-        <AuthContext.Provider value={{ user, userProfile, loading, login, register, logout, isAdmin }}>
+        <AuthContext.Provider value={{ user, userProfile, loading, login, googleLogin, register, logout, isAdmin }}>
             {children}
         </AuthContext.Provider>
     );

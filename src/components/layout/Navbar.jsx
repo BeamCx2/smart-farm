@@ -18,10 +18,10 @@ export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
 
     return (
-        <nav className="sticky top-0 z-50 glass border-b border-white/20 dark:border-gray-700/50 transition-all duration-300">
+        <nav className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 shadow-sm transition-all duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                 {/* Brand */}
-                <Link to="/" className="flex items-center gap-3 font-black text-xl text-emerald-700 dark:text-emerald-400 hover:scale-105 transition-transform">
+                <Link to="/" className="flex items-center gap-3 font-black text-xl text-white hover:scale-105 transition-transform">
                     <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-lg shadow-lg animate-float">
                         🌱
                     </div>
@@ -34,11 +34,10 @@ export default function Navbar() {
                         <Link
                             key={l.to}
                             to={l.to}
-                            className={`relative px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-300 group ${
-                                location.pathname === l.to
-                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-lg'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-gray-800/50'
-                            }`}
+                            className={`relative px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-300 group ${location.pathname === l.to
+                                ? 'bg-emerald-500/10 text-white shadow-lg'
+                                : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+                                }`}
                         >
                             <span className="relative z-10">{l.label}</span>
                             {location.pathname === l.to && (
@@ -50,25 +49,24 @@ export default function Navbar() {
                     {isAdmin && (
                         <Link
                             to="/admin"
-                            className={`relative px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-300 group ${
-                                location.pathname.startsWith('/admin')
-                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-lg'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-gray-800/50'
-                            }`}
+                            className={`relative px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 group ${location.pathname.startsWith('/admin')
+                                ? 'bg-emerald-600 text-white shadow-lg'
+                                : 'text-slate-300 hover:text-white hover:bg-slate-800/70 border border-slate-800'
+                                }`}
                         >
-                            <span className="relative z-10">👑 แอดมิน</span>
+                            <span className="relative z-10 flex items-center gap-2">👑 แอดมิน</span>
                         </Link>
                     )}
 
                     {/* Cart */}
                     <Link
                         to="/cart"
-                        className="relative px-4 py-2.5 rounded-2xl text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all hover:bg-white/50 dark:hover:bg-gray-800/50 group"
+                        className="relative px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white transition-all hover:bg-slate-800/70 border border-slate-800 group"
                     >
                         <span className="flex items-center gap-2">
                             🛒 ตะกร้า
                             {totalItems > 0 && (
-                                <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center animate-bounce shadow-lg">
+                                <span className="bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center animate-bounce shadow-lg">
                                     {totalItems}
                                 </span>
                             )}
@@ -78,7 +76,7 @@ export default function Navbar() {
                     {/* Dark mode */}
                     <button
                         onClick={toggle}
-                        className="p-2.5 rounded-2xl text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all hover:scale-110"
+                        className="p-2.5 rounded-xl text-slate-300 hover:bg-slate-800/70 border border-slate-800 transition-all hover:scale-110"
                         title="Toggle dark mode"
                     >
                         <span className="text-lg">{dark ? '☀️' : '🌙'}</span>
@@ -87,29 +85,29 @@ export default function Navbar() {
                     {/* Auth */}
                     {user ? (
                         <div className="flex items-center gap-3 ml-2">
-                            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/50 dark:bg-gray-800/50">
-                                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700">
+                                <span className="text-sm font-semibold text-white">
                                     👋 {user.displayName || 'User'}
                                 </span>
                             </div>
                             <button
                                 onClick={logout}
-                                className="px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-all hover:scale-105"
+                                className="px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-900/20 rounded-xl border border-slate-700 transition-all hover:scale-105 active:scale-95"
                             >
-                                ออกจากระบบ
+                                ออก
                             </button>
                         </div>
                     ) : (
                         <div className="flex items-center gap-3 ml-2">
                             <Link
                                 to="/login"
-                                className="px-5 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-400 rounded-2xl transition-all hover:bg-white/50 dark:hover:bg-gray-800/50"
+                                className="px-5 py-2.5 text-sm font-semibold text-slate-300 hover:text-white rounded-2xl transition-all hover:bg-slate-800/70"
                             >
                                 เข้าสู่ระบบ
                             </Link>
                             <Link
                                 to="/register"
-                                className="btn-primary px-6 py-2.5 text-sm font-bold text-white rounded-2xl shadow-lg transition-all hover:-translate-y-0.5"
+                                className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl shadow-lg bg-emerald-600 hover:bg-emerald-500 transition-all hover:-translate-y-0.5"
                             >
                                 สมัครสมาชิก
                             </Link>
@@ -127,34 +125,34 @@ export default function Navbar() {
                             </span>
                         )}
                     </Link>
-                    <button onClick={toggle} className="p-2 text-gray-500">{dark ? '☀️' : '🌙'}</button>
+                    <button onClick={toggle} className="p-2 text-slate-300 hover:text-white">{dark ? '☀️' : '🌙'}</button>
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
-                        className="p-2 flex flex-col justify-center items-center gap-1.5"
+                        className="p-2 flex flex-col justify-center items-center gap-1.5 text-slate-300"
                     >
-                        <span className={`block w-6 h-0.5 bg-gray-700 dark:bg-gray-300 transition-all ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-                        <span className={`block w-6 h-0.5 bg-gray-700 dark:bg-gray-300 transition-all ${menuOpen ? 'opacity-0' : ''}`} />
-                        <span className={`block w-6 h-0.5 bg-gray-700 dark:bg-gray-300 transition-all ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                        <span className={`block w-6 h-0.5 bg-slate-500 transition-all ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                        <span className={`block w-6 h-0.5 bg-slate-500 transition-all ${menuOpen ? 'opacity-0' : ''}`} />
+                        <span className={`block w-6 h-0.5 bg-slate-500 transition-all ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
                     </button>
                 </div>
             </div>
 
             {/* Mobile menu */}
             {menuOpen && (
-                <div className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-2 animate-[slideDown_0.2s_ease-out]">
+                <div className="md:hidden border-t border-slate-800 bg-slate-950 p-4 space-y-2 animate-[slideDown_0.2s_ease-out]">
                     {NAV_LINKS.map((l) => (
                         <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)}
-                            className="block px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-gray-800">
+                            className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70">
                             {l.label}
                         </Link>
                     ))}
                     {isAdmin && (
                         <Link to="/admin" onClick={() => setMenuOpen(false)}
-                            className="block px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-gray-800">
+                            className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70">
                             แอดมิน
                         </Link>
                     )}
-                    <hr className="border-gray-200 dark:border-gray-800" />
+                    <hr className="border-slate-800" />
                     {user ? (
                         <button onClick={() => { logout(); setMenuOpen(false); }}
                             className="block w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-600">
@@ -162,7 +160,7 @@ export default function Navbar() {
                         </button>
                     ) : (
                         <>
-                            <Link to="/login" onClick={() => setMenuOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300">เข้าสู่ระบบ</Link>
+                            <Link to="/login" onClick={() => setMenuOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70">เข้าสู่ระบบ</Link>
                             <Link to="/register" onClick={() => setMenuOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-semibold text-center bg-emerald-600 text-white">สมัครสมาชิก</Link>
                         </>
                     )}

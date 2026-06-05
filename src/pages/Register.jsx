@@ -32,9 +32,9 @@ export default function Register() {
         } catch (err) {
             addToast(
                 err.code === 'auth/email-already-in-use' ? 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่นหรือเข้าสู่ระบบ' :
-                err.code === 'auth/weak-password' ? 'รหัสผ่านควรมีความยาวอย่างน้อย 6 ตัวอักษร' :
-                err.code === 'auth/invalid-email' ? 'กรุณาป้อนอีเมลที่ถูกต้อง' :
-                'เกิดข้อผิดพลาดในการสมัครสมาชิก: ' + err.message,
+                    err.code === 'auth/weak-password' ? 'รหัสผ่านควรมีความยาวอย่างน้อย 6 ตัวอักษร' :
+                        err.code === 'auth/invalid-email' ? 'กรุณาป้อนอีเมลที่ถูกต้อง' :
+                            'เกิดข้อผิดพลาดในการสมัครสมาชิก: ' + err.message,
                 'error'
             );
         }
@@ -42,13 +42,12 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-emerald-950 dark:via-gray-900 dark:to-emerald-900 flex items-center justify-center px-4 py-12 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4 py-12 relative overflow-hidden">
             {/* Background decorations */}
             <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/30 rounded-full blur-xl animate-float"></div>
-                <div className="absolute top-40 right-20 w-24 h-24 bg-amber-200/40 rounded-full blur-lg animate-float" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-emerald-300/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute bottom-20 right-10 w-20 h-20 bg-white/20 rounded-full blur-md animate-float" style={{ animationDelay: '0.5s' }}></div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full bg-emerald-500/10 blur-3xl"></div>
+                <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-slate-700/70 blur-2xl"></div>
+                <div className="absolute top-24 right-10 w-32 h-32 rounded-full bg-slate-800/70 blur-2xl"></div>
             </div>
 
             <div className="w-full max-w-md relative z-10 animate-fade-in-up">
@@ -57,16 +56,13 @@ export default function Register() {
                     <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-float">
                         <span className="text-2xl">🌱</span>
                     </div>
-                    <h1 className="text-3xl font-black gradient-text mb-2">สร้างบัญชีใหม่</h1>
-                    <p className="text-gray-600 dark:text-gray-400">เข้าร่วมครอบครัว Smart Farm และเริ่มช้อปปิ้งสินค้าเกษตรอินทรีย์</p>
-                </div>
-
-                {/* Register Form */}
-                <div className="glass rounded-3xl p-8 shadow-2xl">
+                    <h1 className="text-3xl font-black text-white mb-2">สร้างบัญชีใหม่</h1>
+                    <p className="text-slate-400">เข้าร่วมครอบครัว Smart Farm และเริ่มช้อปปิ้งสินค้าเกษตรอินทรีย์</p>
+                    <div className="absolute inset-x-0 top-0 h-1 rounded-t-[28px] bg-gradient-to-r from-emerald-500 to-sky-500"></div>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Name */}
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                            <label className="block text-sm font-bold text-slate-200">
                                 ชื่อ-นามสกุล <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
@@ -75,10 +71,10 @@ export default function Register() {
                                     value={form.name}
                                     onChange={handleChange}
                                     required
-                                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-white/20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:border-emerald-400 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all text-sm placeholder-gray-400"
+                                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-700 bg-slate-950 text-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm placeholder-slate-400"
                                     placeholder="สมชาย ใจดี"
                                 />
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
@@ -88,7 +84,7 @@ export default function Register() {
 
                         {/* Email */}
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                            <label className="block text-sm font-bold text-slate-200">
                                 อีเมล <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
@@ -98,10 +94,10 @@ export default function Register() {
                                     value={form.email}
                                     onChange={handleChange}
                                     required
-                                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-white/20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:border-emerald-400 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all text-sm placeholder-gray-400"
+                                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-700 bg-slate-950 text-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm placeholder-slate-400"
                                     placeholder="your@email.com"
                                 />
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                                     </svg>
@@ -111,7 +107,7 @@ export default function Register() {
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                            <label className="block text-sm font-bold text-slate-200">
                                 รหัสผ่าน <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
@@ -122,10 +118,10 @@ export default function Register() {
                                     onChange={handleChange}
                                     required
                                     minLength={6}
-                                    className="w-full pl-12 pr-12 py-4 rounded-2xl border border-white/20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:border-emerald-400 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all text-sm placeholder-gray-400"
+                                    className="w-full pl-12 pr-12 py-4 rounded-2xl border border-slate-700 bg-slate-950 text-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm placeholder-slate-400"
                                     placeholder="อย่างน้อย 6 ตัวอักษร"
                                 />
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
@@ -133,7 +129,7 @@ export default function Register() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
                                 >
                                     {showPassword ? (
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,12 +143,12 @@ export default function Register() {
                                     )}
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</p>
+                            <p className="text-xs text-slate-500">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</p>
                         </div>
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                            <label className="block text-sm font-bold text-slate-200">
                                 ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
@@ -162,10 +158,10 @@ export default function Register() {
                                     value={form.password2}
                                     onChange={handleChange}
                                     required
-                                    className="w-full pl-12 pr-12 py-4 rounded-2xl border border-white/20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:border-emerald-400 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all text-sm placeholder-gray-400"
+                                    className="w-full pl-12 pr-12 py-4 rounded-2xl border border-slate-700 bg-slate-950 text-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm placeholder-slate-400"
                                     placeholder="ยืนยันรหัสผ่าน"
                                 />
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -173,7 +169,7 @@ export default function Register() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword2(!showPassword2)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
                                 >
                                     {showPassword2 ? (
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,7 +189,7 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full btn-primary py-4 text-white font-bold rounded-2xl shadow-xl transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 inline-flex items-center justify-center gap-2"
+                            className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 inline-flex items-center justify-center gap-2 text-base"
                         >
                             {loading ? (
                                 <>
@@ -213,17 +209,17 @@ export default function Register() {
 
                     {/* Terms */}
                     <div className="text-center mt-6">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-slate-500">
                             การสมัครสมาชิกแสดงว่าคุณยอมรับ
-                            <Link to="/terms" className="text-emerald-600 hover:text-emerald-700 font-medium"> นโยบายและเงื่อนไข</Link>
+                            <Link to="/terms" className="text-emerald-400 hover:text-emerald-300 font-medium"> นโยบายและเงื่อนไข</Link>
                         </p>
                     </div>
 
                     {/* Login Link */}
-                    <div className="text-center mt-6 pt-6 border-t border-white/20">
-                        <p className="text-gray-600 dark:text-gray-400">
+                    <div className="text-center mt-6 pt-6 border-t border-slate-800">
+                        <p className="text-slate-400">
                             มีบัญชีอยู่แล้ว?
-                            <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-bold ml-2 transition-colors">
+                            <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-bold ml-2 transition-colors">
                                 เข้าสู่ระบบ
                             </Link>
                         </p>
@@ -232,7 +228,7 @@ export default function Register() {
 
                 {/* Footer */}
                 <div className="text-center mt-8">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-slate-500">
                         เข้าร่วมกับเรามากกว่า 10,000+ คนแล้ว 🌱
                     </p>
                 </div>
