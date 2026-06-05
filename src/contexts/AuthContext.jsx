@@ -7,6 +7,7 @@ import {
     updateProfile,
     GoogleAuthProvider,
     signInWithPopup,
+    signInWithRedirect,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -64,13 +65,35 @@ export function AuthProvider({ children }) {
 
     async function googleLogin() {
         const provider = new GoogleAuthProvider();
-        const cred = await signInWithPopup(auth, provider);
-        const user = cred.user;
+        try {
+            const cred = await signInWithPopup(auth, provider);
+            const user = cred.user;
 
-        if (!user) {
-            throw new Error('ไม่สามารถเข้าสู่ระบบด้วย Google ได้ในขณะนี้');
+            if (!user) {
+                throw new Error('ไม่สามารถเข้าสู่ระบบด้วย Google ได้ในขณะนี้');
+            }
+
+            // proceed with profile save below
+            return await handlePostSignIn(user);
+        } catch (err) {
+            // If popup is blocked or environment doesn't support popup, fallback to redirect
+            const fallbackCodes = [
+                'auth/popup-blocked',
+                'auth/operation-not-supported-in-this-environment',
+                'auth/cancelled-popup-request',
+            ];
+            if (fallbackCodes.includes(err.code)) {
+                // start redirect flow — this will navigate away
+                await signInWithRedirect(auth, provider);
+                return;
+            }
+            // rethrow other errors
+            throw err;
         }
+    }
 
+    // Extracted helper to save user profile after sign-in
+    async function handlePostSignIn(user) {
         const userDoc = doc(db, 'users', user.uid);
         const snap = await getDoc(userDoc);
 
