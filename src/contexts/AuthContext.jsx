@@ -8,6 +8,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     signInWithRedirect,
+    getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [redirectError, setRedirectError] = useState(null);
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -39,6 +41,38 @@ export function AuthProvider({ children }) {
             setLoading(false);
         });
         return unsub;
+    }, []);
+
+    // Handle redirect result when using signInWithRedirect
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (!mounted) return;
+                if (result && result.user) {
+                    // Save profile if needed
+                    await handlePostSignIn(result.user);
+                }
+            } catch (err) {
+                if (!mounted) return;
+                // Map common auth errors to user-friendly messages
+                const code = err?.code || '';
+                let message = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google';
+                if (code === 'auth/invalid-action-code' || code === 'auth/expired-action-code') {
+                    message = 'ลิงก์ไม่ถูกต้องหรือหมดอายุแล้ว';
+                } else if (code === 'auth/user-disabled') {
+                    message = 'บัญชีนี้ถูกปิดใช้งาน';
+                } else if (code === 'auth/popup-closed-by-user') {
+                    message = 'คุณปิดหน้าต่างยืนยันก่อนจะเสร็จ';
+                } else if (code === 'auth/cancelled-popup-request') {
+                    message = 'คำขอถูกยกเลิก กรุณาลองอีกครั้ง';
+                }
+                setRedirectError(message + (err.message ? (': ' + err.message) : ''));
+            }
+        })();
+
+        return () => { mounted = false; };
     }, []);
 
     async function login(email, password) {
@@ -122,6 +156,10 @@ export function AuthProvider({ children }) {
         return user;
     }
 
+    function clearRedirectError() {
+        setRedirectError(null);
+    }
+
     async function logout() {
         await signOut(auth);
     }
@@ -129,7 +167,7 @@ export function AuthProvider({ children }) {
     const isAdmin = userProfile?.role === 'admin';
 
     return (
-        <AuthContext.Provider value={{ user, userProfile, loading, login, googleLogin, register, logout, isAdmin }}>
+        <AuthContext.Provider value={{ user, userProfile, loading, login, googleLogin, register, logout, isAdmin, redirectError, clearRedirectError }}>
             {children}
         </AuthContext.Provider>
     );

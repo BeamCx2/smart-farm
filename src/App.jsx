@@ -19,6 +19,7 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AuthRedirectHandler from './components/AuthRedirectHandler';
 
 // ✅ Import หน้า Payment, BankTransfer และ Receipt
 import Payment from './pages/payment';
@@ -57,6 +58,8 @@ export default function App() {
         <AuthProvider>
           <CartProvider>
             <ToastProvider>
+              {/* Surface redirect errors from Firebase (signInWithRedirect) */}
+              <AuthRedirectHandler />
               <Routes>
                 {/* 🏠 Main Layout Wrapper */}
                 <Route element={<Layout />}>
