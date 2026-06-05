@@ -97,8 +97,10 @@ export function AuthProvider({ children }) {
         return cred.user;
     }
 
+    // By default use redirect flow to avoid popup blockers; pass { forceRedirect: false }
+    // to attempt popup first.
     async function googleLogin(options = {}) {
-        const { forceRedirect = false } = options || {};
+        const { forceRedirect = true } = options || {};
         const provider = new GoogleAuthProvider();
         // If caller requests redirect explicitly, do it immediately.
         if (forceRedirect) {
