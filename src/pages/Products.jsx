@@ -10,10 +10,15 @@ export default function Products() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchParams, setSearchParams] = useSearchParams();
-    const [search, setSearch] = useState('');
+    const activeCategory = searchParams.get('category') || 'ทั้งหมด';
+    const activeSearchQuery = searchParams.get('search') || '';
+    const [search, setSearch] = useState(activeSearchQuery);
     const [sortBy, setSortBy] = useState('newest');
     const [showFilters, setShowFilters] = useState(false);
-    const activeCategory = searchParams.get('category') || 'ทั้งหมด';
+
+    useEffect(() => {
+        setSearch(activeSearchQuery);
+    }, [activeSearchQuery]);
 
     useEffect(() => {
         if (!isFirebaseConfigured) return;
@@ -134,7 +139,16 @@ export default function Products() {
                                 <input
                                     type="text"
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setSearch(value);
+                                        if (value.trim()) {
+                                            searchParams.set('search', value);
+                                        } else {
+                                            searchParams.delete('search');
+                                        }
+                                        setSearchParams(searchParams);
+                                    }}
                                     placeholder="ค้นหาผักสด ผลไม้..."
                                     className="w-full pl-12 pr-4 py-3 rounded-2xl border border-white/20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-sm focus:border-emerald-400 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all shadow-lg"
                                 />

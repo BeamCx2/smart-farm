@@ -10,13 +10,10 @@ export default function Home() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // ในไฟล์ src/pages/Home.jsx
     useEffect(() => {
         async function load() {
             try {
                 setLoading(true);
-
-                // ✅ [OPTIMIZATION] ตรวจสอบ cache ก่อน
                 const cacheKey = 'home_featured_products';
                 if (isCacheValid(cacheKey)) {
                     const cachedData = getCache(cacheKey);
@@ -25,18 +22,14 @@ export default function Home() {
                     return;
                 }
 
-                // ✅ [OPTIMIZATION] ใช้ orderBy + limit ระดับ query แล้ว
                 const q = query(
                     collection(db, 'products'),
                     where('status', '==', 'active'),
                     orderBy('createdAt', 'desc'),
-                    limit(8) // ✅ จำกัดที่ query level
+                    limit(8)
                 );
                 const snap = await getDocs(q);
-
                 const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-                // ✅ เก็บใน cache
                 setCache(cacheKey, data);
                 setProducts(data);
             } catch (e) {
@@ -50,103 +43,126 @@ export default function Home() {
 
     return (
         <>
-            {/* Hero Section */}
-            <section className="relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 dark:from-emerald-950 dark:via-emerald-900 dark:to-emerald-800 text-white overflow-hidden min-h-screen flex items-center">
-                {/* Animated background pattern */}
-                <div className="absolute inset-0 opacity-10 animate-float">
-                    <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-                    <div className="absolute top-40 right-20 w-24 h-24 bg-amber-400/20 rounded-full blur-lg"></div>
-                    <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-emerald-400/10 rounded-full blur-2xl"></div>
-                    <div className="absolute bottom-20 right-10 w-20 h-20 bg-white/5 rounded-full blur-md"></div>
-                </div>
+            <section className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+                    <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-center">
+                        <div className="space-y-6">
+                            <div className="inline-flex items-center gap-3 rounded-full bg-red-500/10 text-red-700 px-4 py-2 text-sm font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-red-500 block" />
+                                สินค้าขายดี ราคาสุดคุ้ม ทุกวัน
+                            </div>
 
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 text-center animate-fade-in-up">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-sm font-medium mb-6">
-                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                        สินค้าเกษตรอินทรีย์คุณภาพสูง
-                    </div>
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
+                                สินค้าขายดี ราคาสุดคุ้ม
+                                <span className="block text-red-600 mt-3">ผลไม้ตามฤดูกาล ผลไม้นำเข้า ราคาพิเศษ</span>
+                            </h1>
 
-                    <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight gradient-text animate-fade-in-scale">
-                        สดจากฟาร์ม<br />
-                        <span className="text-amber-400">ถึงโต๊ะของคุณ</span> 🌾
-                    </h1>
+                            <p className="max-w-2xl text-base sm:text-lg text-slate-600 dark:text-slate-300">
+                                เว็บร้านค้าเกษตรสดใหม่ พร้อมโปรโมชั่นที่ตอบโจทย์ทั้งลูกค้าร้านและลูกค้าผู้ค้าส่ง
+                                ซื้อวันนี้ส่งไว มีบริการติดตามออเดอร์และตรวจสอบค่าขนส่งทันที
+                            </p>
 
-                    <p className="text-lg md:text-xl opacity-90 max-w-2xl mx-auto mb-10 leading-relaxed">
-                        สินค้าเกษตรอินทรีย์คุณภาพ ปลูกด้วยใจ ราคาที่เข้าถึงได้
-                        พร้อมส่งตรงถึงบ้านคุณอย่างรวดเร็ว
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                        <Link
-                            to="/products"
-                            className="btn-primary px-8 py-4 text-white font-bold rounded-2xl shadow-xl transition-all hover:-translate-y-1 inline-flex items-center gap-3 group"
-                        >
-                            <span>🛒 ช้อปเลย</span>
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                            </svg>
-                        </Link>
-
-                        <Link
-                            to="/products"
-                            className="btn-secondary px-8 py-4 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl transition-all hover:-translate-y-0.5"
-                        >
-                            ดูสินค้าทั้งหมด
-                        </Link>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
-                        <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                            <div className="text-3xl font-black text-amber-400 mb-1">100%</div>
-                            <div className="text-sm opacity-80">อินทรีย์แท้</div>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <Link
+                                    to="/products"
+                                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-red-500/20 hover:bg-red-700 transition-all"
+                                >
+                                    เลือกชมสินค้า
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    className="inline-flex items-center justify-center rounded-full border border-red-600 px-8 py-4 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-slate-800 transition-all"
+                                >
+                                    สมัครสมาชิก
+                                </Link>
+                            </div>
                         </div>
-                        <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                            <div className="text-3xl font-black text-emerald-400 mb-1">24/7</div>
-                            <div className="text-sm opacity-80">พร้อมให้บริการ</div>
-                        </div>
-                        <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                            <div className="text-3xl font-black text-amber-400 mb-1">🚚</div>
-                            <div className="text-sm opacity-80">ส่งฟรีทั่วไทย</div>
+
+                        <div className="rounded-[2rem] bg-white shadow-2xl shadow-slate-200/50 dark:bg-slate-900 dark:shadow-slate-900/40 p-8">
+                            <div className="space-y-4">
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-300">ค้นหาสินค้า</label>
+                                    <div className="flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-100 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18.5a7.5 7.5 0 006.15-3.85z" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            placeholder="ค้นหาผัก ผลไม้ ชุดของขวัญ..."
+                                            className="w-full bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                                        <div className="text-sm font-semibold text-slate-900 dark:text-white">รวดเร็ว</div>
+                                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">จัดส่งทันใจในพื้นที่กรุงเทพและปริมณฑล</p>
+                                    </div>
+                                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                                        <div className="text-sm font-semibold text-slate-900 dark:text-white">ปลอดภัย</div>
+                                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">สินค้าตรวจสอบคุณภาพก่อนจัดส่ง</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
 
-            {/* Categories */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 -mt-16 relative z-10">
-                <div className="glass rounded-3xl p-8 md:p-12 animate-fade-in-up">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl md:text-4xl font-black mb-4 gradient-text">🏷️ หมวดหมู่สินค้า</h2>
-                        <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-                            เลือกหมวดหมู่ที่คุณสนใจเพื่อค้นหาสินค้าที่ตรงใจ
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap justify-center gap-4">
-                        {CATEGORIES.map((cat, index) => (
-                            <Link
-                                key={cat}
-                                to={`/products?category=${encodeURIComponent(cat)}`}
-                                className="group px-6 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg card-hover animate-fade-in-scale"
-                                style={{ animationDelay: `${index * 0.1}s` }}
-                            >
-                                <span className="group-hover:scale-110 transition-transform inline-block">
-                                    {cat}
-                                </span>
-                            </Link>
-                        ))}
+                    <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                        <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
+                            <div className="text-sm uppercase tracking-[0.2em] text-red-600 font-bold">โปรโมชั่น</div>
+                            <h2 className="mt-4 text-2xl font-black">ลดราคาพิเศษ</h2>
+                            <p className="mt-3 text-slate-600 dark:text-slate-400">สินค้าคุณภาพ ราคาเบา ๆ พร้อมจัดส่งเร็ว</p>
+                        </div>
+                        <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
+                            <div className="text-sm uppercase tracking-[0.2em] text-red-600 font-bold">บริการ</div>
+                            <h2 className="mt-4 text-2xl font-black">เช็คค่าขนส่ง</h2>
+                            <p className="mt-3 text-slate-600 dark:text-slate-400">รู้ราคาจัดส่งก่อนสั่งซื้อทุกครั้ง</p>
+                        </div>
+                        <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
+                            <div className="text-sm uppercase tracking-[0.2em] text-red-600 font-bold">จัดส่ง</div>
+                            <h2 className="mt-4 text-2xl font-black">ทั่วไทย</h2>
+                            <p className="mt-3 text-slate-600 dark:text-slate-400">จัดส่งทั่วประเทศ พร้อมติดตามสถานะ</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Featured Products */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <div>
+                        <h2 className="text-3xl font-black">หมวดหมู่สินค้า</h2>
+                        <p className="text-slate-600 dark:text-slate-400">เลือกหมวดหมู่ที่ตรงใจได้อย่างรวดเร็ว</p>
+                    </div>
+                    <Link to="/products" className="text-sm font-semibold text-red-600 hover:text-red-700">
+                        ดูสินค้าเพิ่มเติม →
+                    </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {CATEGORIES.map((category) => (
+                        <Link
+                            key={category}
+                            to={`/products?category=${encodeURIComponent(category)}`}
+                            className="group rounded-3xl border border-slate-200 bg-white p-6 text-left transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-900"
+                        >
+                            <div className="text-sm font-semibold text-red-600">หมวดหมู่</div>
+                            <h3 className="mt-4 text-xl font-black text-slate-900 dark:text-white">{category}</h3>
+                            <p className="mt-3 text-slate-600 dark:text-slate-400">ร้านค้าผัก ผลไม้สด พร้อมส่งตรงจากฟาร์ม</p>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
             <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
-                <div className="text-center mb-12 animate-fade-in-up">
-                    <h2 className="text-3xl md:text-4xl font-black mb-4 gradient-text">🌿 สินค้าแนะนำ</h2>
-                    <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">
-                        Fresh from our heart to your table
-                    </p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <div>
+                        <h2 className="text-3xl font-black">สินค้าขายดี</h2>
+                        <p className="text-slate-600 dark:text-slate-400">สินค้าแนะนำที่ลูกค้าชื่นชอบ</p>
+                    </div>
+                    <Link to="/products" className="text-sm font-semibold text-red-600 hover:text-red-700">
+                        แสดงสินค้าทั้งหมด →
+                    </Link>
                 </div>
 
                 {loading ? (
@@ -154,45 +170,18 @@ export default function Home() {
                         <div className="spinner"></div>
                     </div>
                 ) : products.length === 0 ? (
-                    <div className="text-center py-16 glass rounded-3xl border border-dashed border-gray-300 dark:border-gray-600 animate-fade-in-scale">
-                        <div className="max-w-md mx-auto">
-                            <div className="text-6xl mb-4">🌱</div>
-                            <p className="text-gray-500 dark:text-gray-400 font-bold text-lg mb-4">
-                                ยังไม่มีสินค้าในระบบ
-                            </p>
-                            <Link
-                                to="/admin"
-                                className="btn-primary px-6 py-3 text-white font-semibold rounded-xl inline-block transition-all hover:-translate-y-0.5"
-                            >
-                                ไปเพิ่มสินค้าในหน้าแอดมิน
-                            </Link>
-                        </div>
+                    <div className="text-center py-16 rounded-3xl border border-dashed border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                        <div className="text-6xl mb-4">🌱</div>
+                        <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">ยังไม่มีสินค้าในตอนนี้</p>
+                        <p className="mt-2 text-slate-500 dark:text-slate-400">ระบบกำลังเตรียมสินค้าให้คุณเร็ว ๆ นี้</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {products.map((p, index) => (
-                            <div
-                                key={p.id}
-                                className="animate-fade-in-scale card-hover"
-                                style={{ animationDelay: `${index * 0.1}s` }}
-                            >
-                                <ProductCard product={p} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {products.map((product) => (
+                            <div key={product.id} className="rounded-3xl bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-slate-900 dark:shadow-slate-900/40">
+                                <ProductCard product={product} />
                             </div>
                         ))}
-                    </div>
-                )}
-
-                {!loading && products.length > 0 && (
-                    <div className="text-center mt-16 animate-fade-in-up">
-                        <Link
-                            to="/products"
-                            className="btn-secondary px-8 py-4 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all hover:-translate-y-1 inline-flex items-center gap-3 group"
-                        >
-                            <span>ดูสินค้าทั้งหมด</span>
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </Link>
                     </div>
                 )}
             </section>
