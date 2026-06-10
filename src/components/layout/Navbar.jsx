@@ -60,7 +60,7 @@ export default function Navbar() {
                             to="/products"
                             className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
                         >
-                            หมวดหมู่สินค้า
+                            หมวดหมู่
                         </Link>
                         <Link
                             to="/products"
@@ -68,6 +68,14 @@ export default function Navbar() {
                         >
                             โปรโมชั่น
                         </Link>
+                        {isAdmin && (
+                            <Link
+                                to="/admin"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
+                            >
+                                แอดมิน
+                            </Link>
+                        )}
                         <Link
                             to="/cart"
                             className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
