@@ -34,13 +34,13 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-6">
                     <Link to="/" className="flex items-center gap-3 font-black text-xl text-slate-900 dark:text-white hover:scale-105 transition-transform">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-lg shadow-lg">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-lg shadow-lg">
                             🛒
                         </div>
                         <span className="text-lg">Smart Farm</span>
                     </Link>
 
-                    <form onSubmit={handleSearchSubmit} className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm overflow-hidden transition-all focus-within:border-red-500">
+                    <form onSubmit={handleSearchSubmit} className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm overflow-hidden transition-all focus-within:border-emerald-500">
                         <input
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
@@ -48,7 +48,7 @@ export default function Navbar() {
                             placeholder="ค้นหาสินค้า ผลไม้ ผักสด..."
                             className="px-4 py-2 w-72 bg-transparent text-sm text-slate-900 dark:text-slate-100 outline-none"
                         />
-                        <button type="submit" className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-r-full hover:bg-red-600 transition-all">
+                        <button type="submit" className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-r-full hover:bg-emerald-700 transition-all">
                             ค้นหา
                         </button>
                     </form>
@@ -58,31 +58,31 @@ export default function Navbar() {
                     <div className="hidden md:flex items-center gap-3">
                         <Link
                             to="/products"
-                            className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
+                            className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors"
                         >
                             หมวดหมู่
                         </Link>
                         <Link
                             to="/products"
-                            className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
+                            className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors"
                         >
                             โปรโมชั่น
                         </Link>
                         {isAdmin && (
                             <Link
                                 to="/admin"
-                                className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors"
                             >
                                 แอดมิน
                             </Link>
                         )}
                         <Link
                             to="/cart"
-                            className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-red-600 transition-colors"
+                            className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors"
                         >
                             <span>ตะกร้า</span>
                             {totalItems > 0 && (
-                                <span className="bg-red-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5">
+                                <span className="bg-emerald-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5">
                                     {totalItems}
                                 </span>
                             )}
@@ -94,7 +94,7 @@ export default function Navbar() {
                             <>
                                 <button
                                     onClick={logout}
-                                    className="px-4 py-2 rounded-full text-sm font-semibold text-red-600 border border-red-600 hover:bg-red-50 transition-all"
+                                    className="px-4 py-2 rounded-full text-sm font-semibold text-emerald-600 border border-emerald-600 hover:bg-emerald-50 transition-all"
                                 >
                                     ออกจากระบบ
                                 </button>
@@ -106,13 +106,13 @@ export default function Navbar() {
                             <>
                                 <Link
                                     to="/register"
-                                    className="px-4 py-2 rounded-full text-sm font-semibold text-red-600 border border-red-600 hover:bg-red-50 transition-all"
+                                    className="px-4 py-2 rounded-full text-sm font-semibold text-emerald-600 border border-emerald-600 hover:bg-emerald-50 transition-all"
                                 >
                                     สมัครสมาชิก
                                 </Link>
                                 <Link
                                     to="/login"
-                                    className="px-4 py-2 rounded-full text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all"
+                                    className="px-4 py-2 rounded-full text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
                                 >
                                     เข้าสู่ระบบ
                                 </Link>
@@ -131,9 +131,7 @@ export default function Navbar() {
 
             <div className="border-t border-slate-200 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 hidden md:flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
-                    <span className="font-semibold text-red-600">จัดส่งทั่วไทย</span>
-                    <span>สินค้าเกษตรสดใหม่</span>
-                    <span>รับประกันความสด</span>
+                    <span className="font-semibold text-emerald-600">จัดส่งทั่วไทย</span>
                 </div>
             </div>
 
@@ -147,7 +145,7 @@ export default function Navbar() {
                         placeholder="ค้นหา..."
                         className="w-full px-4 py-2 rounded-full border border-slate-200 bg-slate-50 text-sm outline-none"
                     />
-                    <button type="submit" className="px-4 py-2 rounded-full bg-red-500 text-white text-sm font-semibold">
+                    <button type="submit" className="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-all">
                         ค้นหา
                     </button>
                 </form>
