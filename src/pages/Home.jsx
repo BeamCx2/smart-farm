@@ -134,7 +134,7 @@ export default function Home() {
                         >
                             <div className="text-sm font-semibold text-emerald-600">หมวดหมู่</div>
                             <h3 className="mt-4 text-xl font-black text-slate-900 dark:text-white">{category}</h3>
-                            <p className="mt-3 text-slate-600 dark:text-slate-400">ร้านค้าผัก ผลไม้สด พร้อมส่งตรงจากฟาร์ม</p>
+                            <p className="mt-3 text-slate-600 dark:text-slate-400">ผักและอุปกรณ์ การเพาะปลูก พร้อมส่งตรงจากฟาร์ม</p>
                         </Link>
                     ))}
                 </div>
