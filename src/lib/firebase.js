@@ -19,7 +19,6 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// 🚨 แยกชื่อให้ชัดเจน: rtdb คือตู้สินค้าที่บอสใช้จัดการ
 export const db = getFirestore(app);        
 export const rtdb = getDatabase(app);      
 

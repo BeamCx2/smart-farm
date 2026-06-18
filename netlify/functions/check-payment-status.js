@@ -1,6 +1,3 @@
-// ⚠️ NOTE: This function is for Easy Slip verification (if needed in future)
-// Currently using PromptPay QR only via Firebase Cloud Functions (getscbqr)
-
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -11,8 +8,6 @@ exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
   try {
-    // 📝 Placeholder for Easy Slip verification
-    // Will implement when Easy Slip integration is needed
     
     return {
       statusCode: 200,

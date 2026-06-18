@@ -56,7 +56,6 @@ export default function Dashboard() {
                     })
                     .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-                // 4. คำนวณรายการรอดำเนินการ: นับเฉพาะ 'pending' และ 'waiting_verify' (รอตรวจสลิป)
                 const pending = orders.filter(o =>
                     o.status === 'pending' ||
                     o.status === 'waiting_verify'

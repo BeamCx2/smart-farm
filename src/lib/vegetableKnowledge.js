@@ -227,7 +227,6 @@ export const VEGETABLE_KNOWLEDGE = {
     }
 };
 
-// ฟังก์ชันช่วยเหลือสำหรับค้นหาผัก
 export const findVegetable = (query) => {
     const normalizedQuery = query.toLowerCase().trim();
     return Object.values(VEGETABLE_KNOWLEDGE).find(veg =>
@@ -236,7 +235,6 @@ export const findVegetable = (query) => {
     );
 };
 
-// ฟังก์ชันสำหรับสร้างคำตอบอัตโนมัติ
 export const generateVegetableResponse = (query, vegetable) => {
     const lowerQuery = query.toLowerCase();
 
@@ -260,6 +258,5 @@ export const generateVegetableResponse = (query, vegetable) => {
         return `${vegetable.thaiName} ${vegetable.season}`;
     }
 
-    // ข้อมูลทั่วไป
     return `${vegetable.thaiName} (${vegetable.scientificName})\n\nโภชนาการ: วิตามิน ${vegetable.nutrition.vitamins.join(', ')}\nประโยชน์: ${vegetable.benefits[0]}\nวิธีปรุง: ${vegetable.cooking.slice(0, 2).join(', ')}\n\n${vegetable.storage}`;
 };
