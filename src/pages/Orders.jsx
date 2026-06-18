@@ -86,10 +86,8 @@ export default function Orders() {
     if (authLoading || loading) return <div className="p-20 text-center animate-pulse font-black text-emerald-600 uppercase">Fetching Orders...</div>;
     if (!user) return <Navigate to="/register" replace />;
 
-    // eslint-disable-next-line react-hooks/purity
     const now = Math.floor(Date.now() / 1000);
 
-    // Check for expired pending orders
     orders.forEach(order => {
         const isPending = order.status === 'pending';
         const isExpired = isPending && order.createdAt?.seconds && now > (order.createdAt.seconds + 86400);

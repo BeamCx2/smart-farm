@@ -25,7 +25,6 @@ export default function Products() {
 
         const loadProducts = async () => {
             try {
-                // ✅ [OPTIMIZATION] ตรวจสอบ cache ก่อน
                 const cacheKey = 'products_active_list';
                 if (isCacheValid(cacheKey)) {
                     const cachedData = getCache(cacheKey);
@@ -34,7 +33,6 @@ export default function Products() {
                     return;
                 }
 
-                // ✅ [OPTIMIZATION] ลด limit จาก 500 เป็น 100
                 const q = query(
                     collection(db, 'products'),
                     where('status', '==', 'active'),
@@ -45,7 +43,6 @@ export default function Products() {
                 const snapshot = await getDocs(q);
                 const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-                // ✅ เก็บใน cache สำหรับครั้งถัดไป
                 setCache(cacheKey, data);
                 setProducts(data);
                 setLoading(false);
