@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getStorage, ref, uploadBytes } from 'firebase/storage';
@@ -23,14 +23,14 @@ export default function Payment() {
     const [statusModal, setStatusModal] = useState({ show: false, success: false, message: '', details: null });
 
     const storage = getStorage(app);
-    const functions = getFunctions(app, 'asia-southeast1');
-    const getSCBQR = httpsCallable(functions, 'getscbqr');
+    const functions = useMemo(() => getFunctions(app, 'asia-southeast1'), []);
 
     useEffect(() => {
         const handleGenerateQR = async () => {
             if (amount <= 0) return;
             setLoading(true);
             try {
+                const getSCBQR = httpsCallable(functions, 'getscbqr');
                 const result = await getSCBQR({ amount, orderId });
                 if (result.data?.qrRawData) setQrRawData(result.data.qrRawData);
             } catch (error) {
@@ -40,7 +40,7 @@ export default function Payment() {
             }
         };
         handleGenerateQR();
-    }, [amount, orderId, getSCBQR]);
+    }, [amount, orderId, functions]);
 
     const scanSlipForPayload = useCallback(async (file) => {
         const imageBitmap = await (window.createImageBitmap ? createImageBitmap(file) : new Promise((resolve, reject) => {
