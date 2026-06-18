@@ -54,7 +54,7 @@ export default function Home() {
 
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
                                 สินค้าขายดี ราคาสุดคุ้ม
-                                <span className="block text-emerald-600 mt-3">ผลไม้ตามฤดูกาล ผลไม้นำเข้า ราคาพิเศษ</span>
+                                <span className="block text-emerald-600 mt-3">ผักและอุปกรณ์ การเพาะปลูก ราคาพิเศษ</span>
                             </h1>
 
                             <p className="max-w-2xl text-base sm:text-lg text-slate-600 dark:text-slate-300">
@@ -100,11 +100,11 @@ export default function Home() {
                             <h2 className="mt-4 text-2xl font-black">ลดราคาพิเศษ</h2>
                             <p className="mt-3 text-slate-600 dark:text-slate-400">สินค้าคุณภาพ ราคาเบา ๆ พร้อมจัดส่งเร็ว</p>
                         </div>
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
+                        {/* <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
                             <div className="text-sm uppercase tracking-[0.2em] text-emerald-600 font-bold">บริการ</div>
                             <h2 className="mt-4 text-2xl font-black">เช็คค่าขนส่ง</h2>
                             <p className="mt-3 text-slate-600 dark:text-slate-400">รู้ราคาจัดส่งก่อนสั่งซื้อทุกครั้ง</p>
-                        </div>
+                        </div> */}
                         <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
                             <div className="text-sm uppercase tracking-[0.2em] text-emerald-600 font-bold">จัดส่ง</div>
                             <h2 className="mt-4 text-2xl font-black">ทั่วไทย</h2>
