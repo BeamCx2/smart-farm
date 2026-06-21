@@ -66,6 +66,7 @@ export default function BankTransfer() {
 
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ payload: payload })
             });
             const result = await verifyRes.json();
@@ -77,7 +78,7 @@ export default function BankTransfer() {
                 const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
                 const receiverName = slipData.receiver?.account?.name?.th || "";
                 const receiverAccount = slipData.receiver?.account?.bank?.account || "";
-                const transRef = slipData.transRef;
+                const transRef = slipData.transRef || slipResponse.payloadHash;
 
                 // Triple Lock Verification
                 const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");

@@ -88,6 +88,7 @@ export default function Payment() {
 
             const verifyRes = await fetch('/.netlify/functions/verify-slip', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ payload: payload })
             });
             const result = await verifyRes.json();
@@ -99,7 +100,7 @@ export default function Payment() {
                 const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
                 const receiverName = slipData.receiver?.account?.name?.th || "";
                 const receiverAccount = slipData.receiver?.account?.bank?.account || "";
-                const transRef = slipData.transRef;
+                const transRef = slipData.transRef || slipResponse.payloadHash;
 
                 const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
                 const isAccountValid = receiverAccount.includes("4218");
