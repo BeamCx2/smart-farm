@@ -4,6 +4,13 @@ function normalizeDigits(value) {
     return String(value || '').replace(/\D/g, '');
 }
 
+function normalizeAccount(value) {
+    let digits = normalizeDigits(value);
+    if (digits.startsWith('66')) digits = digits.slice(2);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    return digits;
+}
+
 function parseTLV(payload) {
     const result = {};
     let index = 0;
@@ -38,7 +45,6 @@ function parsePromptPayPayload(payload) {
     const additional = tlv['62'] ? parseTLV(tlv['62'].value) : {};
 
     let account = '';
-    let accountSource = null;
     const accountFields = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
     for (const field of accountFields) {
         const entry = tlv[field];
@@ -46,20 +52,17 @@ function parsePromptPayPayload(payload) {
         const found = findAccountInTemplate(entry.value);
         if (found) {
             account = found.account;
-            accountSource = { field, subId: found.subId, rawValue: found.rawValue };
             break;
         }
     }
 
     if (!account) {
-        // fallback: top-level fields may contain numeric account identifiers
         for (const field of ['02', '03', '04', '05', '06', '07', '08', '09']) {
             const entry = tlv[field];
             if (!entry?.value) continue;
             const digits = normalizeDigits(entry.value);
             if (digits.length >= 9 && digits.length <= 13) {
                 account = digits;
-                accountSource = { field, rawValue: entry.value };
                 break;
             }
         }
@@ -73,13 +76,18 @@ function parsePromptPayPayload(payload) {
         merchantName,
         merchantCity,
         account,
-        accountSource,
         transRef,
         payload,
         payloadHash,
         rawTLV: tlv,
         additional
     };
+}
+
+function isValidPromptPayAccount(account) {
+    const normalized = normalizeAccount(account);
+    const expected = '6389886566';
+    return normalized.endsWith(expected);
 }
 
 exports.handler = async (event) => {
@@ -99,15 +107,16 @@ exports.handler = async (event) => {
         }
 
         const slip = parsePromptPayPayload(payload);
-        const expectedAccounts = ['0638986566', '00638989656'];
-        const normalizedAccount = normalizeDigits(slip.account);
-        const isAccountValid = expectedAccounts.includes(normalizedAccount);
+        const validAccount = isValidPromptPayAccount(slip.account);
+        const validAmount = Number(slip.amount) > 0;
 
         const response = {
-            success: isAccountValid && slip.amount > 0,
+            success: validAccount && validAmount,
             data: {
                 amountInSlip: slip.amount,
-                payload: slip.payload,
+                receiverName: slip.merchantName,
+                receiverAccount: slip.account,
+                transRef: slip.transRef || slip.payloadHash,
                 payloadHash: slip.payloadHash,
                 rawSlip: {
                     receiver: {
@@ -128,15 +137,20 @@ exports.handler = async (event) => {
             }
         };
 
-        if (!isAccountValid) {
+        if (!validAccount) {
             response.success = false;
             response.message = 'QR ไม่ตรงบัญชี PromptPay ของเรา';
             response.data.details = {
                 foundAccount: slip.account,
-                expectedAccounts,
+                expectedLast10: '6389886566',
                 merchantName: slip.merchantName,
                 merchantCity: slip.merchantCity
             };
+        }
+
+        if (!validAmount) {
+            response.success = false;
+            response.message = 'ยอดเงินใน QR ไม่ถูกต้อง';
         }
 
         return {

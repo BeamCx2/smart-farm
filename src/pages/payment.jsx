@@ -93,16 +93,20 @@ export default function Payment() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ payload: payload })
             });
+            if (!verifyRes.ok) {
+                const errorText = await verifyRes.text();
+                throw new Error(`Verify API failed: ${errorText}`);
+            }
+
             const result = await verifyRes.json();
-
             if (result && result.success === true) {
-                const slipResponse = result.data;
-                const slipData = slipResponse.rawSlip || slipResponse;
+                const slipResponse = result.data || {};
+                const slipData = slipResponse.rawSlip || {};
 
-                const slipAmount = slipResponse.amountInSlip || slipData.amount?.amount || 0;
-                const receiverName = slipData.receiver?.account?.name?.th || "";
-                const receiverAccount = slipData.receiver?.account?.bank?.account || "";
-                const transRef = slipData.transRef || slipResponse.payloadHash;
+                const slipAmount = Number(slipResponse.amountInSlip || slipData.amount?.amount || 0);
+                const receiverName = slipResponse.receiverName || slipData.receiver?.account?.name?.th || "";
+                const receiverAccount = slipResponse.receiverAccount || slipData.receiver?.account?.bank?.account || "";
+                const transRef = slipResponse.transRef || slipResponse.payloadHash || slipData.transRef || "";
 
                 const isNameValid = receiverName.replace(/\s/g, "").includes("ณัฐวุฒิ");
                 const isAccountValid = receiverAccount.includes("4218");
