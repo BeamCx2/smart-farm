@@ -109,14 +109,27 @@ export default function Subscribe() {
                                 </div>
                             </div>
 
-                            <div className="mt-10">
+                            <div className="mt-10 grid gap-4 sm:grid-cols-2">
                                 <button
                                     type="button"
                                     onClick={handleSubscribe}
                                     disabled={processing}
                                     className="w-full rounded-3xl bg-emerald-500 px-8 py-5 text-lg font-black uppercase tracking-[0.15em] text-slate-950 shadow-2xl shadow-emerald-500/30 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {processing ? 'กำลังเชื่อมต่อ Stripe...' : 'สมัครสมาชิก 699 บาท/เดือน'}
+                                    {processing ? 'กำลังเชื่อมต่อ Stripe...' : 'สมัครสมาชิกด้วยบัตร (Stripe)'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!user) {
+                                            addToast('กรุณาเข้าสู่ระบบก่อนชำระเงิน', 'info');
+                                            return navigate('/login');
+                                        }
+                                        navigate('/payment', { state: { amount: 699, orderId: 'subscribe-699', isSubscription: true } });
+                                    }}
+                                    className="w-full rounded-3xl border border-white/20 bg-slate-900 px-8 py-5 text-lg font-black uppercase tracking-[0.15em] text-white shadow-2xl shadow-slate-900/40 transition hover:bg-slate-800"
+                                >
+                                    ชำระด้วย PromptPay QR
                                 </button>
                             </div>
                         </div>

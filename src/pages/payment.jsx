@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import {
-    collection, query, where, getDocs, updateDoc,
+    collection, query, where, getDocs, updateDoc, setDoc,
     serverTimestamp, doc, increment
 } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatTHB } from '../lib/utils';
@@ -15,7 +16,7 @@ import jsQR from 'jsqr';
 export default function Payment() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { amount, orderId } = location.state || { amount: 0, orderId: 'N/A' };
+    const { amount, orderId, isSubscription } = location.state || { amount: 0, orderId: 'N/A', isSubscription: false };
 
     const [qrRawData, setQrRawData] = useState('');
     const [loading, setLoading] = useState(false);
@@ -23,6 +24,7 @@ export default function Payment() {
     const [statusModal, setStatusModal] = useState({ show: false, success: false, message: '', details: null });
 
     const storage = getStorage(app);
+    const { user } = useAuth();
     const functions = useMemo(() => getFunctions(app, 'asia-southeast1'), []);
 
     useEffect(() => {
@@ -130,28 +132,79 @@ export default function Payment() {
                 const storageRef = ref(storage, `slips/${orderId}_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, file);
 
-                const q = query(collection(db, 'orders'), where('orderId', '==', orderId));
-                const snap = await getDocs(q);
+                if (isSubscription) {
+                    if (!user) {
+                        setUploading(false);
+                        return setStatusModal({ show: true, success: false, message: 'กรุณาเข้าสู่ระบบ', details: 'ต้องเข้าสู่ระบบเพื่อสมัครสมาชิกด้วย PromptPay' });
+                    }
 
-                if (!snap.empty) {
-                    const orderDoc = snap.docs[0];
-                    const orderData = orderDoc.data();
+                    const storageRef = ref(storage, `slips/subscription_${user.uid}_${Date.now()}.jpg`);
+                    await uploadBytes(storageRef, file);
 
-                    const updateStockPromises = (orderData.items || []).map(item =>
-                        updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
-                    );
-                    await Promise.all(updateStockPromises);
+                    const subscriptionId = transRef || `sub_${user.uid}_${Date.now()}`;
+                    const subscriptionDoc = doc(db, 'subscriptions', subscriptionId);
+                    await updateDoc(subscriptionDoc, {
+                        userId: user.uid,
+                        email: user.email || '',
+                        plan: 'monthly_699',
+                        price: 699,
+                        status: 'pending',
+                        transRef,
+                        slipPath: `slips/subscription_${user.uid}_${Date.now()}.jpg`,
+                        verifiedBy: 'PromptPay Subscription',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    }).catch(async () => {
+                        await setDoc(subscriptionDoc, {
+                            userId: user.uid,
+                            email: user.email || '',
+                            plan: 'monthly_699',
+                            price: 699,
+                            status: 'pending',
+                            transRef,
+                            slipPath: `slips/subscription_${user.uid}_${Date.now()}.jpg`,
+                            verifiedBy: 'PromptPay Subscription',
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        });
+                    });
 
-                    await updateDoc(orderDoc.ref, {
-                        status: 'paid',
-                        slipPath: `slips/${orderId}_${Date.now()}.jpg`,
-                        transRef: transRef,
-                        updatedAt: serverTimestamp(),
-                        verifiedBy: 'PromptPay Triple Lock (Stable)'
+                    await updateDoc(doc(db, 'users', user.uid), {
+                        subscription: {
+                            status: 'pending',
+                            plan: 'monthly_699',
+                            paymentMethod: 'PromptPay',
+                            transRef,
+                            updatedAt: serverTimestamp()
+                        }
                     });
 
                     setUploading(false);
-                    setStatusModal({ show: true, success: true, message: 'ชำระเงินสำเร็จ!', details: 'ยืนยันออเดอร์และตัดสต๊อกเรียบร้อย' });
+                    setStatusModal({ show: true, success: true, message: 'ขอสมัครสมาชิกเรียบร้อยแล้ว!', details: 'ส่งหลักฐานชำระเงินให้ทางทีมงานตรวจสอบแล้ว' });
+                } else {
+                    const q = query(collection(db, 'orders'), where('orderId', '==', orderId));
+                    const snap = await getDocs(q);
+
+                    if (!snap.empty) {
+                        const orderDoc = snap.docs[0];
+                        const orderData = orderDoc.data();
+
+                        const updateStockPromises = (orderData.items || []).map(item =>
+                            updateDoc(doc(db, 'products', item.id), { stock: increment(-item.qty) })
+                        );
+                        await Promise.all(updateStockPromises);
+
+                        await updateDoc(orderDoc.ref, {
+                            status: 'paid',
+                            slipPath: `slips/${orderId}_${Date.now()}.jpg`,
+                            transRef: transRef,
+                            updatedAt: serverTimestamp(),
+                            verifiedBy: 'PromptPay Triple Lock (Stable)'
+                        });
+
+                        setUploading(false);
+                        setStatusModal({ show: true, success: true, message: 'ชำระเงินสำเร็จ!', details: 'ยืนยันออเดอร์และตัดสต๊อกเรียบร้อย' });
+                    }
                 }
             } else {
                 setUploading(false);
