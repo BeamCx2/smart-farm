@@ -8,6 +8,7 @@ const NAV_LINKS = [
     { to: '/', label: 'หน้าแรก' },
     { to: '/products', label: 'สินค้า' },
     { to: '/orders', label: 'คำสั่งซื้อ' },
+    { to: '/subscribe', label: 'สมัครสมาชิก' },
 ];
 
 export default function Navbar() {

@@ -19,6 +19,7 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Subscribe from './pages/Subscribe';
 
 // ✅ Import หน้า Payment, BankTransfer และ Receipt
 import Payment from './pages/payment';
@@ -69,6 +70,7 @@ export default function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/subscribe" element={<ProtectedRoute><Subscribe /></ProtectedRoute>} />
 
                   {/* 🔒 Private Routes */}
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

@@ -75,6 +75,12 @@ export default function Home() {
                                 >
                                     สมัครสมาชิก
                                 </Link>
+                                <Link
+                                    to="/subscribe"
+                                    className="inline-flex items-center justify-center rounded-full bg-slate-900 px-8 py-4 text-sm font-semibold text-white hover:bg-slate-800 transition-all"
+                                >
+                                    699 บาท/เดือน
+                                </Link>
                             </div>
                         </div>
 
