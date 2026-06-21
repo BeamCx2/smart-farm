@@ -1,150 +1,43 @@
 const { createHash } = require('crypto');
+// นำเข้าฟังก์ชันจากไลบรารี promptparse
+const { parse } = require('promptparse');
+const { slipVerify } = require('promptparse/validate');
 
-function normalizeDigits(value) {
-    return String(value || '').replace(/\D/g, '');
-}
-
+// ฟังก์ชันทำความสะอาดเลขบัญชี (ตัด 0066, 66 และ 0 นำหน้าออก)
 function normalizeAccount(value) {
-    let digits = normalizeDigits(value);
-    
-    // จัดการรหัสประเทศของ PromptPay ที่อาจแนบมาในรูปแบบ 0066 หรือ 66
-    if (digits.startsWith('0066')) {
-        digits = digits.slice(4);
-    } else if (digits.startsWith('66')) {
-        digits = digits.slice(2);
-    }
-    
-    // ตัด 0 นำหน้าออกเพื่อให้เหลือแค่ตัวเลขหลักของเบอร์โทรหรือบัญชี
-    if (digits.startsWith('0')) {
-        digits = digits.slice(1);
-    }
-    
+    let digits = String(value || '').replace(/\D/g, '');
+    if (digits.startsWith('0066')) digits = digits.slice(4);
+    else if (digits.startsWith('66')) digits = digits.slice(2);
+    if (digits.startsWith('0')) digits = digits.slice(1);
     return digits;
 }
 
-function parseTLV(payload) {
-    const result = {};
-    let index = 0;
-    while (index + 4 <= payload.length) {
-        const id = payload.slice(index, index + 2);
-        const length = Number(payload.slice(index + 2, index + 4));
-        const value = payload.slice(index + 4, index + 4 + length);
-        if (!id || Number.isNaN(length) || value.length !== length) break;
-        result[id] = { value, length };
-        index += 4 + length;
-    }
-    return result;
-}
-
-function findAccountInTemplate(template) {
-    const nested = parseTLV(template);
-    for (const subId of Object.keys(nested)) {
-        const value = nested[subId].value;
-        const digits = normalizeDigits(value);
-        if (digits.length >= 9 && digits.length <= 13) {
-            return { account: digits, subId, rawValue: value };
-        }
-    }
-    return null;
-}
-
-function parsePromptPayUrl(payload) {
-    try {
-        const url = new URL(payload);
-        const path = url.pathname.replace(/^\//, '');
-        const parts = path.split('/').filter(Boolean);
-        let account = '';
-        let amount = 0;
-
-        if (parts.length >= 1) {
-            account = normalizeDigits(parts[0]);
-        }
-        if (parts.length >= 2) {
-            amount = Number(parts[1]) || 0;
-        }
-        if (!amount) {
-            amount = Number(url.searchParams.get('amount')) || 0;
-        }
-
-        return {
-            account,
-            amount,
-            merchantName: '',
-            merchantCity: '',
-            transRef: url.searchParams.get('ref') || '',
-            payloadHash: createHash('sha256').update(payload).digest('hex'),
-            payload,
-            rawTLV: {},
-            additional: {}
-        };
-    } catch (error) {
-        return null;
-    }
-}
-
-function parsePromptPayPayload(payload) {
-    const tlv = parseTLV(payload);
-    const amount = Number(tlv['54']?.value || 0);
-    const merchantName = tlv['59']?.value || '';
-    const merchantCity = tlv['60']?.value || '';
-    const additional = tlv['62'] ? parseTLV(tlv['62'].value) : {};
-
-    let account = '';
-    const accountFields = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
-    for (const field of accountFields) {
-        const entry = tlv[field];
-        if (!entry?.value) continue;
-        const found = findAccountInTemplate(entry.value);
-        if (found) {
-            account = found.account;
-            break;
-        }
-    }
-
-    if (!account) {
-        for (const field of ['02', '03', '04', '05', '06', '07', '08', '09']) {
-            const entry = tlv[field];
-            if (!entry?.value) continue;
-            const digits = normalizeDigits(entry.value);
-            if (digits.length >= 9 && digits.length <= 13) {
-                account = digits;
-                break;
-            }
-        }
-    }
-
-    const hasTlvData = Object.keys(tlv).length > 0;
-    if (!hasTlvData) {
-        const urlParsed = parsePromptPayUrl(payload);
-        if (urlParsed) {
-            return urlParsed;
-        }
-    }
-
-    const transRef = additional['05']?.value || additional['04']?.value || additional['07']?.value || additional['08']?.value || '';
-    const payloadHash = createHash('sha256').update(payload).digest('hex');
-
-    return {
-        amount,
-        merchantName,
-        merchantCity,
-        account,
-        transRef,
-        payload,
-        payloadHash,
-        rawTLV: tlv,
-        additional
-    };
-}
-
+// ตรวจสอบว่าตรงกับกสิกร (06389886566) หรือพร้อมเพย์ (0822024218) หรือไม่
 function isValidPromptPayAccount(account) {
     const normalized = normalizeAccount(account);
-    // เมื่อผ่านฟังก์ชัน normalizeAccount เลข 0 ด้านหน้าจะถูกตัดออก
-    // 06389886566 -> 6389886566 (กสิกร)
-    // 0822024218 -> 822024218 (พร้อมเพย์)
     const validAccounts = ['6389886566', '822024218'];
-    
     return validAccounts.some(acc => normalized.endsWith(acc));
+}
+
+// ดึงเลขบัญชีที่ซ้อนอยู่ข้างใน (เช่น ใน Tag 29 ของ PromptPay)
+function extractAccountFromTag(tagValue) {
+    if (!tagValue) return null;
+    try {
+        // ใช้ promptparse ถอดรหัส Tag ย่อยที่ซ้อนอยู่
+        const nested = parse(tagValue);
+        // ค้นหาใน Sub-Tag มาตรฐานของ AnyID (01=เบอร์โทร, 02=บัตรปชช, 03=E-Wallet)
+        for (let i = 1; i <= 9; i++) {
+            const subId = '0' + i;
+            const value = nested.getTagValue(subId);
+            if (value) {
+                const digits = String(value).replace(/\D/g, '');
+                if (digits.length >= 9 && digits.length <= 15) return digits;
+            }
+        }
+    } catch(e) {
+        // กรณีไม่ใช่โครงสร้าง TLV ซ้อน ให้ข้ามไป
+    }
+    return null;
 }
 
 exports.handler = async (event) => {
@@ -163,64 +56,113 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'Missing QR payload' }) };
         }
 
-        const slip = parsePromptPayPayload(payload);
-        const validAccount = isValidPromptPayAccount(slip.account);
-        const validAmount = Number(slip.amount) > 0;
+        // ==========================================
+        // โหมดที่ 1: ตรวจสอบว่าเป็นคิวอาร์บน "สลิปโอนเงิน" (e-Slip) หรือไม่?
+        // ==========================================
+        // slipVerify จะเช็คโครงสร้างและคำนวณ CRC ให้ ถ้าผ่านจะได้ Object กลับมา
+        const slipData = slipVerify(payload);
+        
+        if (slipData) {
+            console.log('✅ Detected Valid e-Slip QR:', slipData);
+            
+            // ตอนนี้เราดึงรหัสอ้างอิงและธนาคารออกมาได้แล้ว รอเอาไปเชื่อม API ในอนาคต
+            return { 
+                statusCode: 400, 
+                headers, 
+                body: JSON.stringify({ 
+                    success: false, 
+                    isSlip: true,
+                    message: 'สแกนสำเร็จ: เป็นสลิปโอนเงิน แต่ระบบยังไม่ได้เชื่อมต่อ API สำหรับตรวจสอบยอด',
+                    data: {
+                        sendingBank: slipData.sendingBank, // รหัสธนาคารต้นทาง (เช่น 004 = กสิกร)
+                        transRef: slipData.transRef        // รหัสอ้างอิงสำหรับไปเช็คกับ API
+                    }
+                }) 
+            };
+        }
 
-        const response = {
+        // ==========================================
+        // โหมดที่ 2: ตรวจสอบว่าเป็นคิวอาร์สำหรับ "จ่ายเงิน" (Payment QR) หรือไม่?
+        // ==========================================
+        let ppqr;
+        try {
+             // ใช้ promptparse ถอดรหัสโครงสร้าง EMVCo 
+             ppqr = parse(payload);
+        } catch(e) {
+             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'รูปแบบ QR ไม่ถูกต้อง (Invalid Format)' }) };
+        }
+
+        // เช็ค Tag '00' ว่าเป็นโครงสร้าง QR มาตรฐานหรือไม่
+        if (!ppqr || !ppqr.getTagValue('00')) {
+             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'ไม่พบข้อมูล Payment QR ที่ถูกต้อง' }) };
+        }
+
+        // ดึงข้อมูลหลักๆ ออกมา (Tag 54 = ยอดเงิน, 59 = ชื่อร้าน, 60 = เมือง)
+        const amountStr = ppqr.getTagValue('54');
+        const amount = Number(amountStr) || 0;
+        const merchantName = ppqr.getTagValue('59') || '';
+        
+        // ค้นหาเลขบัญชีผู้รับเงิน (มักอยู่ใน Tag 26-35)
+        let account = '';
+        const accountFields = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '35'];
+        for (const field of accountFields) {
+            const tagValue = ppqr.getTagValue(field);
+            if (tagValue) {
+                const found = extractAccountFromTag(tagValue);
+                if (found) { 
+                    account = found; 
+                    break; 
+                }
+            }
+        }
+
+        // ดึง TransRef เพิ่มเติมจาก Tag 62 (ถ้ามี)
+        let transRef = '';
+        const tag62 = ppqr.getTagValue('62');
+        if (tag62) {
+            transRef = parse(tag62).getTagValue('07') || '';
+        }
+        
+        const payloadHash = createHash('sha256').update(payload).digest('hex');
+        
+        // เข้าสู่ลอจิกตรวจสอบเงื่อนไข
+        const validAccount = isValidPromptPayAccount(account);
+        const validAmount = amount > 0;
+
+        const responseData = {
             success: validAccount && validAmount,
             data: {
-                amountInSlip: slip.amount,
-                receiverName: slip.merchantName,
-                receiverAccount: slip.account,
-                transRef: slip.transRef || slip.payloadHash,
-                payloadHash: slip.payloadHash,
+                amountInSlip: amount,
+                receiverName: merchantName,
+                receiverAccount: account,
+                transRef: transRef || payloadHash,
+                payloadHash: payloadHash,
                 rawSlip: {
                     receiver: {
-                        account: {
-                            bank: {
-                                account: slip.account || '06389886566 / 0822024218'
-                            },
-                            name: {
-                                th: slip.merchantName || 'ณัฐวุฒิ ภักดีอำนาจ'
-                            }
-                        }
+                        account: { bank: { account: account || '06389886566 / 0822024218' } },
+                        name: { th: merchantName || 'ณัฐวุฒิ ภักดีอำนาจ' }
                     },
-                    transRef: slip.transRef || slip.payloadHash,
-                    amount: {
-                        amount: slip.amount
-                    }
+                    transRef: transRef || payloadHash,
+                    amount: { amount: amount }
                 }
             }
         };
 
         if (!validAccount) {
-            response.success = false;
-            response.message = 'QR ไม่ตรงบัญชีที่กำหนด (กสิกร หรือ พร้อมเพย์ของเรา)';
-            response.data.details = {
-                foundAccount: slip.account,
-                expectedAccounts: ['06389886566', '0822024218'],
-                merchantName: slip.merchantName,
-                merchantCity: slip.merchantCity
-            };
+            responseData.success = false;
+            responseData.message = 'QR ไม่ตรงบัญชีที่กำหนด (กสิกร หรือ พร้อมเพย์ของเรา)';
+            responseData.data.details = { foundAccount: account, expectedAccounts: ['06389886566', '0822024218'] };
         }
 
         if (!validAmount) {
-            response.success = false;
-            response.message = 'ยอดเงินใน QR ไม่ถูกต้อง หรือไม่มีการระบุยอดเงิน';
+            responseData.success = false;
+            responseData.message = 'ยอดเงินใน QR ไม่ถูกต้อง หรือไม่มีการระบุยอดเงิน';
         }
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify(response)
-        };
+        return { statusCode: 200, headers, body: JSON.stringify(responseData) };
+
     } catch (error) {
         console.error('Verification error:', error);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ success: false, message: 'Server error', error: error.message })
-        };
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: 'Server error', error: error.message }) };
     }
 };
