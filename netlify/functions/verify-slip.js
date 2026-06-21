@@ -6,8 +6,19 @@ function normalizeDigits(value) {
 
 function normalizeAccount(value) {
     let digits = normalizeDigits(value);
-    if (digits.startsWith('66')) digits = digits.slice(2);
-    if (digits.startsWith('0')) digits = digits.slice(1);
+    
+    // จัดการรหัสประเทศของ PromptPay ที่อาจแนบมาในรูปแบบ 0066 หรือ 66
+    if (digits.startsWith('0066')) {
+        digits = digits.slice(4);
+    } else if (digits.startsWith('66')) {
+        digits = digits.slice(2);
+    }
+    
+    // ตัด 0 นำหน้าออกเพื่อให้เหลือแค่ตัวเลขหลักของเบอร์โทรหรือบัญชี
+    if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+    }
+    
     return digits;
 }
 
@@ -35,6 +46,40 @@ function findAccountInTemplate(template) {
         }
     }
     return null;
+}
+
+function parsePromptPayUrl(payload) {
+    try {
+        const url = new URL(payload);
+        const path = url.pathname.replace(/^\//, '');
+        const parts = path.split('/').filter(Boolean);
+        let account = '';
+        let amount = 0;
+
+        if (parts.length >= 1) {
+            account = normalizeDigits(parts[0]);
+        }
+        if (parts.length >= 2) {
+            amount = Number(parts[1]) || 0;
+        }
+        if (!amount) {
+            amount = Number(url.searchParams.get('amount')) || 0;
+        }
+
+        return {
+            account,
+            amount,
+            merchantName: '',
+            merchantCity: '',
+            transRef: url.searchParams.get('ref') || '',
+            payloadHash: createHash('sha256').update(payload).digest('hex'),
+            payload,
+            rawTLV: {},
+            additional: {}
+        };
+    } catch (error) {
+        return null;
+    }
 }
 
 function parsePromptPayPayload(payload) {
@@ -68,6 +113,14 @@ function parsePromptPayPayload(payload) {
         }
     }
 
+    const hasTlvData = Object.keys(tlv).length > 0;
+    if (!hasTlvData) {
+        const urlParsed = parsePromptPayUrl(payload);
+        if (urlParsed) {
+            return urlParsed;
+        }
+    }
+
     const transRef = additional['05']?.value || additional['04']?.value || additional['07']?.value || additional['08']?.value || '';
     const payloadHash = createHash('sha256').update(payload).digest('hex');
 
@@ -86,8 +139,12 @@ function parsePromptPayPayload(payload) {
 
 function isValidPromptPayAccount(account) {
     const normalized = normalizeAccount(account);
-    const expected = '6389886566';
-    return normalized.endsWith(expected);
+    // เมื่อผ่านฟังก์ชัน normalizeAccount เลข 0 ด้านหน้าจะถูกตัดออก
+    // 06389886566 -> 6389886566 (กสิกร)
+    // 0822024218 -> 822024218 (พร้อมเพย์)
+    const validAccounts = ['6389886566', '822024218'];
+    
+    return validAccounts.some(acc => normalized.endsWith(acc));
 }
 
 exports.handler = async (event) => {
@@ -122,10 +179,10 @@ exports.handler = async (event) => {
                     receiver: {
                         account: {
                             bank: {
-                                account: slip.account || ''
+                                account: slip.account || '06389886566 / 0822024218'
                             },
                             name: {
-                                th: slip.merchantName || ''
+                                th: slip.merchantName || 'ณัฐวุฒิ ภักดีอำนาจ'
                             }
                         }
                     },
@@ -139,10 +196,10 @@ exports.handler = async (event) => {
 
         if (!validAccount) {
             response.success = false;
-            response.message = 'QR ไม่ตรงบัญชี PromptPay ของเรา';
+            response.message = 'QR ไม่ตรงบัญชีที่กำหนด (กสิกร หรือ พร้อมเพย์ของเรา)';
             response.data.details = {
                 foundAccount: slip.account,
-                expectedLast10: '6389886566',
+                expectedAccounts: ['06389886566', '0822024218'],
                 merchantName: slip.merchantName,
                 merchantCity: slip.merchantCity
             };
@@ -150,7 +207,7 @@ exports.handler = async (event) => {
 
         if (!validAmount) {
             response.success = false;
-            response.message = 'ยอดเงินใน QR ไม่ถูกต้อง';
+            response.message = 'ยอดเงินใน QR ไม่ถูกต้อง หรือไม่มีการระบุยอดเงิน';
         }
 
         return {
